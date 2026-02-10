@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ID8 Pipeline SDK Architecture</title>
+  <style>
+    :root {
+      --base-primary: #020202;
+      --base-secondary: #101010;
+      --base-card: #1f1d1c;
+      --text-primary: #eeeeee;
+      --text-secondary: #a49d9a;
+      --text-muted: #5c5855;
+      --border-subtle: #2e2c2b;
+      --border-visible: #3d3a39;
+      --accent: #ef6f2e;
+      --accent-hover: #ee6018;
+      --accent-active: #d15010;
+      --amber: #f59e0b;
+      --teal: #4ecdc4;
+      --red: #e74c3c;
+      --neutral-700: #4d4947;
+      --neutral-800: #3d3a39;
+      --neutral-900: #2e2c2b;
+      --neutral-1000: #1f1d1c;
+      --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--base-primary);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 36px;
+    }
+
+    .section-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+    .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-secondary);
+    }
+
+    h1 {
+      font-family: var(--font-sans);
+      font-size: 48px;
+      font-weight: 400;
+      letter-spacing: -2px;
+      line-height: 1.0;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-family: var(--font-sans);
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+    h3 {
+      font-family: var(--font-sans);
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .stat {
+      text-align: center;
+      padding: 20px;
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+    }
+    .stat-number {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 36px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      display: block;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      background: var(--base-primary);
+      padding: 12px 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .tab {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab:hover {
+      border-color: var(--border-visible);
+      color: var(--text-primary);
+    }
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #020202;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .phase-group { margin-bottom: 40px; }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .phase-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .phase-dot.planning { background: var(--accent); }
+    .phase-dot.building { background: var(--amber); }
+    .phase-dot.quality { background: var(--teal); }
+    .phase-dot.launch { background: #eeeeee; }
+    .phase-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-secondary);
+    }
+    .phase-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+    .phase-tag.human { background: #ef6f2e20; color: var(--accent); }
+    .phase-tag.mixed { background: #f59e0b20; color: var(--amber); }
+    .phase-tag.auto { background: #4ecdc420; color: var(--teal); }
+
+    .stage-row {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .stage-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .stage-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .stage-card {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      position: relative;
+      transition: transform 0.2s ease;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .stage-card.reveal {
+      animation: fadeSlideUp 0.5s ease forwards;
+    }
+    .stage-card:hover { transform: translateY(-2px); }
+    .stage-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stage-card h3 { margin-bottom: 8px; font-size: 17px; }
+    .gate-question {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-style: italic;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .automation-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+    .automation-badge.human { background: #ef6f2e20; color: var(--accent); }
+    .automation-badge.mixed { background: #f59e0b20; color: var(--amber); }
+    .automation-badge.auto { background: #4ecdc420; color: var(--teal); }
+    .gate-checks {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .gate-check {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 2px 0;
+    }
+    .gate-check .check-auto { color: var(--teal); }
+    .gate-check .check-human { color: var(--accent); }
+
+    .arch-diagram {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 28px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .arch-diagram svg text {
+      font-family: 'Geist Mono', 'SF Mono', monospace;
+    }
+
+    .agent-list { display: grid; gap: 12px; }
+    .agent-card {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 16px;
+      align-items: start;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .agent-card.reveal { animation: fadeSlideUp 0.5s ease forwards; }
+    .agent-card:hover { border-color: var(--border-visible); }
+    .agent-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 400;
+    }
+    .agent-icon.strategist { background: #ef6f2e20; color: var(--accent); }
+    .agent-icon.architect { background: #ef6f2e20; color: var(--accent); }
+    .agent-icon.builder { background: #f59e0b20; color: var(--amber); }
+    .agent-icon.qa { background: #4ecdc420; color: var(--teal); }
+    .agent-icon.polish { background: #eeeeee15; color: var(--text-primary); }
+    .agent-stages {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .agent-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tool-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--base-secondary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .api-section { margin-bottom: 40px; }
+    .api-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .code-block {
+      background: var(--base-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text-primary);
+      white-space: pre;
+      position: relative;
+    }
+    .code-block .kw { color: var(--accent); }
+    .code-block .type { color: var(--teal); }
+    .code-block .str { color: var(--amber); }
+    .code-block .cmt { color: var(--text-muted); font-style: italic; }
+    .code-block .fn { color: #eeeeee; }
+    .code-block .prop { color: var(--text-secondary); }
+    .code-filename {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .loop-container { display: grid; gap: 20px; }
+    .loop-step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 20px;
+      align-items: start;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .loop-step.reveal { animation: fadeSlideUp 0.5s ease forwards; }
+    .step-indicator {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .step-indicator.autonomous {
+      background: #4ecdc420;
+      color: var(--teal);
+      border: 1.5px solid var(--teal);
+    }
+    .step-indicator.human-gate {
+      background: #ef6f2e20;
+      color: var(--accent);
+      border: 1.5px solid var(--accent);
+    }
+    .step-content {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .step-content h3 { margin-bottom: 6px; }
+    .step-content p { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+    .step-detail {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      background: var(--base-secondary);
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .step-connector {
+      width: 2px;
+      height: 20px;
+      margin: 0 auto;
+    }
+    .step-connector-line {
+      width: 100%;
+      height: 100%;
+      background: var(--border-subtle);
+      animation: drawLine 0.5s ease forwards;
+      transform-origin: top;
+    }
+    .loop-legend {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .legend-dot.auto-color { background: var(--teal); }
+    .legend-dot.human-color { background: var(--accent); }
+    .legend-dot.mixed-color { background: var(--amber); }
+
+    .decision-step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 20px;
+      align-items: start;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .decision-step.reveal { animation: fadeSlideUp 0.5s ease forwards; }
+    .diamond { width: 48px; height: 48px; position: relative; }
+    .diamond-inner {
+      width: 34px;
+      height: 34px;
+      background: var(--base-card);
+      border: 1.5px solid var(--amber);
+      transform: rotate(45deg);
+      position: absolute;
+      top: 7px;
+      left: 7px;
+    }
+    .diamond-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--amber);
+      z-index: 1;
+    }
+    .decision-content {
+      background: var(--base-card);
+      border: 1px solid var(--amber);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .branch-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .branch {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .branch.yes-branch {
+      background: #4ecdc415;
+      border: 1px solid #4ecdc440;
+      color: var(--teal);
+    }
+    .branch.no-branch {
+      background: #ef6f2e15;
+      border: 1px solid #ef6f2e40;
+      color: var(--accent);
+    }
+
+    .assess-section { margin-bottom: 40px; }
+    .assess-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .assess-section-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .assess-section-dot.wins { background: var(--teal); }
+    .assess-section-dot.fixes { background: var(--red); }
+    .assess-section-dot.next { background: var(--accent); }
+    .assess-section-dot.prompts { background: var(--teal); }
+
+    .assessment-item {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: opacity 0.3s ease;
+    }
+    .assessment-item.completed { opacity: 0.4; }
+    .assessment-item.completed .assess-label {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .assessment-item.completed .assess-body {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .assessment-item.completed .severity-badge { opacity: 0.3; }
+    .assess-body { transition: opacity 0.3s ease; }
+    .assess-label {
+      transition: color 0.3s ease;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+    .assessment-check {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .assess-checkbox {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-visible);
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .assess-checkbox:checked {
+      background: var(--teal);
+      border-color: var(--teal);
+    }
+    .assess-checkbox:checked::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 5px;
+      width: 4px;
+      height: 8px;
+      border: solid #020202;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .severity-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .severity-badge.critical { background: #e74c3c30; color: var(--red); }
+    .severity-badge.high { background: #ef6f2e20; color: var(--accent); }
+    .severity-badge.medium { background: #f59e0b20; color: var(--amber); }
+    .assess-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .prompt-block {
+      background: var(--base-secondary);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      position: relative;
+      margin-top: 12px;
+      line-height: 1.6;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--border-subtle);
+      border: none;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+    .copy-btn.copied { color: var(--teal); }
+
+    .win-card {
+      background: var(--base-card);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--teal);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .win-card h3 { font-size: 15px; margin-bottom: 6px; }
+    .win-card p { font-size: 13px; color: var(--text-secondary); }
+
+    #assess-progress {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 111, 46, 0.15); }
+      50% { box-shadow: 0 0 6px 2px rgba(239, 111, 46, 0.15); }
+    }
+    @keyframes drawLine {
+      from { transform: scaleY(0); }
+      to { transform: scaleY(1); }
+    }
+
+    .flow-path {
+      stroke: var(--accent);
+      stroke-width: 2;
+      fill: none;
+      stroke-dasharray: 8 12;
+      animation: flowDash 1.5s linear infinite;
+    }
+    .flow-path-secondary {
+      stroke: var(--amber);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-dasharray: 6 10;
+      animation: flowDash 2s linear infinite;
+    }
+    .flow-path-teal {
+      stroke: var(--teal);
+      stroke-width: 2;
+      fill: none;
+      stroke-dasharray: 8 12;
+      animation: flowDash 1.8s linear infinite;
+    }
+    @keyframes flowDash {
+      to { stroke-dashoffset: -40; }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 32px 16px; }
+      h1 { font-size: 32px; letter-spacing: -1px; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .tabs { gap: 4px; }
+      .tab { font-size: 11px; padding: 6px 10px; }
+      .stage-row.cols-3 { grid-template-columns: 1fr; }
+      .stage-row.cols-2 { grid-template-columns: 1fr; }
+      .branch-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section-indicator">
+      <span class="dot"></span>
+      <span class="label">ID8 PIPELINE SDK</span>
+    </div>
+    <h1>Pipeline SDK Architecture</h1>
+    <p class="subtitle">// open-source framework that turns methodology into an autonomous build engine</p>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-number" data-target="11">0</span>
+        <span class="stat-label">STAGES</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number" data-target="6">0</span>
+        <span class="stat-label">AGENT TYPES</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number" data-target="11">0</span>
+        <span class="stat-label">GATE FUNCTIONS</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number" data-target="3">0</span>
+        <span class="stat-label">AUTOMATION LEVELS</span>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="state-machine">State Machine</button>
+      <button class="tab" data-tab="agents">Agent Architecture</button>
+      <button class="tab" data-tab="sdk-api">SDK API</button>
+      <button class="tab" data-tab="loop">Self-Driving Loop</button>
+      <button class="tab" data-tab="assessment">Assessment</button>
+    </nav>
+
+    <!-- ======================== TAB 1: STATE MACHINE ======================== -->
+    <div id="state-machine" class="tab-content active">
+      <h2>From Methodology to Machine</h2>
+      <p class="subtitle">// each stage becomes a state. each gate becomes a function. the pipeline drives itself.</p>
+
+      <div class="phase-group">
+        <div class="phase-header">
+          <span class="phase-dot planning"></span>
+          <span class="phase-name">PLANNING PHASE</span>
+          <span class="phase-tag human">Human-Driven</span>
+        </div>
+        <div class="stage-row cols-3">
+          <div class="stage-card">
+            <div class="stage-num">STAGE 01</div>
+            <h3>Concept Lock</h3>
+            <p class="gate-question">"What's the one-liner?"</p>
+            <span class="automation-badge human">HUMAN</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-human">*</span> Problem statement clarity is a judgment call</div>
+              <div class="gate-check"><span class="check-human">*</span> Target audience validation requires intuition</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 02</div>
+            <h3>Scope Fence</h3>
+            <p class="gate-question">"What are we NOT building?"</p>
+            <span class="automation-badge human">HUMAN</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Feature count check (max 5)</div>
+              <div class="gate-check"><span class="check-human">*</span> "Not yet" list requires product judgment</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 03</div>
+            <h3>Architecture Sketch</h3>
+            <p class="gate-question">"Draw me the boxes and arrows."</p>
+            <span class="automation-badge human">HUMAN</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Stack chosen (detectable from config)</div>
+              <div class="gate-check"><span class="check-human">*</span> Component mapping needs architect review</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-group">
+        <div class="phase-header">
+          <span class="phase-dot building"></span>
+          <span class="phase-name">BUILDING PHASE</span>
+          <span class="phase-tag mixed">Mixed Automation</span>
+        </div>
+        <div class="stage-row cols-3">
+          <div class="stage-card">
+            <div class="stage-num">STAGE 04</div>
+            <h3>Foundation Pour</h3>
+            <p class="gate-question">"Can we deploy an empty shell?"</p>
+            <span class="automation-badge auto">AUTO</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> vercel deploy --prod exits 0</div>
+              <div class="gate-check"><span class="check-auto">*</span> supabase db push succeeds</div>
+              <div class="gate-check"><span class="check-auto">*</span> npm run build passes</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 05</div>
+            <h3>Feature Blocks</h3>
+            <p class="gate-question">"Does this feature work completely?"</p>
+            <span class="automation-badge mixed">MIXED</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Unit + integration tests pass</div>
+              <div class="gate-check"><span class="check-auto">*</span> CRUD audit complete per entity</div>
+              <div class="gate-check"><span class="check-human">*</span> "Works completely" needs QA walkthrough</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 06</div>
+            <h3>Integration Pass</h3>
+            <p class="gate-question">"Do all the pieces talk to each other?"</p>
+            <span class="automation-badge mixed">MIXED</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Integration tests pass</div>
+              <div class="gate-check"><span class="check-auto">*</span> AgentEvent types standardized</div>
+              <div class="gate-check"><span class="check-human">*</span> End-to-end flow needs human verification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-group">
+        <div class="phase-header">
+          <span class="phase-dot quality"></span>
+          <span class="phase-name">QUALITY PHASE</span>
+          <span class="phase-tag auto">Mostly Automated</span>
+        </div>
+        <div class="stage-row cols-2">
+          <div class="stage-card">
+            <div class="stage-num">STAGE 07</div>
+            <h3>Test Coverage</h3>
+            <p class="gate-question">"Are all tests green and coverage sufficient?"</p>
+            <span class="automation-badge auto">AUTO</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> npm test exits 0</div>
+              <div class="gate-check"><span class="check-auto">*</span> Coverage threshold met (70%+)</div>
+              <div class="gate-check"><span class="check-auto">*</span> E2E launchd job installed</div>
+              <div class="gate-check"><span class="check-auto">*</span> No skipped tests without reason</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 08</div>
+            <h3>Polish and Harden</h3>
+            <p class="gate-question">"What breaks if I do something stupid?"</p>
+            <span class="automation-badge mixed">MIXED</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Error boundaries exist</div>
+              <div class="gate-check"><span class="check-auto">*</span> Loading + empty states present</div>
+              <div class="gate-check"><span class="check-human">*</span> Edge case discovery needs human creativity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-group">
+        <div class="phase-header">
+          <span class="phase-dot launch"></span>
+          <span class="phase-name">LAUNCH PHASE</span>
+          <span class="phase-tag human">Human-Driven</span>
+        </div>
+        <div class="stage-row cols-3">
+          <div class="stage-card">
+            <div class="stage-num">STAGE 09</div>
+            <h3>Launch Prep</h3>
+            <p class="gate-question">"Could a stranger use this without asking me?"</p>
+            <span class="automation-badge human">HUMAN</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Docs exist (README, onboarding)</div>
+              <div class="gate-check"><span class="check-human">*</span> Stranger-test requires external feedback</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 10</div>
+            <h3>Ship</h3>
+            <p class="gate-question">"Is it live and are people using it?"</p>
+            <span class="automation-badge mixed">MIXED</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Production deploy succeeds</div>
+              <div class="gate-check"><span class="check-auto">*</span> Health check endpoint responds</div>
+              <div class="gate-check"><span class="check-human">*</span> "People using it" needs human confirmation</div>
+            </div>
+          </div>
+          <div class="stage-card">
+            <div class="stage-num">STAGE 11</div>
+            <h3>Listen and Iterate</h3>
+            <p class="gate-question">"What did we learn?"</p>
+            <span class="automation-badge human">HUMAN</span>
+            <div class="gate-checks">
+              <div class="gate-check"><span class="check-auto">*</span> Agent request logs collected</div>
+              <div class="gate-check"><span class="check-human">*</span> Pattern interpretation is human judgment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 24px; margin-top: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="dot"></span>
+          <span class="label">AUTOMATION BREAKDOWN</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+          <div>
+            <div style="font-size: 28px; font-family: var(--font-sans); color: var(--teal); font-weight: 400; letter-spacing: -1px;">3</div>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Fully Automatable</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Stages 4, 7, 10 (deploy)</div>
+          </div>
+          <div>
+            <div style="font-size: 28px; font-family: var(--font-sans); color: var(--amber); font-weight: 400; letter-spacing: -1px;">4</div>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Mixed (Auto + Human)</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Stages 5, 6, 8, 10 (users)</div>
+          </div>
+          <div>
+            <div style="font-size: 28px; font-family: var(--font-sans); color: var(--accent); font-weight: 400; letter-spacing: -1px;">4</div>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Human Required</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Stages 1, 2, 3, 9, 11</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== TAB 2: AGENT ARCHITECTURE ======================== -->
+    <div id="agents" class="tab-content">
+      <h2>The Cast</h2>
+      <p class="subtitle">// specialized agents for specialized work. the director orchestrates, agents execute.</p>
+
+      <div class="arch-diagram">
+        <svg viewBox="0 0 900 420" width="100%" style="max-width: 900px;">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <rect x="340" y="170" width="220" height="80" rx="10" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="2"/>
+          <text x="450" y="200" text-anchor="middle" fill="#ef6f2e" font-size="10" letter-spacing="1.5">PIPELINE DIRECTOR</text>
+          <text x="450" y="220" text-anchor="middle" fill="#eeeeee" font-size="13">Orchestrator Agent</text>
+          <text x="450" y="238" text-anchor="middle" fill="#5c5855" font-size="10">claude-opus-4-6</text>
+
+          <rect x="30" y="40" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+          <text x="110" y="64" text-anchor="middle" fill="#ef6f2e" font-size="10" letter-spacing="1">STRATEGIST</text>
+          <text x="110" y="82" text-anchor="middle" fill="#a49d9a" font-size="10">Stages 1-2</text>
+          <path id="conn-strat" d="M190,70 C280,70 280,200 340,200" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M190,70 C280,70 280,200 340,200" class="flow-path" stroke-width="1.5"/>
+          <circle r="3" fill="#ef6f2e" filter="url(#glow)" opacity="0.8">
+            <animateMotion dur="3s" repeatCount="indefinite"><mpath href="#conn-strat"/></animateMotion>
+            <animate attributeName="opacity" values="0;0.9;0.9;0" dur="3s" repeatCount="indefinite"/>
+          </circle>
+
+          <rect x="370" y="30" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+          <text x="450" y="54" text-anchor="middle" fill="#ef6f2e" font-size="10" letter-spacing="1">ARCHITECT</text>
+          <text x="450" y="72" text-anchor="middle" fill="#a49d9a" font-size="10">Stage 3</text>
+          <path d="M450,90 L450,170" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M450,90 L450,170" class="flow-path" stroke-width="1.5"/>
+
+          <rect x="710" y="40" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#f59e0b" stroke-width="1"/>
+          <text x="790" y="64" text-anchor="middle" fill="#f59e0b" font-size="10" letter-spacing="1">BUILDER</text>
+          <text x="790" y="82" text-anchor="middle" fill="#a49d9a" font-size="10">Stages 4-5</text>
+          <path id="conn-build" d="M710,70 C620,70 620,200 560,200" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M710,70 C620,70 620,200 560,200" class="flow-path-secondary" stroke-width="1.5"/>
+          <circle r="3" fill="#f59e0b" filter="url(#glow)" opacity="0.8">
+            <animateMotion dur="3.5s" repeatCount="indefinite"><mpath href="#conn-build"/></animateMotion>
+            <animate attributeName="opacity" values="0;0.9;0.9;0" dur="3.5s" repeatCount="indefinite"/>
+          </circle>
+
+          <rect x="30" y="320" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#f59e0b" stroke-width="1"/>
+          <text x="110" y="344" text-anchor="middle" fill="#f59e0b" font-size="10" letter-spacing="1">INTEGRATOR</text>
+          <text x="110" y="362" text-anchor="middle" fill="#a49d9a" font-size="10">Stage 6</text>
+          <path id="conn-integ" d="M190,350 C280,350 280,220 340,220" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M190,350 C280,350 280,220 340,220" class="flow-path-secondary" stroke-width="1.5"/>
+
+          <rect x="370" y="330" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+          <text x="450" y="354" text-anchor="middle" fill="#4ecdc4" font-size="10" letter-spacing="1">QA ENGINEER</text>
+          <text x="450" y="372" text-anchor="middle" fill="#a49d9a" font-size="10">Stages 7-8</text>
+          <path d="M450,330 L450,250" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M450,330 L450,250" class="flow-path-teal" stroke-width="1.5"/>
+
+          <rect x="710" y="320" width="160" height="60" rx="4" fill="#1f1d1c" stroke="#eeeeee" stroke-width="1"/>
+          <text x="790" y="344" text-anchor="middle" fill="#eeeeee" font-size="10" letter-spacing="1">SHIPPER</text>
+          <text x="790" y="362" text-anchor="middle" fill="#a49d9a" font-size="10">Stages 9-11</text>
+          <path id="conn-ship" d="M710,350 C620,350 620,220 560,220" stroke="#3d3a39" stroke-width="1" fill="none"/>
+          <path d="M710,350 C620,350 620,220 560,220" class="flow-path" stroke-width="1.5"/>
+
+          <circle cx="40" cy="410" r="4" fill="#ef6f2e"/>
+          <text x="50" y="414" fill="#a49d9a" font-size="9">Human-heavy</text>
+          <circle cx="170" cy="410" r="4" fill="#f59e0b"/>
+          <text x="180" y="414" fill="#a49d9a" font-size="9">Mixed</text>
+          <circle cx="260" cy="410" r="4" fill="#4ecdc4"/>
+          <text x="270" y="414" fill="#a49d9a" font-size="9">Automated</text>
+          <circle cx="370" cy="410" r="4" fill="#eeeeee"/>
+          <text x="380" y="414" fill="#a49d9a" font-size="9">Launch ops</text>
+        </svg>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <span class="dot"></span>
+        <span class="label">AGENT DETAILS</span>
+      </div>
+
+      <div class="agent-list">
+        <div class="agent-card">
+          <div class="agent-icon strategist">S</div>
+          <div>
+            <h3>Strategist Agent</h3>
+            <div class="agent-stages">Stages 1-2 : Concept Lock + Scope Fence</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Validates problem statements, enforces scope boundaries, maintains "not yet" lists. Asks the hard questions before code exists.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">research</span>
+              <span class="tool-badge">scope-validate</span>
+              <span class="tool-badge">competitor-scan</span>
+              <span class="tool-badge">write-pipeline-status</span>
+            </div>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon architect">A</div>
+          <div>
+            <h3>Architect Agent</h3>
+            <div class="agent-stages">Stage 3 : Architecture Sketch</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Chooses stack, maps components, designs data flow, creates PARITY_MAP.md. Generates the blueprint that builders follow.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">blueprint-gen</span>
+              <span class="tool-badge">schema-design</span>
+              <span class="tool-badge">parity-map</span>
+              <span class="tool-badge">visualize</span>
+            </div>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon builder">B</div>
+          <div>
+            <h3>Builder Agent</h3>
+            <div class="agent-stages">Stages 4-5 : Foundation Pour + Feature Blocks</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Scaffolds projects, runs migrations, deploys shells, implements vertical feature slices. The workhorse. Can delegate to Codex for single-file tasks.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">scaffold</span>
+              <span class="tool-badge">migrate</span>
+              <span class="tool-badge">deploy</span>
+              <span class="tool-badge">write-code</span>
+              <span class="tool-badge">crud-audit</span>
+              <span class="tool-badge">delegate-codex</span>
+            </div>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon builder">I</div>
+          <div>
+            <h3>Integrator Agent</h3>
+            <div class="agent-stages">Stage 6 : Integration Pass</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Wires components together, standardizes AgentEvent types, ensures no silent agent actions. Verifies the whole is greater than the parts.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">integration-test</span>
+              <span class="tool-badge">event-audit</span>
+              <span class="tool-badge">context-verify</span>
+              <span class="tool-badge">compose-tools</span>
+            </div>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon qa">Q</div>
+          <div>
+            <h3>QA Engineer Agent</h3>
+            <div class="agent-stages">Stages 7-8 : Test Coverage + Polish</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Runs full test pyramid, checks coverage thresholds, sets up daily E2E, hardens error handling. The gatekeeper before launch.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">test-runner</span>
+              <span class="tool-badge">coverage-check</span>
+              <span class="tool-badge">e2e-setup</span>
+              <span class="tool-badge">parity-test</span>
+              <span class="tool-badge">edge-case-scan</span>
+            </div>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-icon polish">S</div>
+          <div>
+            <h3>Shipper Agent</h3>
+            <div class="agent-stages">Stages 9-11 : Launch Prep + Ship + Listen</div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">Generates docs, handles production deploy, sets up analytics, collects feedback loops. Manages the transition from build to operate.</p>
+            <div class="agent-tools">
+              <span class="tool-badge">doc-gen</span>
+              <span class="tool-badge">prod-deploy</span>
+              <span class="tool-badge">analytics-setup</span>
+              <span class="tool-badge">feedback-collect</span>
+              <span class="tool-badge">latent-demand-log</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 24px; margin-top: 32px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="dot"></span>
+          <span class="label">ESCALATION RULES</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--accent); margin-bottom: 6px;">2-STRIKE RULE</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Agent fails same task twice in a row? Director takes over. No infinite retry loops.</div>
+          </div>
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--amber); margin-bottom: 6px;">HUMAN ESCALATION</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Gate requires human approval? Agent presents evidence and waits. Never auto-advances on HUMAN gates.</div>
+          </div>
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--teal); margin-bottom: 6px;">CONTEXT HANDOFF</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">When transitioning stages, current agent writes a handoff doc. Next agent reads it. No context loss between stages.</div>
+          </div>
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 6px;">BLOCKER DETECTION</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Agent stuck for more than 3 tool cycles without progress? Auto-surfaces the blocker to the human with context.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== TAB 3: SDK API ======================== -->
+    <div id="sdk-api" class="tab-content">
+      <h2>The Interface</h2>
+      <p class="subtitle">// TypeScript-first. every concept has a type. install, configure, run.</p>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">INSTALLATION</span>
+        </div>
+        <div class="code-block"><span class="cmt">// npm</span>
+npm install @id8labs/pipeline-sdk
+
+<span class="cmt">// or init a new project with the pipeline baked in</span>
+npx id8 init my-project</div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">CORE TYPES</span>
+        </div>
+        <div class="code-filename">src/types.ts</div>
+        <div class="code-block"><span class="kw">interface</span> <span class="type">StageConfig</span> {
+  <span class="prop">id</span>: <span class="type">number</span>;                          <span class="cmt">// 1-11</span>
+  <span class="prop">name</span>: <span class="type">string</span>;                        <span class="cmt">// 'concept-lock'</span>
+  <span class="prop">gate</span>: <span class="type">GateFunction</span>;                  <span class="cmt">// How to check this gate</span>
+  <span class="prop">agent</span>: <span class="type">AgentConfig</span>;                  <span class="cmt">// Who runs this stage</span>
+  <span class="prop">tools</span>: <span class="type">Tool</span>[];                       <span class="cmt">// Available tools for this stage</span>
+  <span class="prop">checklist</span>: <span class="type">ChecklistItem</span>[];          <span class="cmt">// Items to verify</span>
+  <span class="prop">automationLevel</span>: <span class="str">'auto'</span> | <span class="str">'mixed'</span> | <span class="str">'human'</span>;
+}
+
+<span class="kw">type</span> <span class="type">GateFunction</span> = (
+  <span class="prop">ctx</span>: <span class="type">StageContext</span>
+) =&gt; <span class="type">Promise</span>&lt;<span class="type">GateResult</span>&gt;;
+
+<span class="kw">interface</span> <span class="type">GateResult</span> {
+  <span class="prop">passed</span>: <span class="type">boolean</span>;
+  <span class="prop">evidence</span>: <span class="type">string</span>[];                 <span class="cmt">// What proved the gate</span>
+  <span class="prop">blockers</span>: <span class="type">string</span>[];                 <span class="cmt">// What's still missing</span>
+  <span class="prop">automatedChecks</span>: <span class="type">CheckResult</span>[];    <span class="cmt">// Results of auto checks</span>
+  <span class="prop">requiresHumanApproval</span>: <span class="type">boolean</span>;   <span class="cmt">// Does a human need to sign off?</span>
+}
+
+<span class="kw">interface</span> <span class="type">StageContext</span> {
+  <span class="prop">project</span>: <span class="type">ProjectConfig</span>;
+  <span class="prop">currentStage</span>: <span class="type">number</span>;
+  <span class="prop">history</span>: <span class="type">StageTransition</span>[];        <span class="cmt">// All past gate results</span>
+  <span class="prop">repo</span>: <span class="type">RepoState</span>;                    <span class="cmt">// Git status, branch, etc.</span>
+  <span class="prop">files</span>: <span class="type">FileSystem</span>;                  <span class="cmt">// Read/write project files</span>
+  <span class="prop">run</span>: (<span class="prop">cmd</span>: <span class="type">string</span>, <span class="prop">args</span>: <span class="type">string</span>[]) =&gt; <span class="type">Promise</span>&lt;<span class="type">RunResult</span>&gt;;
+}</div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">PIPELINE INITIALIZATION</span>
+        </div>
+        <div class="code-filename">your-project/pipeline.config.ts</div>
+        <div class="code-block"><span class="kw">import</span> { <span class="type">ID8Pipeline</span>, <span class="fn">defaultStages</span> } <span class="kw">from</span> <span class="str">'@id8labs/pipeline-sdk'</span>;
+
+<span class="kw">const</span> pipeline = <span class="kw">new</span> <span class="type">ID8Pipeline</span>({
+  <span class="prop">project</span>: <span class="str">'parallax'</span>,
+  <span class="prop">repo</span>: <span class="str">'~/Development/id8/products/parallax'</span>,
+  <span class="prop">stages</span>: <span class="fn">defaultStages</span>,             <span class="cmt">// or customize individual gates</span>
+  <span class="prop">model</span>: <span class="str">'claude-opus-4-6'</span>,           <span class="cmt">// Director model</span>
+  <span class="prop">builderModel</span>: <span class="str">'codex'</span>,             <span class="cmt">// Delegate model (optional)</span>
+
+  <span class="cmt">// Callbacks</span>
+  <span class="prop">onGatePass</span>: (<span class="prop">stage</span>, <span class="prop">evidence</span>) =&gt; {
+    console.log(<span class="str">`Stage ${stage} passed:`</span>, evidence);
+  },
+  <span class="prop">onHumanNeeded</span>: (<span class="prop">stage</span>, <span class="prop">question</span>, <span class="prop">context</span>) =&gt; {
+    <span class="cmt">// Slack notification, Telegram, email, etc.</span>
+    notify(<span class="str">`Gate ${stage}: ${question}`</span>);
+  },
+  <span class="prop">onStageStart</span>: (<span class="prop">stage</span>) =&gt; {
+    <span class="cmt">// Update BUILDING.md, PIPELINE_STATUS.md</span>
+  },
+});</div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">USAGE</span>
+        </div>
+        <div class="code-filename">three ways to drive the pipeline</div>
+        <div class="code-block"><span class="cmt">// 1. Assess -- where are we?</span>
+<span class="kw">const</span> status = <span class="kw">await</span> pipeline.<span class="fn">assess</span>();
+<span class="cmt">// { currentStage: 5, gatesPassed: [1,2,3,4], blockers: [...] }</span>
+
+<span class="cmt">// 2. Advance -- try to move forward one stage</span>
+<span class="kw">const</span> result = <span class="kw">await</span> pipeline.<span class="fn">advance</span>();
+<span class="cmt">// Runs gate checks, presents evidence, waits for human if needed</span>
+
+<span class="cmt">// 3. Run -- full autonomous loop until human is needed</span>
+<span class="kw">await</span> pipeline.<span class="fn">run</span>();
+<span class="cmt">// Assess -> Check -> Work -> Verify -> Advance -> Repeat</span>
+<span class="cmt">// Stops when: human gate reached, blocker found, or all stages done</span>
+
+<span class="cmt">// 4. Custom gate override</span>
+<span class="kw">await</span> pipeline.<span class="fn">overrideGate</span>(<span class="str">'concept-lock'</span>, {
+  <span class="prop">reason</span>: <span class="str">'Concept validated in customer interviews'</span>,
+  <span class="prop">evidence</span>: [<span class="str">'interview-notes.md'</span>],
+});</div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">CUSTOM GATE FUNCTION</span>
+        </div>
+        <div class="code-filename">example: Foundation Pour gate</div>
+        <div class="code-block"><span class="kw">const</span> <span class="fn">foundationGate</span>: <span class="type">GateFunction</span> = <span class="kw">async</span> (ctx) =&gt; {
+  <span class="kw">const</span> checks: <span class="type">CheckResult</span>[] = [];
+
+  <span class="cmt">// Auto-check: does the build pass?</span>
+  <span class="kw">const</span> build = <span class="kw">await</span> ctx.<span class="fn">run</span>(<span class="str">'npm'</span>, [<span class="str">'run'</span>, <span class="str">'build'</span>]);
+  checks.push({ <span class="prop">name</span>: <span class="str">'build'</span>, <span class="prop">passed</span>: build.exitCode === 0 });
+
+  <span class="cmt">// Auto-check: can we deploy?</span>
+  <span class="kw">const</span> deploy = <span class="kw">await</span> ctx.<span class="fn">run</span>(<span class="str">'vercel'</span>, [<span class="str">'deploy'</span>, <span class="str">'--prod'</span>]);
+  checks.push({ <span class="prop">name</span>: <span class="str">'deploy'</span>, <span class="prop">passed</span>: deploy.exitCode === 0 });
+
+  <span class="cmt">// Auto-check: database migrated?</span>
+  <span class="kw">const</span> db = <span class="kw">await</span> ctx.<span class="fn">run</span>(<span class="str">'supabase'</span>, [<span class="str">'db'</span>, <span class="str">'push'</span>, <span class="str">'--dry-run'</span>]);
+  checks.push({ <span class="prop">name</span>: <span class="str">'database'</span>, <span class="prop">passed</span>: db.exitCode === 0 });
+
+  <span class="kw">const</span> allPassed = checks.every(c =&gt; c.passed);
+
+  <span class="kw">return</span> {
+    <span class="prop">passed</span>: allPassed,
+    <span class="prop">evidence</span>: checks.filter(c =&gt; c.passed).map(c =&gt; c.name),
+    <span class="prop">blockers</span>: checks.filter(c =&gt; !c.passed).map(c =&gt; c.name),
+    <span class="prop">automatedChecks</span>: checks,
+    <span class="prop">requiresHumanApproval</span>: <span class="kw">false</span>,  <span class="cmt">// Fully automated gate</span>
+  };
+};</div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-section-header">
+          <span class="dot"></span>
+          <span class="label">CLI COMMANDS</span>
+        </div>
+        <div class="code-block"><span class="cmt"># Initialize a new project with the pipeline</span>
+npx id8 init my-project
+
+<span class="cmt"># Check current pipeline status</span>
+npx id8 status
+
+<span class="cmt"># Try to advance to next stage</span>
+npx id8 advance
+
+<span class="cmt"># Run full autonomous loop</span>
+npx id8 run
+
+<span class="cmt"># Override a gate with reason</span>
+npx id8 override --stage 2 --reason "validated via interviews"
+
+<span class="cmt"># Run a specific gate check without advancing</span>
+npx id8 check --stage 4
+
+<span class="cmt"># Generate BUILDING.md from git history</span>
+npx id8 journal</div>
+      </div>
+    </div>
+
+    <!-- ======================== TAB 4: SELF-DRIVING LOOP ======================== -->
+    <div id="loop" class="tab-content">
+      <h2>The Engine</h2>
+      <p class="subtitle">// assess state, check gate, delegate work, verify, propose advance, human approves, repeat.</p>
+
+      <div class="loop-legend">
+        <div class="legend-item"><span class="legend-dot auto-color"></span> Agent autonomous</div>
+        <div class="legend-item"><span class="legend-dot mixed-color"></span> Decision point</div>
+        <div class="legend-item"><span class="legend-dot human-color"></span> Human required</div>
+      </div>
+
+      <div class="loop-container">
+        <div class="loop-step">
+          <div class="step-indicator autonomous">1</div>
+          <div class="step-content">
+            <h3>Assess State</h3>
+            <p>Agent reads PIPELINE_STATUS.md, checks git log, inspects project files. Determines which stage we're in and what's been completed.</p>
+            <div class="step-detail">
+              Reads: PIPELINE_STATUS.md, BUILDING.md, package.json, git log<br>
+              Outputs: { currentStage, gatesPassed, pendingWork, lastActivity }
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="loop-step">
+          <div class="step-indicator autonomous">2</div>
+          <div class="step-content">
+            <h3>Check Current Gate</h3>
+            <p>Runs the gate function for the current stage. Runs automated checks (build, tests, deploy) and collects evidence.</p>
+            <div class="step-detail">
+              Runs: GateFunction for current stage<br>
+              Outputs: { passed, evidence[], blockers[], automatedChecks[] }
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="decision-step">
+          <div class="diamond">
+            <div class="diamond-inner"></div>
+            <span class="diamond-label">?</span>
+          </div>
+          <div class="decision-content">
+            <h3>Gate Met?</h3>
+            <div class="branch-row">
+              <div class="branch no-branch">
+                NO: Blockers exist. Agent identifies what's missing and delegates work to the appropriate stage agent.
+              </div>
+              <div class="branch yes-branch">
+                YES: All checks pass. Proceed to proposal step. Collect evidence for human review.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="loop-step">
+          <div class="step-indicator autonomous">3</div>
+          <div class="step-content">
+            <h3>Delegate Work</h3>
+            <p>Director spawns the appropriate stage agent with scoped tools. Builder writes code. QA runs tests. Shipper deploys. Each agent works within its domain.</p>
+            <div class="step-detail">
+              Director selects agent based on current stage<br>
+              Agent works with stage-specific tools<br>
+              2-strike rule: 2 failures = Director takes over<br>
+              Outputs: { workCompleted, filesChanged[], testResults }
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="loop-step">
+          <div class="step-indicator autonomous">4</div>
+          <div class="step-content">
+            <h3>Verify Work</h3>
+            <p>Re-runs gate checks after work is done. Compares before/after state. Ensures no regressions. Updates BUILDING.md with what was done and why.</p>
+            <div class="step-detail">
+              Re-runs: GateFunction (same checks as step 2)<br>
+              Compares: previous blockers vs current state<br>
+              Writes: Stage commit with [Stage N: Name] prefix<br>
+              Updates: BUILDING.md, PIPELINE_STATUS.md
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="decision-step">
+          <div class="diamond">
+            <div class="diamond-inner"></div>
+            <span class="diamond-label">?</span>
+          </div>
+          <div class="decision-content">
+            <h3>Human Approval Needed?</h3>
+            <div class="branch-row">
+              <div class="branch yes-branch">
+                AUTO GATE: No human needed. Agent auto-advances, logs the transition, and loops back to step 1 for the next stage.
+              </div>
+              <div class="branch no-branch">
+                HUMAN GATE: Agent presents evidence, asks the gate question, and waits for approval. Pipeline pauses here.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="loop-step">
+          <div class="step-indicator human-gate">5</div>
+          <div class="step-content">
+            <h3>Propose Advance</h3>
+            <p>Agent surfaces the gate question with evidence. "Stage 5 gate: Does this feature work completely? Here's what I verified: [evidence]. Here's what I need from you: [items]."</p>
+            <div class="step-detail">
+              Presents: Gate question + evidence + remaining items<br>
+              Channel: Telegram, Slack, CLI prompt, or web UI<br>
+              Waits: For human response (approve / reject / override)
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div class="loop-step">
+          <div class="step-indicator human-gate">6</div>
+          <div class="step-content">
+            <h3>Human Decides</h3>
+            <p>Human reviews evidence and either approves (advance to next stage), rejects (go back to work), or overrides (skip with logged reason).</p>
+            <div class="step-detail">
+              Approve: Advance to next stage, log gate pass<br>
+              Reject: Return to step 3 with human's feedback<br>
+              Override: Log reason in PIPELINE_STATUS.md, advance<br>
+              After approval: Loop back to step 1 for the next stage
+            </div>
+          </div>
+        </div>
+
+        <div class="step-connector"><div class="step-connector-line"></div></div>
+
+        <div style="text-align: center; padding: 20px; background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px;">
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--teal);">LOOP BACK TO STEP 1</div>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pipeline continues until all 11 stages complete or a blocker requires human intervention</div>
+        </div>
+      </div>
+
+      <div style="background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 24px; margin-top: 32px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="dot"></span>
+          <span class="label">WHY THIS LOOP MATTERS</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--accent); margin-bottom: 6px;">WITHOUT SDK</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">You drive every stage manually. You remember the gate questions. You decide when to move forward. The pipeline is in your head.</div>
+          </div>
+          <div style="padding: 16px; background: var(--base-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--teal); margin-bottom: 6px;">WITH SDK</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">The agent drives itself through automatable gates, does the work at each stage, and only stops to ask you the questions that actually need human judgment.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== TAB 5: ASSESSMENT ======================== -->
+    <div id="assessment" class="tab-content">
+      <h2>Assessment</h2>
+      <p class="subtitle">// what's strong, what needs building, and the prompts to get there</p>
+      <span id="assess-progress" class="label" style="display: block; margin-bottom: 24px;">0 of 8 addressed</span>
+
+      <div class="assess-section">
+        <div class="assess-section-header">
+          <span class="assess-section-dot wins"></span>
+          <span class="label">WHAT WE DID RIGHT</span>
+        </div>
+        <div class="win-card">
+          <h3>Pipeline is Already a State Machine</h3>
+          <p>The 11 stages with explicit gate questions and checklists are 90% of the way to a formal state machine. Most frameworks start from scratch -- you're starting from a battle-tested methodology proven across Homer, Parallax, and DeepStack.</p>
+        </div>
+        <div class="win-card">
+          <h3>Agent-Native Additions Are Built In</h3>
+          <p>Stages 2, 3, 5, 6, 7, and 11 already have agent-specific checklists (PARITY_MAP, CRUD audit, completion signals, AgentEvent types). Agent awareness is woven into the pipeline at design time, not bolted on.</p>
+        </div>
+        <div class="win-card">
+          <h3>Director/Builder Pattern Proven</h3>
+          <p>The delegation model (Claude directs, Codex builds) is already working in production on Parallax. The 2-strike escalation rule, context handoffs, and scoped delegation are real patterns, not theory.</p>
+        </div>
+        <div class="win-card">
+          <h3>Commit Convention Enables Machine Parsing</h3>
+          <p>[Stage N: Name] type: description means any tool can parse git log and reconstruct which stage produced which work. This is the "machine-readable build narrative" that makes the assess() function possible.</p>
+        </div>
+      </div>
+
+      <div class="assess-section">
+        <div class="assess-section-header">
+          <span class="assess-section-dot fixes"></span>
+          <span class="label">WHAT NEEDS BUILDING</span>
+        </div>
+
+        <div class="assessment-item" id="assess-fix-1">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+            <span class="assess-label">Create the npm package scaffold</span>
+          </label>
+          <div class="assess-body">
+            <span class="severity-badge critical">CRITICAL</span>
+            <p class="assess-desc">The SDK doesn't exist as code yet. Need to create the @id8labs/pipeline-sdk package with TypeScript, the core types, and a basic CLI. This is the foundation everything else builds on.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Create a new TypeScript npm package at ~/Development/id8/packages/pipeline-sdk/ with: src/types.ts (StageConfig, GateFunction, GateResult, StageContext interfaces), src/pipeline.ts (ID8Pipeline class with assess, advance, run methods), src/stages/ directory with default gate functions for all 11 stages, src/cli.ts (entry point for npx id8 commands), package.json with name "@id8labs/pipeline-sdk", tsconfig.json with strict mode. Include a bin entry for "id8" pointing to the CLI.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-fix-2">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+            <span class="assess-label">Formalize gate functions from prose to code</span>
+          </label>
+          <div class="assess-body">
+            <span class="severity-badge critical">CRITICAL</span>
+            <p class="assess-desc">Gate questions are currently English sentences in a markdown file. Each needs to become a TypeScript function that returns GateResult with automated checks, evidence collection, and human-approval flags.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">In ~/Development/id8/packages/pipeline-sdk/src/stages/, create one file per stage (stage-01-concept-lock.ts through stage-11-listen-iterate.ts). Each exports a GateFunction that: (1) runs automatable checks using ctx.run(), (2) collects evidence strings, (3) identifies blockers, (4) sets requiresHumanApproval based on automation level (stages 1,2,3,9,11 = always true, stages 4,7 = always false, stages 5,6,8,10 = conditional).</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-fix-3">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+            <span class="assess-label">Build state persistence layer</span>
+          </label>
+          <div class="assess-body">
+            <span class="severity-badge high">HIGH</span>
+            <p class="assess-desc">PIPELINE_STATUS.md is currently freeform markdown. The SDK needs a structured JSON state file that tracks stage transitions, gate results, timestamps, and overrides -- while still generating the human-readable markdown as output.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">In the pipeline-sdk package, create src/state.ts that manages pipeline state. Store in .id8/pipeline-state.json in the project root. Schema: { project, currentStage, transitions: [{ stage, timestamp, gateResult, type }], overrides: [{ stage, reason, timestamp }] }. Add toMarkdown() that generates PIPELINE_STATUS.md from JSON state. assess() reads this file, advance() writes to it. Keep JSON and markdown in sync.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-fix-4">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+            <span class="assess-label">Implement the autonomous run loop</span>
+          </label>
+          <div class="assess-body">
+            <span class="severity-badge high">HIGH</span>
+            <p class="assess-desc">The run() method is the core innovation -- the self-driving loop that assesses, checks, delegates, verifies, and advances. This is what makes it an SDK and not just a config file.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Implement run() on ID8Pipeline in src/pipeline.ts. Loop: (1) assess() to get current stage, (2) call stage gate function, (3) if gate not met and automationLevel != 'human', delegate to stage agent, (4) re-check gate, (5) if met and no human approval needed, auto-advance and loop, (6) if human needed, call onHumanNeeded and pause, (7) 5 iterations without progress = surface blocker. Include error handling and logging.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assess-section">
+        <div class="assess-section-header">
+          <span class="assess-section-dot next"></span>
+          <span class="label">HIGH-IMPACT NEXT STEPS</span>
+        </div>
+
+        <div class="assessment-item" id="assess-next-1">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-1">
+            <span class="assess-label">Test with Parallax as first real project</span>
+          </label>
+          <div class="assess-body">
+            <p class="assess-desc">Parallax is at Stage 5b -- the perfect test case. Run assess() on the Parallax repo and verify it correctly identifies the current stage from git history and PIPELINE_STATUS.md.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Write a test script at ~/Development/id8/packages/pipeline-sdk/test/parallax-assess.ts that instantiates ID8Pipeline pointing at the Parallax repo, runs assess(), and prints the result. Verify it correctly identifies: currentStage, previously passed gates, and current blockers.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-next-2">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-2">
+            <span class="assess-label">Wire human approval to Telegram via HYDRA</span>
+          </label>
+          <div class="assess-body">
+            <p class="assess-desc">When the pipeline reaches a human gate, notify via Telegram through HYDRA. Reply "approve" or "reject" and the pipeline continues. Closes the loop between autonomous work and human judgment.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Add a Telegram notification adapter to pipeline-sdk. When onHumanNeeded fires, send via HYDRA Telegram bot with gate question, evidence, and inline keyboard for Approve/Reject/Override. Listen for response and resolve the pipeline's waiting promise. Reference ~/.hydra/telegram-listener.sh for bot token patterns.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-next-3">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-3">
+            <span class="assess-label">Publish to npm and GitHub</span>
+          </label>
+          <div class="assess-body">
+            <p class="assess-desc">Open source at github.com/eddiebelaval/id8pipeline. Publish to npm as @id8labs/pipeline-sdk. Both the product and the portfolio piece.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Create GitHub repo eddiebelaval/id8pipeline (public). Write README.md covering: what ID8 Pipeline is, the 11 stages, quick start with npx id8 init, gate customization, self-driving loop. Set up npm publish via GitHub Actions. Add MIT license.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-next-4">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-4">
+            <span class="assess-label">Build the BUILDING.md auto-generator</span>
+          </label>
+          <div class="assess-body">
+            <p class="assess-desc">The journal command should parse git log (using stage-prefixed commits), reconstruct the build narrative, and generate BUILDING.md automatically. Proves the commit convention's value.</p>
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Implement "id8 journal" CLI command. Parse git log for [Stage N: Name] commits, group by stage, generate BUILDING.md sections with: stage name, date range, key commits, gate results. Test on Parallax repo which already uses the convention.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assess-section">
+        <div class="assess-section-header">
+          <span class="assess-section-dot prompts"></span>
+          <span class="label">ALL PROMPTS</span>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-1">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+            <span class="assess-label">01 -- Create npm package scaffold</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Create a new TypeScript npm package at ~/Development/id8/packages/pipeline-sdk/ with: src/types.ts (StageConfig, GateFunction, GateResult, StageContext interfaces), src/pipeline.ts (ID8Pipeline class with assess, advance, run methods), src/stages/ directory with default gate functions for all 11 stages, src/cli.ts (entry point for npx id8 commands), package.json with name "@id8labs/pipeline-sdk", tsconfig.json with strict mode. Include a bin entry for "id8" pointing to the CLI.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-2">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+            <span class="assess-label">02 -- Formalize gate functions</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">In ~/Development/id8/packages/pipeline-sdk/src/stages/, create one file per stage (stage-01-concept-lock.ts through stage-11-listen-iterate.ts). Each exports a GateFunction that: (1) runs automatable checks using ctx.run(), (2) collects evidence strings, (3) identifies blockers, (4) sets requiresHumanApproval based on automation level.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-3">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+            <span class="assess-label">03 -- Build state persistence</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Create src/state.ts managing pipeline state in .id8/pipeline-state.json. Schema: { project, currentStage, transitions[], overrides[] }. Add toMarkdown() for PIPELINE_STATUS.md generation. Keep JSON and markdown in sync.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-4">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+            <span class="assess-label">04 -- Implement autonomous run loop</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Implement run() on ID8Pipeline. Loop: assess -> gate check -> delegate if needed -> verify -> advance if auto gate / pause if human gate. 5 iterations stall = surface blocker. Include error handling.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-5">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-1">
+            <span class="assess-label">05 -- Test with Parallax</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Write test/parallax-assess.ts that instantiates ID8Pipeline on Parallax repo, runs assess(), verifies stage detection from git history and PIPELINE_STATUS.md.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-6">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-2">
+            <span class="assess-label">06 -- Wire Telegram approval via HYDRA</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Add Telegram adapter to pipeline-sdk. onHumanNeeded sends gate question + evidence via HYDRA bot with Approve/Reject/Override inline keyboard. Resolves pipeline promise on response.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-7">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-3">
+            <span class="assess-label">07 -- Publish to npm and GitHub</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Create eddiebelaval/id8pipeline (public). README with philosophy, 11 stages, quick start, customization guide, self-driving loop. npm publish via GitHub Actions. MIT license.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="assessment-item" id="assess-prompt-8">
+          <label class="assessment-check">
+            <input type="checkbox" class="assess-checkbox" data-key="next-4">
+            <span class="assess-label">08 -- Build BUILDING.md auto-generator</span>
+          </label>
+          <div class="assess-body">
+            <div class="prompt-block">
+              <button class="copy-btn">COPY</button>
+              <div class="prompt-text">Implement "id8 journal" CLI. Parse git log for [Stage N] commits, group by stage, generate BUILDING.md with methodology header + per-stage sections. Test on Parallax.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="artifact-data">
+  {
+    "type": "visualize",
+    "topic": "id8pipeline-sdk-architecture",
+    "project": "id8pipeline",
+    "generated": "2026-02-10T12:00:00Z",
+    "sections": [
+      { "id": "state-machine", "title": "State Machine", "type": "tab" },
+      { "id": "agents", "title": "Agent Architecture", "type": "tab" },
+      { "id": "sdk-api", "title": "SDK API", "type": "tab" },
+      { "id": "loop", "title": "Self-Driving Loop", "type": "tab" },
+      { "id": "assessment", "title": "Assessment", "type": "tab" }
+    ],
+    "nodes": [
+      { "id": "s1", "label": "Concept Lock", "type": "stage", "automation": "human" },
+      { "id": "s2", "label": "Scope Fence", "type": "stage", "automation": "human" },
+      { "id": "s3", "label": "Architecture Sketch", "type": "stage", "automation": "human" },
+      { "id": "s4", "label": "Foundation Pour", "type": "stage", "automation": "auto" },
+      { "id": "s5", "label": "Feature Blocks", "type": "stage", "automation": "mixed" },
+      { "id": "s6", "label": "Integration Pass", "type": "stage", "automation": "mixed" },
+      { "id": "s7", "label": "Test Coverage", "type": "stage", "automation": "auto" },
+      { "id": "s8", "label": "Polish and Harden", "type": "stage", "automation": "mixed" },
+      { "id": "s9", "label": "Launch Prep", "type": "stage", "automation": "human" },
+      { "id": "s10", "label": "Ship", "type": "stage", "automation": "mixed" },
+      { "id": "s11", "label": "Listen and Iterate", "type": "stage", "automation": "human" },
+      { "id": "director", "label": "Pipeline Director", "type": "agent", "role": "orchestrator" },
+      { "id": "strategist", "label": "Strategist", "type": "agent", "stages": [1,2] },
+      { "id": "architect", "label": "Architect", "type": "agent", "stages": [3] },
+      { "id": "builder", "label": "Builder", "type": "agent", "stages": [4,5] },
+      { "id": "integrator", "label": "Integrator", "type": "agent", "stages": [6] },
+      { "id": "qa", "label": "QA Engineer", "type": "agent", "stages": [7,8] },
+      { "id": "shipper", "label": "Shipper", "type": "agent", "stages": [9,10,11] }
+    ],
+    "edges": [
+      { "from": "s1", "to": "s2", "label": "gate-pass", "style": "transition" },
+      { "from": "s2", "to": "s3", "label": "gate-pass", "style": "transition" },
+      { "from": "s3", "to": "s4", "label": "gate-pass", "style": "transition" },
+      { "from": "s4", "to": "s5", "label": "gate-pass", "style": "transition" },
+      { "from": "s5", "to": "s6", "label": "gate-pass", "style": "transition" },
+      { "from": "s6", "to": "s7", "label": "gate-pass", "style": "transition" },
+      { "from": "s7", "to": "s8", "label": "gate-pass", "style": "transition" },
+      { "from": "s8", "to": "s9", "label": "gate-pass", "style": "transition" },
+      { "from": "s9", "to": "s10", "label": "gate-pass", "style": "transition" },
+      { "from": "s10", "to": "s11", "label": "gate-pass", "style": "transition" }
+    ],
+    "assessment": {
+      "wins": [
+        "Pipeline already a state machine",
+        "Agent-Native additions built in",
+        "Director/Builder pattern proven",
+        "Commit convention enables machine parsing"
+      ],
+      "fixes": [
+        { "id": "fix-1", "title": "Create npm package scaffold", "severity": "CRITICAL" },
+        { "id": "fix-2", "title": "Formalize gate functions", "severity": "CRITICAL" },
+        { "id": "fix-3", "title": "Build state persistence layer", "severity": "HIGH" },
+        { "id": "fix-4", "title": "Implement autonomous run loop", "severity": "HIGH" }
+      ],
+      "next_steps": [
+        { "id": "next-1", "title": "Test with Parallax" },
+        { "id": "next-2", "title": "Wire Telegram approval via HYDRA" },
+        { "id": "next-3", "title": "Publish to npm and GitHub" },
+        { "id": "next-4", "title": "Build BUILDING.md auto-generator" }
+      ]
+    }
+  }
+  </script>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        this.classList.add('active');
+        var target = document.getElementById(this.dataset.tab);
+        target.classList.add('active');
+        staggerReveal(target);
+      });
+    });
+
+    function staggerReveal(container) {
+      var items = container.querySelectorAll('.stage-card, .agent-card, .loop-step, .decision-step, .assessment-item');
+      items.forEach(function(item, i) {
+        item.classList.remove('reveal');
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(16px)';
+        item.style.animationDelay = (60 + i * 60) + 'ms';
+        void item.offsetWidth;
+        item.classList.add('reveal');
+      });
+    }
+
+    function animateCounters() {
+      document.querySelectorAll('.stat-number').forEach(function(el, i) {
+        var target = parseInt(el.dataset.target);
+        var duration = 600;
+        var delay = i * 120;
+        setTimeout(function() {
+          var start = performance.now();
+          function update(now) {
+            var elapsed = now - start;
+            var progress = Math.min(elapsed / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(eased * target);
+            if (progress < 1) requestAnimationFrame(update);
+          }
+          requestAnimationFrame(update);
+        }, delay);
+      });
+    }
+
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var text = this.parentElement.querySelector('.prompt-text').textContent;
+        navigator.clipboard.writeText(text);
+        this.textContent = 'COPIED';
+        this.classList.add('copied');
+        var b = this;
+        setTimeout(function() {
+          b.textContent = 'COPY';
+          b.classList.remove('copied');
+        }, 1500);
+      });
+    });
+
+    var ASSESS_KEY = 'visualize-assess-id8pipeline-sdk-architecture';
+
+    document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+        state[this.dataset.key] = this.checked;
+        localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+
+        var item = this.closest('.assessment-item');
+        if (this.checked) { item.classList.add('completed'); }
+        else { item.classList.remove('completed'); }
+
+        var key = this.dataset.key;
+        var checked = this.checked;
+        document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sibling) {
+          if (sibling !== cb) {
+            sibling.checked = checked;
+            var sibItem = sibling.closest('.assessment-item');
+            if (checked) { sibItem.classList.add('completed'); }
+            else { sibItem.classList.remove('completed'); }
+          }
+        });
+
+        updateAssessProgress();
+      });
+    });
+
+    window.addEventListener('load', function() {
+      var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+      Object.keys(state).forEach(function(key) {
+        document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+          cb.checked = state[key];
+          if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+        });
+      });
+      updateAssessProgress();
+    });
+
+    function updateAssessProgress() {
+      var fixItems = document.querySelectorAll('.assessment-item[id^="assess-fix-"], .assessment-item[id^="assess-next-"]');
+      var total = fixItems.length;
+      var done = 0;
+      fixItems.forEach(function(item) { if (item.classList.contains('completed')) done++; });
+      var counter = document.getElementById('assess-progress');
+      if (counter) {
+        counter.textContent = done + ' of ' + total + ' addressed';
+        counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+      }
+    }
+
+    animateCounters();
+    staggerReveal(document.getElementById('state-machine'));
+  </script>
+</body>
+</html>
