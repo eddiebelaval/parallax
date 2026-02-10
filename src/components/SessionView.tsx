@@ -7,7 +7,6 @@ import { NameEntry } from "./NameEntry";
 import { WaitingState } from "./WaitingState";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
-import type { MessageSender } from "@/types/database";
 
 interface SessionViewProps {
   roomCode: string;
@@ -21,6 +20,18 @@ export function SessionView({ roomCode }: SessionViewProps) {
   const [localSideA, setLocalSideA] = useState<string | null>(null);
   const [localSideB, setLocalSideB] = useState<string | null>(null);
 
+  // Track which message is currently being analyzed by Claude
+  const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(null);
+
+  // Clear analyzing state when the message receives its nvc_analysis via Realtime UPDATE
+  useEffect(() => {
+    if (!analyzingMessageId) return;
+    const msg = messages.find((m) => m.id === analyzingMessageId);
+    if (msg?.nvc_analysis) {
+      setAnalyzingMessageId(null);
+    }
+  }, [messages, analyzingMessageId]);
+
   // Sync local state with Realtime session updates
   useEffect(() => {
     if (session?.person_a_name && !localSideA) {
@@ -33,11 +44,9 @@ export function SessionView({ roomCode }: SessionViewProps) {
 
   const handleNameA = useCallback(async (name: string) => {
     if (!session) {
-      // Session doesn't exist yet — create it with person A
       const created = await createSession(name);
       if (created) setLocalSideA(name);
     } else {
-      // Session exists — join as person A
       const joined = await joinSession(name, 'a');
       if (joined) setLocalSideA(name);
     }
@@ -49,32 +58,41 @@ export function SessionView({ roomCode }: SessionViewProps) {
     if (joined) setLocalSideB(name);
   }, [session, joinSession]);
 
+  // Trigger NVC mediation for a message (fire-and-forget — result arrives via Realtime UPDATE)
+  const triggerMediation = useCallback(async (messageId: string) => {
+    if (!session?.id) return;
+    setAnalyzingMessageId(messageId);
+    try {
+      await fetch("/api/mediate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: session.id,
+          message_id: messageId,
+        }),
+      });
+    } catch {
+      // Mediation failed — clear the loading state
+      setAnalyzingMessageId(null);
+    }
+  }, [session?.id]);
+
   const handleSendA = useCallback(async (content: string) => {
-    await sendMessage('person_a', content);
-  }, [sendMessage]);
+    const sent = await sendMessage('person_a', content);
+    if (sent) triggerMediation(sent.id);
+  }, [sendMessage, triggerMediation]);
 
   const handleSendB = useCallback(async (content: string) => {
-    await sendMessage('person_b', content);
-  }, [sendMessage]);
+    const sent = await sendMessage('person_b', content);
+    if (sent) triggerMediation(sent.id);
+  }, [sendMessage, triggerMediation]);
 
   const bothJoined = session?.status === 'active';
   const isATurn = currentTurn === 'person_a';
   const isBTurn = currentTurn === 'person_b';
 
-  // Format messages for the MessageArea component
-  const formattedMessages = messages.map((msg) => ({
-    id: msg.id,
-    sender: msg.sender === 'person_a'
-      ? (session?.person_a_name ?? 'Person A')
-      : msg.sender === 'person_b'
-        ? (session?.person_b_name ?? 'Person B')
-        : 'Mediator',
-    content: msg.content,
-    timestamp: new Date(msg.created_at).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  }));
+  const personAName = session?.person_a_name ?? "Person A";
+  const personBName = session?.person_b_name ?? "Person B";
 
   if (sessionLoading) {
     return (
@@ -90,7 +108,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
       <div className="flex flex-col border-b md:border-b-0 md:border-r border-border min-h-[50vh] md:min-h-0">
         <div className="px-4 py-2 border-b border-border flex items-center justify-between">
           <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-500">
-            {session?.person_a_name ?? "Person A"}
+            {personAName}
           </span>
           {bothJoined && (
             <span className={`font-mono text-xs uppercase tracking-wider ${isATurn ? 'text-accent' : 'text-factory-gray-700'}`}>
@@ -104,11 +122,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
           <WaitingState roomCode={roomCode} />
         ) : (
           <>
-            <MessageArea messages={formattedMessages} />
+            <MessageArea
+              messages={messages}
+              personAName={personAName}
+              personBName={personBName}
+              analyzingMessageId={analyzingMessageId}
+            />
             <MessageInput
               onSend={handleSendA}
               disabled={!isATurn}
-              placeholder={isATurn ? "Type your message..." : `Waiting for ${session?.person_b_name ?? "Person B"}...`}
+              placeholder={isATurn ? "Type your message..." : `Waiting for ${personBName}...`}
             />
           </>
         )}
@@ -118,7 +141,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
       <div className="flex flex-col min-h-[50vh] md:min-h-0">
         <div className="px-4 py-2 border-b border-border flex items-center justify-between">
           <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-500">
-            {session?.person_b_name ?? "Person B"}
+            {personBName}
           </span>
           {bothJoined && (
             <span className={`font-mono text-xs uppercase tracking-wider ${isBTurn ? 'text-accent' : 'text-factory-gray-700'}`}>
@@ -136,11 +159,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
           <WaitingState roomCode={roomCode} />
         ) : (
           <>
-            <MessageArea messages={formattedMessages} />
+            <MessageArea
+              messages={messages}
+              personAName={personAName}
+              personBName={personBName}
+              analyzingMessageId={analyzingMessageId}
+            />
             <MessageInput
               onSend={handleSendB}
               disabled={!isBTurn}
-              placeholder={isBTurn ? "Type your message..." : `Waiting for ${session?.person_a_name ?? "Person A"}...`}
+              placeholder={isBTurn ? "Type your message..." : `Waiting for ${personAName}...`}
             />
           </>
         )}

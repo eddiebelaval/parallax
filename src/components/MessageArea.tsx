@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { MessageCard } from "./MessageCard";
+import type { Message } from "@/types/database";
 
-export interface Message {
-  id: string;
-  sender: string;
-  content: string;
-  timestamp: string;
+interface MessageAreaProps {
+  messages: Message[];
+  personAName: string;
+  personBName: string;
+  analyzingMessageId?: string | null;
 }
 
-export function MessageArea({ messages }: { messages: Message[] }) {
+export function MessageArea({
+  messages,
+  personAName,
+  personBName,
+  analyzingMessageId,
+}: MessageAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,18 +36,31 @@ export function MessageArea({ messages }: { messages: Message[] }) {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
       {messages.map((msg) => (
-        <div key={msg.id} className="space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-xs text-accent uppercase tracking-wider">
-              {msg.sender}
-            </span>
-            <span className="font-mono text-xs text-factory-gray-700">
-              {msg.timestamp}
-            </span>
-          </div>
-          <p className="text-foreground text-sm leading-relaxed">
-            {msg.content}
-          </p>
+        <div key={msg.id}>
+          <MessageCard
+            sender={msg.sender}
+            senderName={
+              msg.sender === "person_a"
+                ? personAName
+                : msg.sender === "person_b"
+                  ? personBName
+                  : "Claude"
+            }
+            content={msg.content}
+            timestamp={new Date(msg.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            nvcAnalysis={msg.nvc_analysis}
+          />
+          {analyzingMessageId === msg.id && !msg.nvc_analysis && (
+            <div className="pl-4 mt-2 flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600">
+                Analyzing
+              </span>
+            </div>
+          )}
         </div>
       ))}
       <div ref={bottomRef} />
