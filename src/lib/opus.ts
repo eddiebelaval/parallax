@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { NVC_SYSTEM_PROMPT, buildMediationPrompt } from '@/lib/prompts'
+import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, buildMediationPrompt } from '@/lib/prompts'
 import type { MessageSender } from '@/types/database'
 
 const client = new Anthropic({
@@ -38,6 +38,43 @@ export async function mediateMessage(
   })
 
   // Extract text from the response content blocks
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('')
+
+  return text
+}
+
+/**
+ * Call Claude to produce a session summary analyzing the full conversation arc.
+ *
+ * Returns the raw text from Claude's response. The caller should
+ * parse it with parseSessionSummary().
+ */
+export async function summarizeSession(
+  personAName: string,
+  personBName: string,
+  conversationHistory: ConversationEntry[],
+): Promise<string> {
+  const transcript = conversationHistory
+    .map((m) => `[${m.sender}]: ${m.content}`)
+    .join('\n')
+
+  const userPrompt = `PARTICIPANTS:
+- Person A: ${personAName}
+- Person B: ${personBName}
+
+FULL CONVERSATION:
+${transcript}`
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 2048,
+    system: SESSION_SUMMARY_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
+  })
+
   const text = response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
