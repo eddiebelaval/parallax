@@ -5,14 +5,16 @@ import { MessageArea } from "./MessageArea";
 import { MessageInput } from "./MessageInput";
 import { NameEntry } from "./NameEntry";
 import { WaitingState } from "./WaitingState";
+import { SessionSummary } from "./SessionSummary";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
 
 interface SessionViewProps {
   roomCode: string;
+  onEndSession?: () => void;
 }
 
-export function SessionView({ roomCode }: SessionViewProps) {
+export function SessionView({ roomCode, onEndSession }: SessionViewProps) {
   const { session, loading: sessionLoading, createSession, joinSession } = useSession(roomCode);
   const { messages, sendMessage, currentTurn } = useMessages(session?.id);
 
@@ -77,6 +79,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
     }
   }, [session?.id]);
 
+  // End the session — status change flows through Realtime to both sides
+  const endSession = useCallback(async () => {
+    try {
+      await fetch(`/api/sessions/${roomCode}/end`, { method: "POST" });
+      onEndSession?.();
+    } catch {
+      // Session end failed — Realtime won't fire, no-op
+    }
+  }, [roomCode, onEndSession]);
+
   const handleSendA = useCallback(async (content: string) => {
     const sent = await sendMessage('person_a', content);
     if (sent) triggerMediation(sent.id);
@@ -88,6 +100,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
   }, [sendMessage, triggerMediation]);
 
   const bothJoined = session?.status === 'active';
+  const isCompleted = session?.status === 'completed';
   const isATurn = currentTurn === 'person_a';
   const isBTurn = currentTurn === 'person_b';
 
@@ -98,6 +111,19 @@ export function SessionView({ roomCode }: SessionViewProps) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+      </div>
+    );
+  }
+
+  // When session is completed, show the summary spanning the full width
+  if (isCompleted) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <SessionSummary
+          roomCode={roomCode}
+          personAName={personAName}
+          personBName={personBName}
+        />
       </div>
     );
   }
