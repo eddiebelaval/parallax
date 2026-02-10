@@ -23,7 +23,7 @@ export function MessageInput({
   }
 
   return (
-    <div className="border-t border-border px-4 py-3">
+    <div className="px-4 py-3">
       <div className="flex gap-3">
         <input
           type="text"
