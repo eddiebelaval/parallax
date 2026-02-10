@@ -130,3 +130,30 @@ h1, h2, h3, h4, h5, h6 {
 .analysis-reveal > div {
   overflow: hidden;
 }
+
+/* ─── Signal Rail Animations ─── */
+
+@keyframes signal-segment-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes signal-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.signal-segment {
+  transform-origin: top;
+  animation: signal-segment-in 300ms ease-out both;
+}
+
+.signal-segment-latest {
+  animation: signal-segment-in 300ms ease-out both, signal-pulse 2s ease-in-out infinite;
+}
