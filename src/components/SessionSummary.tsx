@@ -66,8 +66,8 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
   const { data } = state
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
-      <div className="max-w-2xl mx-auto space-y-10">
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-2xl mx-auto space-y-8 sm:space-y-10">
         {/* Overall Insight — hero quote */}
         <div className="border-l-2 border-accent pl-5 py-2">
           <p className="text-foreground text-lg leading-relaxed">
@@ -97,7 +97,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
         )}
 
         {/* Person sections — side by side on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <PersonSummary
             name={personAName}
             needs={data.personANeeds}

@@ -44,6 +44,11 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const finalTranscriptRef = useRef("");
+  const onTranscriptRef = useRef(onTranscript);
+
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
 
   // Check support after mount (SSR-safe)
   useEffect(() => {
@@ -106,7 +111,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
       setListening(false);
       const result = finalTranscriptRef.current.trim();
       if (result) {
-        onTranscript(result);
+        onTranscriptRef.current(result);
       }
       setInterim("");
     };
@@ -114,7 +119,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
-  }, [disabled, onTranscript]);
+  }, [disabled]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -144,7 +149,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
           onTouchEnd={stopListening}
           onMouseLeave={listening ? stopListening : undefined}
           disabled={disabled}
-          className="relative flex items-center justify-center w-10 h-10 rounded-full border border-border transition-colors hover:border-factory-gray-600 disabled:opacity-40"
+          className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:border-factory-gray-600 disabled:opacity-40"
           aria-label={listening ? "Listening..." : "Hold to speak"}
         >
           {/* Pulsing ring when active */}

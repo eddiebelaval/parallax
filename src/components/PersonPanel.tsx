@@ -51,14 +51,14 @@ export function PersonPanel({
   return (
     <div className={`flex flex-col min-h-[50vh] md:min-h-0 ${className ?? ""}`}>
       {/* Panel header */}
-      <div className="px-4 py-2 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="px-3 md:px-4 py-2 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-3">
           <span className="font-mono text-[10px] text-factory-gray-700">{roomCode}</span>
           <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-500">
             {name}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {bothJoined && (
             <span className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider ${isMyTurn ? 'text-accent' : 'text-factory-gray-700'}`}>
               {isMyTurn && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
@@ -97,7 +97,7 @@ export function PersonPanel({
               <button
                 onClick={() => onInputModeChange(inputMode === "text" ? "voice" : "text")}
                 disabled={!isMyTurn}
-                className="px-3 py-3 text-factory-gray-500 hover:text-foreground transition-colors disabled:opacity-40"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-factory-gray-500 hover:text-foreground transition-colors disabled:opacity-40"
                 aria-label={inputMode === "text" ? "Switch to voice" : "Switch to text"}
               >
                 {inputMode === "text" ? <MicIcon size={14} /> : <KeyboardIcon size={14} />}
