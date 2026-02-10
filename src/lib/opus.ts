@@ -2,6 +2,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, buildMediationPrompt } from '@/lib/prompts'
 import type { MessageSender } from '@/types/database'
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  throw new Error('Missing ANTHROPIC_API_KEY — add it to .env.local')
+}
+
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
