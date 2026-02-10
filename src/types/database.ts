@@ -10,12 +10,18 @@ export type SessionStatus = 'waiting' | 'active' | 'completed'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
 
 export interface NvcAnalysis {
-  observation: string
-  feeling: string
-  need: string
-  request: string
-  subtext: string
-  translated_message: string
+  // Classic NVC framework (Marshall Rosenberg's 4 components)
+  observation: string       // What happened — fact without judgment
+  feeling: string           // What the speaker is feeling
+  need: string              // The core human need behind the feeling
+  request: string           // A constructive ask they could make
+
+  // "Beneath the surface" analysis (Parallax's unique lens)
+  subtext: string           // What they're really saying beneath the words
+  blindSpots: string[]      // What the speaker can't see about their own communication
+  unmetNeeds: string[]      // Structured list of unmet universal human needs
+  nvcTranslation: string    // The message rewritten using NVC principles
+  emotionalTemperature: number // 0.0 (calm/neutral) to 1.0 (heated/volatile)
 }
 
 export interface Database {
