@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Stage Mode -- Build Blueprint</title>
+<script type="application/json" id="blueprint-data">
+{
+  "project": "parallax",
+  "feature": "stage-mode",
+  "created": "2026-02-10",
+  "repo": "~/Development/id8/products/parallax",
+  "stack": ["Next.js 16", "Supabase Realtime", "Claude Sonnet 4.5", "Tailwind CSS v4", "Vercel"],
+  "phases": [
+    {
+      "id": "P1",
+      "name": "Issue Extraction Prompt Layer",
+      "batch": "sequential",
+      "depends_on": [],
+      "tasks": [
+        {
+          "id": "P1-T1",
+          "title": "Design issue extraction prompt in prompts.ts",
+          "status": "pending",
+          "file": "src/lib/prompts.ts",
+          "prompt": "Add a new ISSUE_EXTRACTION_PROMPT constant to src/lib/prompts.ts. This prompt instructs Claude to extract discrete, trackable issues/complaints from a conflict message. Each issue should be a short phrase (5-15 words) that can be displayed as a scoreboard card.\n\nThe prompt should return JSON: { issues: [{ description: string, severity: 'high' | 'medium' | 'low' }] }.\n\nAlso add:\n- buildIssueExtractionPrompt(conversationHistory, targetMessage) following the same pattern as buildMediationPrompt()\n- parseIssueExtraction(raw: string) following the same pattern as parseNvcAnalysis()\n\nKeep the existing NVC_SYSTEM_PROMPT and SESSION_SUMMARY_PROMPT untouched.\n\nFile: ~/Development/id8/products/parallax/src/lib/prompts.ts\nExisting patterns to follow: buildMediationPrompt(), parseNvcAnalysis()"
+        },
+        {
+          "id": "P1-T2",
+          "title": "Design response grading prompt in prompts.ts",
+          "status": "pending",
+          "file": "src/lib/prompts.ts",
+          "prompt": "Add RESPONSE_GRADING_PROMPT to src/lib/prompts.ts. This prompt instructs Claude to analyze a response message against a list of outstanding issues.\n\nFor each issue, Claude grades:\n- 'addressed' (green) - issue was directly and satisfactorily addressed\n- 'partially_addressed' (amber) - acknowledged but not fully resolved\n- 'worsened' (red) - response made it worse or was dismissive\n- 'not_addressed' (gray) - not mentioned at all\n\nReturn JSON: { grades: [{ issue_id: string, status: 'addressed' | 'partially_addressed' | 'worsened' | 'not_addressed', explanation: string }] }\n\nAlso add:\n- buildResponseGradingPrompt(conversationHistory, responseMessage, outstandingIssues: Array<{id: string, description: string}>)\n- parseResponseGrading(raw: string)\n\nFile: ~/Development/id8/products/parallax/src/lib/prompts.ts"
+        },
+        {
+          "id": "P1-T3",
+          "title": "Add Issue and IssueStatus types to database.ts",
+          "status": "pending",
+          "file": "src/types/database.ts",
+          "prompt": "Add to src/types/database.ts:\n\n1. Type: export type IssueStatus = 'not_addressed' | 'partially_addressed' | 'addressed' | 'worsened'\n2. Type: export type IssueSeverity = 'high' | 'medium' | 'low'\n3. Interface:\nexport interface Issue {\n  id: string\n  session_id: string\n  source_message_id: string\n  person: MessageSender\n  description: string\n  severity: IssueSeverity\n  status: IssueStatus\n  addressed_by_message_id: string | null\n  grade_explanation: string | null\n  created_at: string\n}\n4. Add issues table definition to the Database interface (Row, Insert, Update, Relationships with FK to sessions and messages)\n5. Add convenience type: export type IssueRow = Database['public']['Tables']['issues']['Row']\n\nKeep ALL existing types untouched.\n\nFile: ~/Development/id8/products/parallax/src/types/database.ts"
+        },
+        {
+          "id": "P1-T4",
+          "title": "Create Supabase migration for issues table",
+          "status": "pending",
+          "file": "supabase/migrations/20260210_create_issues_table.sql",
+          "prompt": "Create supabase/migrations/20260210_create_issues_table.sql:\n\nCREATE TABLE public.issues (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  session_id uuid NOT NULL REFERENCES public.sessions(id) ON DELETE CASCADE,\n  source_message_id uuid NOT NULL REFERENCES public.messages(id) ON DELETE CASCADE,\n  person text NOT NULL CHECK (person IN ('person_a', 'person_b')),\n  description text NOT NULL,\n  severity text NOT NULL DEFAULT 'medium' CHECK (severity IN ('high', 'medium', 'low')),\n  status text NOT NULL DEFAULT 'not_addressed' CHECK (status IN ('not_addressed', 'partially_addressed', 'addressed', 'worsened')),\n  addressed_by_message_id uuid REFERENCES public.messages(id),\n  grade_explanation text,\n  created_at timestamptz DEFAULT now()\n);\n\nCREATE INDEX idx_issues_session_id ON public.issues(session_id);\nCREATE INDEX idx_issues_status ON public.issues(status);\n\nALTER TABLE public.issues ENABLE ROW LEVEL SECURITY;\nCREATE POLICY \"Allow all for now\" ON public.issues FOR ALL USING (true);\n\n-- Enable Realtime for issues table\nALTER PUBLICATION supabase_realtime ADD TABLE public.issues;\n\nFile: ~/Development/id8/products/parallax/supabase/migrations/20260210_create_issues_table.sql"
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "Issue API Routes",
+      "batch": "sequential",
+      "depends_on": ["P1"],
+      "tasks": [
+        {
+          "id": "P2-T1",
+          "title": "POST /api/extract-issues route",
+          "status": "pending",
+          "file": "src/app/api/extract-issues/route.ts",
+          "prompt": "Create src/app/api/extract-issues/route.ts:\n\nPOST handler that:\n1. Accepts { session_id: string, message_id: string }\n2. Fetches the target message and session from Supabase (same pattern as /api/mediate/route.ts)\n3. Fetches conversation history (same pattern as /api/mediate)\n4. Calls Claude with ISSUE_EXTRACTION_PROMPT via a new extractIssues() function in opus.ts\n5. Parses the response with parseIssueExtraction()\n6. Inserts each extracted issue into the issues table with status 'not_addressed' and the source_message_id\n7. Returns { issues: Issue[] }\n\nAlso add extractIssues() to src/lib/opus.ts following the same pattern as mediateMessage():\n- Uses getClient()\n- ISSUE_EXTRACTION_PROMPT as system prompt\n- buildIssueExtractionPrompt() for user message\n- Returns raw text string\n\nReference files:\n- ~/Development/id8/products/parallax/src/app/api/mediate/route.ts (pattern to follow)\n- ~/Development/id8/products/parallax/src/lib/opus.ts (add extractIssues function)\n- ~/Development/id8/products/parallax/src/lib/prompts.ts (use new prompt functions from P1-T1)"
+        },
+        {
+          "id": "P2-T2",
+          "title": "POST /api/grade-response route",
+          "status": "pending",
+          "file": "src/app/api/grade-response/route.ts",
+          "prompt": "Create src/app/api/grade-response/route.ts:\n\nPOST handler that:\n1. Accepts { session_id: string, message_id: string }\n2. Fetches all issues for this session with status != 'addressed' (outstanding issues)\n3. If no outstanding issues, return early with { grades: [] }\n4. Fetches the response message and conversation history\n5. Calls Claude with RESPONSE_GRADING_PROMPT via new gradeResponse() in opus.ts\n6. Parses response with parseResponseGrading()\n7. For each grade, updates the issue row in Supabase: status, addressed_by_message_id (if addressed/partially), grade_explanation\n8. Returns { grades: [...] }\n\nAlso add gradeResponse() to src/lib/opus.ts following mediateMessage() pattern.\n\nReference files:\n- ~/Development/id8/products/parallax/src/app/api/mediate/route.ts (pattern)\n- ~/Development/id8/products/parallax/src/lib/opus.ts (add gradeResponse)\n- ~/Development/id8/products/parallax/src/lib/prompts.ts (use P1-T2 functions)"
+        },
+        {
+          "id": "P2-T3",
+          "title": "Wire issue extraction + grading into triggerMediation flow",
+          "status": "pending",
+          "file": "src/components/SessionView.tsx",
+          "prompt": "Modify the triggerMediation callback in src/components/SessionView.tsx to also call the new endpoints after NVC mediation:\n\n1. After the /api/mediate call succeeds, fire /api/extract-issues with { session_id, message_id } (fire-and-forget via .catch(() => {}))\n2. Determine if this message is a response (not the first human message). If the current turn alternated (someone already spoke before), also fire /api/grade-response with { session_id, message_id } (fire-and-forget)\n3. Both additional calls are parallel and non-blocking -- the NVC analysis flow is unchanged\n4. This wiring works for BOTH Remote Mode and Stage Mode since SessionView handles messages in both\n\nOptimization note: In a future pass, combine extraction + grading into the NVC prompt. For now, separate calls are clearer.\n\nFile: ~/Development/id8/products/parallax/src/components/SessionView.tsx\nLook at the existing triggerMediation callback around line 71-92."
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "X-Ray Scoreboard UI",
+      "batch": "parallel",
+      "depends_on": ["P2"],
+      "tasks": [
+        {
+          "id": "P3-T1",
+          "title": "XRayView.tsx -- main stage mode layout",
+          "status": "pending",
+          "file": "src/components/XRayView.tsx",
+          "prompt": "Create src/components/XRayView.tsx:\n\nA full-screen single-panel view (replaces SessionView's split-screen when in stage mode). Layout:\n\n- Top: TurnBanner (full-width, shows whose turn + timer)\n- Middle: Two-column issue board (Person A issues left, Person B issues right), each column is an IssueBoardColumn\n- Bottom: MessageInput centered (only enabled for current turn's person)\n- Header: Room code + session controls + score summary\n\nUses existing hooks:\n- useSession(roomCode) from src/hooks/useSession.ts\n- useMessages(session?.id) from src/hooks/useMessages.ts\n- useIssues(session?.id) from src/hooks/useIssues.ts (new, P3-T5)\n\nProps: { roomCode: string }\n\nFactory design system:\n- Background: #020202\n- Warm grays for borders (#2a2622)\n- Orange dot indicators (#ef6f2e)\n- Geist Mono for labels\n- NO shadows, NO gradients, NO glow\n\nName entry flow: Reuse NameEntry component for both sides before session starts.\nSame triggerMediation pattern as SessionView for sending messages.\n\nFile: ~/Development/id8/products/parallax/src/components/XRayView.tsx\nReference: ~/Development/id8/products/parallax/src/components/SessionView.tsx (existing pattern)"
+        },
+        {
+          "id": "P3-T2",
+          "title": "IssueCard.tsx -- individual issue display",
+          "status": "pending",
+          "file": "src/components/IssueCard.tsx",
+          "prompt": "Create src/components/IssueCard.tsx:\n\nDisplays a single issue as a card with:\n- Status color indicator (left border, 3px): #4ecdc4 addressed, #ef4444 worsened, #3a3632 not_addressed, #f59e0b partially_addressed\n- Issue description text in #eeeeee\n- Severity badge (font-mono, uppercase, 10px, subdued color)\n- Grade explanation (collapsed by default, expand on click, font-mono text-xs text in warm gray)\n- Subtle entry animation (fadeSlideUp, staggered by index prop)\n\nProps: { issue: Issue; index: number }\n\nImport Issue type from src/types/database.ts\n\nFactory design:\n- Background: #141210\n- Border: 1px solid #2a2622\n- Hover: background shifts to #1a1815\n- NO shadows, NO glow\n\nFile: ~/Development/id8/products/parallax/src/components/IssueCard.tsx"
+        },
+        {
+          "id": "P3-T3",
+          "title": "IssueBoardColumn.tsx -- grouped issues per person",
+          "status": "pending",
+          "file": "src/components/IssueBoardColumn.tsx",
+          "prompt": "Create src/components/IssueBoardColumn.tsx:\n\nA column displaying all issues from one person. Layout:\n- Header: orange dot + person name (uppercase monospace) + issue count badge\n- Score line: 'N/M addressed' with thin progress bar (teal #4ecdc4 fill on warm gray track)\n- Scrollable list of IssueCard components\n- Empty state: 'No issues extracted yet' in muted text (#6b6560)\n\nProps: {\n  person: 'person_a' | 'person_b'\n  personName: string\n  issues: Issue[]\n}\n\nSort issues: worsened first, then not_addressed, then partially_addressed, then addressed.\n\nImport Issue type from src/types/database.ts and IssueCard from ./IssueCard\n\nFile: ~/Development/id8/products/parallax/src/components/IssueBoardColumn.tsx"
+        },
+        {
+          "id": "P3-T4",
+          "title": "TurnBanner.tsx -- turn indicator with pacing timer",
+          "status": "pending",
+          "file": "src/components/TurnBanner.tsx",
+          "prompt": "Create src/components/TurnBanner.tsx:\n\nFull-width banner at top of XRayView showing:\n- Whose turn it is (person name, large font-mono uppercase)\n- Pulsing orange dot (#ef6f2e) next to active person's name\n- Timer counting up from turn start (MM:SS format, font-mono), reset when turn changes\n- Turn number (e.g., 'TURN 3' in small mono text)\n- Nudge text when timer exceeds 2 minutes: 'Consider addressing [person]'s unaddressed concerns' in amber\n\nProps: {\n  currentTurn: MessageSender\n  personAName: string\n  personBName: string\n  turnNumber: number\n  unaddressedCount: number\n}\n\nDesign: border-b 1px solid #2a2622, py-3 px-6, background #020202.\nTimer uses useState + useEffect with setInterval, cleanup on unmount.\nTimer resets when currentTurn changes.\n\nFile: ~/Development/id8/products/parallax/src/components/TurnBanner.tsx\nImport MessageSender from src/types/database.ts"
+        },
+        {
+          "id": "P3-T5",
+          "title": "useIssues.ts hook -- Realtime subscription for issues",
+          "status": "pending",
+          "file": "src/hooks/useIssues.ts",
+          "prompt": "Create src/hooks/useIssues.ts:\n\n'use client' hook that:\n1. Fetches all issues for a session_id from Supabase on mount (ordered by created_at asc)\n2. Subscribes to Supabase Realtime for INSERT and UPDATE events on the issues table, filtered by session_id\n3. On INSERT: append new issue to state (deduplicate by id, same as useMessages)\n4. On UPDATE: replace the updated issue in state\n5. Returns { issues: Issue[], loading: boolean, issuesByPerson: { person_a: Issue[], person_b: Issue[] } }\n\nFollow the EXACT same pattern as src/hooks/useMessages.ts:\n- cancelled flag for fetch\n- Channel setup with .on('postgres_changes', { event: 'INSERT', ... }) and .on('postgres_changes', { event: 'UPDATE', ... })\n- Cleanup via supabase.removeChannel(channel)\n\nFile: ~/Development/id8/products/parallax/src/hooks/useIssues.ts\nReference: ~/Development/id8/products/parallax/src/hooks/useMessages.ts"
+        },
+        {
+          "id": "P3-T6",
+          "title": "Stage mode route: /session/[code]/stage/page.tsx",
+          "status": "pending",
+          "file": "src/app/session/[code]/stage/page.tsx",
+          "prompt": "Create src/app/session/[code]/stage/page.tsx:\n\nA Next.js page that renders XRayView with the room code from params. Same structure as existing src/app/session/[code]/page.tsx but renders XRayView instead of SessionView.\n\nThe page should:\n1. Extract code from params (use the Next.js 16 params pattern)\n2. Render the factory-styled layout wrapper (same as existing session page)\n3. Render <XRayView roomCode={code} />\n4. Include the same meta tags / layout approach as the existing session page\n\nFile: ~/Development/id8/products/parallax/src/app/session/[code]/stage/page.tsx\nReference: ~/Development/id8/products/parallax/src/app/session/[code]/page.tsx (copy this structure)"
+        }
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Live Interaction Polish",
+      "batch": "sequential",
+      "depends_on": ["P3"],
+      "tasks": [
+        {
+          "id": "P4-T1",
+          "title": "Animated status transitions on issue cards",
+          "status": "pending",
+          "file": "src/components/IssueCard.tsx",
+          "prompt": "Update src/components/IssueCard.tsx to animate status changes:\n\n1. Track previous status via useRef\n2. When status changes from not_addressed to addressed: flash green border-color transition (300ms to #4ecdc4, then settle)\n3. When status changes to worsened: flash red pulse (border-color to #ef4444)\n4. When status changes to partially_addressed: amber pulse (#f59e0b)\n5. All transitions use CSS transitions only (no framer-motion dependency needed)\n6. Add small SVG icons: checkmark for addressed, X for worsened, ~ for partial\n\nKeep factory design: NO shadows, NO glow -- use border-color and opacity transitions only.\n\nFile: ~/Development/id8/products/parallax/src/components/IssueCard.tsx"
+        },
+        {
+          "id": "P4-T2",
+          "title": "Nudge UI -- unaddressed issues banner",
+          "status": "pending",
+          "file": "src/components/XRayView.tsx",
+          "prompt": "Add nudge functionality to XRayView.tsx:\n\n1. Calculate unaddressed issue count for the OTHER person (if Person B's turn, count Person A's unaddressed issues)\n2. When count > 0, show a nudge banner above the message input: 'N issues from [Person] still unaddressed'\n3. When count > 0 AND turn timer > 90 seconds, escalate: 'Consider addressing: [top 2 unaddressed issue descriptions]'\n4. Style: warm gray background (#1a1815), amber text (#f59e0b), font-mono, subtle top border\n5. Dismissable (click X button), but reappears on next turn change\n\nFile: ~/Development/id8/products/parallax/src/components/XRayView.tsx"
+        },
+        {
+          "id": "P4-T3",
+          "title": "Turn timer with visual countdown",
+          "status": "pending",
+          "file": "src/components/TurnBanner.tsx",
+          "prompt": "Enhance TurnBanner.tsx with a visual timer:\n\n1. Track turn start time via useRef (reset when currentTurn prop changes)\n2. Count up in MM:SS format, updating every second via setInterval\n3. At 2:00, timer text color changes from #eeeeee to #f59e0b (amber warning)\n4. At 3:00, timer text color changes to #ef4444 (red)\n5. Add a thin 2px progress bar under the banner:\n   - Fills left to right over 3 minutes\n   - Color transitions: #4ecdc4 (0-2min) -> #f59e0b (2-3min) -> #ef4444 (3min+)\n6. Timer resets when turn changes\n\nUse setInterval in useEffect, clean up on unmount and on dependency change.\n\nFile: ~/Development/id8/products/parallax/src/components/TurnBanner.tsx"
+        },
+        {
+          "id": "P4-T4",
+          "title": "Score summary -- running tally per person",
+          "status": "pending",
+          "file": "src/components/XRayView.tsx",
+          "prompt": "Add a score summary bar to XRayView.tsx header:\n\n1. Calculate per person: total issues raised against them, addressed count, partially count, worsened count\n2. Display as: '[PersonA]: 3/5 addressed | [PersonB]: 2/4 addressed'\n3. Color-code numbers: addressed count in teal (#4ecdc4), worsened in red (#ef4444), total in white (#eeeeee)\n4. Position: in the header bar, right-aligned, font-mono text-xs\n5. Numbers should smoothly transition when values change (CSS transition on opacity)\n\nThis gives a running game-score feel to the mediation.\n\nFile: ~/Development/id8/products/parallax/src/components/XRayView.tsx"
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "Mode Integration + Demo Flow",
+      "batch": "parallel",
+      "depends_on": ["P4"],
+      "tasks": [
+        {
+          "id": "P5-T1",
+          "title": "Landing page mode picker",
+          "status": "pending",
+          "file": "src/app/page.tsx",
+          "prompt": "Update src/app/page.tsx to add a mode selection step:\n\n1. After session creation (room code generated), show two mode options before navigating:\n   - 'Remote Mode' -- navigates to /session/[code] (existing split-screen)\n   - 'Stage Mode' -- navigates to /session/[code]/stage (new X-ray scoreboard)\n2. Design as two cards side by side:\n   - Remote Mode: 'Each person sees their own panel' + simple chat SVG icon\n   - Stage Mode: 'One shared screen for in-person mediation' + target/crosshair SVG icon\n3. Selection navigates to the appropriate route with the room code\n4. Factory design: cards with border 1px solid #2a2622, warm gray hover (#1a1815), orange accent on selected\n5. For joining an existing session (entering a room code), also show the mode picker\n\nThe mode is URL-based only (no session row change needed). Same backend for both.\n\nFile: ~/Development/id8/products/parallax/src/app/page.tsx"
+        },
+        {
+          "id": "P5-T2",
+          "title": "Polish Stage Mode responsive layout",
+          "status": "pending",
+          "file": "src/components/XRayView.tsx",
+          "prompt": "Polish XRayView.tsx for large screen / projector display:\n\n1. On screens > 1440px: increase base font sizes, issue cards get more padding\n2. On screens > 1920px: add a 'presentation-mode' class that scales text 1.25x\n3. Ensure readability from 10+ feet away (demo distance) -- larger turn indicator, bigger status dots\n4. Mobile fallback: stack columns vertically on < 768px\n5. Ensure the turn banner and score summary are always visible (sticky positioning)\n6. Test that issue cards don't clip or overflow on any screen size\n\nUse Tailwind responsive classes (md:, lg:, xl:, 2xl:) for breakpoints.\n\nFile: ~/Development/id8/products/parallax/src/components/XRayView.tsx"
+        },
+        {
+          "id": "P5-T3",
+          "title": "Demo script optimized for Stage Mode",
+          "status": "pending",
+          "file": "docs/DEMO_SCRIPT.md",
+          "prompt": "Create docs/DEMO_SCRIPT.md with a 3-minute demo script:\n\n## Timing\n1. [0:00-0:15] Open Parallax, create session, show mode picker, select Stage Mode\n2. [0:15-0:30] Both people join (same device), show the empty X-ray board\n3. [0:30-1:00] Person A speaks: 'You never listen to me when I talk about my day. You are always on your phone and you dismiss my feelings.'\n   - Show 3 issues extracted: 'not listening', 'phone distraction', 'dismissing feelings'\n   - Show NVC analysis appearing alongside\n4. [1:00-1:30] Person B responds: 'I hear you about the phone, I will put it down during dinner. But I do not think I dismiss your feelings.'\n   - Show grading: 'phone distraction' turns green, 'not listening' turns amber, 'dismissing feelings' stays red\n5. [1:30-2:15] Continue back and forth, show scores evolving, more issues extracted\n6. [2:15-2:45] Show nudge system when issues remain unaddressed past 90 seconds\n7. [2:45-3:00] End session, show summary with issue resolution stats\n\n## Key Demo Talking Points\n- 'We extract the issues so both sides can see what needs addressing'\n- 'Green means heard, red means missed -- real-time accountability'\n- 'The nudge system prevents avoidance'\n\nFile: ~/Development/id8/products/parallax/docs/DEMO_SCRIPT.md"
+        },
+        {
+          "id": "P5-T4",
+          "title": "README update with both modes",
+          "status": "pending",
+          "file": "README.md",
+          "prompt": "Update README.md to document both modes:\n\n1. Add 'Modes' section describing Remote Mode and Stage Mode with 1-2 sentence descriptions each\n2. Add simple text-based architecture diagram showing the Stage Mode data flow\n3. Update 'Getting Started' with instructions for accessing both modes\n4. Add 'Demo' section with quick-start command sequence for judges\n5. Keep concise -- hackathon README, not full documentation\n\nFile: ~/Development/id8/products/parallax/README.md"
+        },
+        {
+          "id": "P5-T5",
+          "title": "OSS cleanup (LICENSE, .env.example, console.log removal)",
+          "status": "pending",
+          "file": "multiple",
+          "prompt": "Final cleanup for submission:\n\n1. Ensure .env.example lists all required vars:\n   NEXT_PUBLIC_SUPABASE_URL=\n   NEXT_PUBLIC_SUPABASE_ANON_KEY=\n   SUPABASE_SERVICE_ROLE_KEY=\n   ANTHROPIC_API_KEY=\n2. Add MIT LICENSE file if not present\n3. Remove any console.log / console.warn statements from src/\n4. Verify .gitignore includes: node_modules, .next, .env.local, .env\n5. Run: npm run build && npx tsc --noEmit -- fix any errors\n\nFiles: .env.example, LICENSE, .gitignore, and all src/ files"
+        }
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "Ship",
+      "batch": "sequential",
+      "depends_on": ["P5"],
+      "tasks": [
+        {
+          "id": "P6-T1",
+          "title": "Record 3-min demo video",
+          "status": "pending",
+          "file": null,
+          "prompt": "Record a 3-minute demo video following docs/DEMO_SCRIPT.md:\n\n1. Use Stage Mode for maximum visual impact\n2. Record on Mac Studio with screen capture (QuickTime or OBS)\n3. Ensure the factory dark theme (#020202 background) is clearly visible\n4. Show issue cards animating from gray to green/red as grading arrives\n5. Capture the nudge system triggering\n6. Upload to shareable link (YouTube unlisted or Loom)\n7. Keep narration concise and focused on the problem being solved"
+        },
+        {
+          "id": "P6-T2",
+          "title": "Write 100-200 word submission summary",
+          "status": "pending",
+          "file": "SUBMISSION.md",
+          "prompt": "Write SUBMISSION.md with 100-200 word summary:\n\nParallax is a real-time conflict resolution tool that uses Claude to surface what people actually mean beneath their words. Two modes: Remote (split-screen chat for separate devices) and Stage (shared X-ray scoreboard for in-person mediation).\n\nStage Mode extracts discrete issues from each message, grades responses against outstanding issues, and displays a living scoreboard where both people can see -- in real-time -- which concerns are being addressed and which are being ignored.\n\nBuilt with Next.js 16, Supabase Realtime, Claude Sonnet 4.5, and deployed on Vercel.\n\nStage Mode transforms conflict mediation from an opaque process into a transparent, gamified experience where progress is visible and accountability is mutual.\n\nFile: ~/Development/id8/products/parallax/SUBMISSION.md"
+        },
+        {
+          "id": "P6-T3",
+          "title": "Final repo review",
+          "status": "pending",
+          "file": null,
+          "prompt": "Final review checklist:\n- [ ] npm run build passes\n- [ ] npx tsc --noEmit passes\n- [ ] .env.example is complete\n- [ ] README is up to date\n- [ ] No console.log statements in src/\n- [ ] No hardcoded API keys anywhere\n- [ ] All new files are TypeScript (.ts/.tsx)\n- [ ] Stage Mode route works end-to-end locally\n- [ ] Remote Mode still works (no regression)\n- [ ] Demo script tested with real Claude API calls\n- [ ] Issues table Realtime subscription works\n- [ ] Issue extraction produces 1-5 issues per message\n- [ ] Response grading correctly updates issue statuses"
+        },
+        {
+          "id": "P6-T4",
+          "title": "Submit to hackathon",
+          "status": "pending",
+          "file": null,
+          "prompt": "Submit to Claude Code Hackathon:\n1. Ensure all changes are on a feature branch\n2. Create PR: gh pr create --title 'feat: Stage Mode - X-ray scoreboard for in-person mediation'\n3. Squash merge to main: gh pr merge --squash\n4. Verify Vercel auto-deploys from main\n5. Submit via hackathon form with: repo URL, deployed URL, demo video link, SUBMISSION.md content\n6. Deadline: Feb 16, 2026"
+        }
+      ]
+    }
+  ],
+  "architecture": {
+    "existing": {
+      "components": [
+        { "id": "landing", "name": "Landing Page", "type": "page", "file": "src/app/page.tsx" },
+        { "id": "session-page", "name": "Session Page", "type": "page", "file": "src/app/session/[code]/page.tsx" },
+        { "id": "session-view", "name": "SessionView", "type": "component", "file": "src/components/SessionView.tsx" },
+        { "id": "person-panel", "name": "PersonPanel", "type": "component", "file": "src/components/PersonPanel.tsx" },
+        { "id": "message-area", "name": "MessageArea", "type": "component", "file": "src/components/MessageArea.tsx" },
+        { "id": "message-card", "name": "MessageCard", "type": "component", "file": "src/components/MessageCard.tsx" },
+        { "id": "message-input", "name": "MessageInput", "type": "component", "file": "src/components/MessageInput.tsx" },
+        { "id": "voice-input", "name": "VoiceInput", "type": "component", "file": "src/components/VoiceInput.tsx" },
+        { "id": "signal-rail", "name": "SignalRail", "type": "component", "file": "src/components/SignalRail.tsx" },
+        { "id": "the-melt", "name": "TheMelt", "type": "component", "file": "src/components/TheMelt.tsx" },
+        { "id": "session-summary", "name": "SessionSummary", "type": "component", "file": "src/components/SessionSummary.tsx" },
+        { "id": "api-sessions", "name": "/api/sessions", "type": "api", "file": "src/app/api/sessions/route.ts" },
+        { "id": "api-messages", "name": "/api/messages", "type": "api", "file": "src/app/api/messages/route.ts" },
+        { "id": "api-mediate", "name": "/api/mediate", "type": "api", "file": "src/app/api/mediate/route.ts" },
+        { "id": "hook-session", "name": "useSession", "type": "hook", "file": "src/hooks/useSession.ts" },
+        { "id": "hook-messages", "name": "useMessages", "type": "hook", "file": "src/hooks/useMessages.ts" },
+        { "id": "lib-supabase", "name": "Supabase Client", "type": "lib", "file": "src/lib/supabase.ts" },
+        { "id": "lib-opus", "name": "Claude API", "type": "lib", "file": "src/lib/opus.ts" },
+        { "id": "lib-prompts", "name": "NVC Prompts", "type": "lib", "file": "src/lib/prompts.ts" },
+        { "id": "db-sessions", "name": "sessions table", "type": "database" },
+        { "id": "db-messages", "name": "messages table", "type": "database" }
+      ]
+    },
+    "new": {
+      "components": [
+        { "id": "stage-page", "name": "Stage Page", "type": "page", "file": "src/app/session/[code]/stage/page.tsx" },
+        { "id": "xray-view", "name": "XRayView", "type": "component", "file": "src/components/XRayView.tsx" },
+        { "id": "issue-card", "name": "IssueCard", "type": "component", "file": "src/components/IssueCard.tsx" },
+        { "id": "issue-board-col", "name": "IssueBoardColumn", "type": "component", "file": "src/components/IssueBoardColumn.tsx" },
+        { "id": "turn-banner", "name": "TurnBanner", "type": "component", "file": "src/components/TurnBanner.tsx" },
+        { "id": "api-extract", "name": "/api/extract-issues", "type": "api", "file": "src/app/api/extract-issues/route.ts" },
+        { "id": "api-grade", "name": "/api/grade-response", "type": "api", "file": "src/app/api/grade-response/route.ts" },
+        { "id": "hook-issues", "name": "useIssues", "type": "hook", "file": "src/hooks/useIssues.ts" },
+        { "id": "db-issues", "name": "issues table", "type": "database" }
+      ]
+    }
+  },
+  "assessment": {
+    "strengths": [
+      "Reuses 90% of existing infrastructure (sessions, messages, Supabase, Claude client)",
+      "Issue extraction is a natural extension of the NVC prompt -- same Claude call pattern, additional output",
+      "Single panel is simpler UI than split-screen (less state management)",
+      "Scoreboard is inherently more demo-friendly than a chat interface",
+      "Realtime updates via Supabase make the scoreboard feel alive and responsive"
+    ],
+    "risks": [
+      { "level": "HIGH", "description": "Claude issue extraction quality -- needs careful prompt engineering to extract discrete, trackable items without over-splitting or under-splitting", "mitigation": "Test with 10+ real conflict messages, iterate prompt, add few-shot examples to the system prompt" },
+      { "level": "HIGH", "description": "Response grading accuracy -- matching responses to issues requires semantic understanding and context awareness", "mitigation": "Pass full issue descriptions (not just IDs) to grading prompt, include full conversation context, accept partial matches" },
+      { "level": "MEDIUM", "description": "Latency budget -- 3 Claude calls per message (NVC + extract + grade) may exceed 5 second user tolerance", "mitigation": "Fire extract + grade in parallel after NVC completes. Future optimization: combine into single prompt with structured output." },
+      { "level": "LOW", "description": "Supabase Realtime for issues table -- same subscription pattern as messages table", "mitigation": "Ensure Realtime publication is enabled in migration SQL. Test INSERT + UPDATE events before building UI." }
+    ],
+    "optimizations": [
+      "Combine issue extraction into the existing NVC prompt (one call, two outputs) to cut latency from 3 calls to 2",
+      "Pre-grade during NVC analysis -- include 'which previous issues does this response address' as part of the NVC prompt output",
+      "Cache outstanding issues in client state via useIssues hook to avoid re-fetching before grading API call",
+      "Use Claude structured output mode (tool_use) for more reliable JSON parsing of issues and grades"
+    ],
+    "estimate": {
+      "total_hours": "16-20 hours",
+      "phase_breakdown": {
+        "P1": "2-3 hours (prompts + types + migration)",
+        "P2": "3-4 hours (API routes + opus.ts additions + wiring)",
+        "P3": "4-5 hours (6 parallel UI tasks -- components + hook + route)",
+        "P4": "3-4 hours (animations + nudge system + timer + score bar)",
+        "P5": "2-3 hours (mode picker + responsive polish + docs + cleanup)",
+        "P6": "2-3 hours (video recording + submission + final review)"
+      },
+      "critical_path": "P1 -> P2 -> P3 -> P4 (12-16 hours of dependent work)",
+      "hackathon_timeline": "Feb 10-11: P1+P2, Feb 12-13: P3+P4, Feb 14: P5, Feb 15-16: P6"
+    }
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #020202;
+    --bg-secondary: #0d0b09;
+    --bg-card: #141210;
+    --bg-card-hover: #1a1815;
+    --text-primary: #eeeeee;
+    --text-secondary: #a09890;
+    --text-muted: #6b6560;
+    --border: #2a2622;
+    --border-light: #3a3632;
+    --accent: #ef6f2e;
+    --accent-secondary: #f59e0b;
+    --success: #4ecdc4;
+    --danger: #ef4444;
+    --gray-warm-100: #f5f0eb;
+    --gray-warm-300: #b5aba0;
+    --gray-warm-500: #7a7068;
+    --gray-warm-700: #4a4440;
+    --gray-warm-900: #1a1815;
+    --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-title h1 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .header-title .badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 2px;
+  }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .header-meta span {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .progress-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .progress-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .progress-count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .progress-count .num {
+    color: var(--success);
+    font-weight: 600;
+  }
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--success);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .tab-nav {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+    position: relative;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .tab-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: none;
+  }
+  .tab-content.active { display: block; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .section-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  h2 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  p { color: var(--text-secondary); margin-bottom: 12px; }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .overview-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 3px;
+  }
+  .overview-card .label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .overview-card .value {
+    font-size: 1.8rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .overview-card .value .unit {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+  }
+  .stat-accent { color: var(--accent) !important; }
+  .stat-success { color: var(--success) !important; }
+
+  .overview-description {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    border-radius: 3px;
+    margin-bottom: 32px;
+  }
+  .overview-description h3 { margin-bottom: 12px; }
+  .overview-description p { margin-bottom: 8px; }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 3px;
+  }
+  .feature-card h4 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+  .feature-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+  }
+  .feature-card .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .status-green { background: var(--success); }
+  .status-amber { background: var(--accent-secondary); }
+  .status-red { background: var(--danger); }
+  .status-gray { background: var(--border-light); }
+
+  .timeline-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    border-radius: 3px;
+    margin-bottom: 32px;
+  }
+  .timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .timeline-row:last-child { margin-bottom: 0; }
+  .timeline-date {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    min-width: 80px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .timeline-phases {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+  }
+  .timeline-phase {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tp-p1 { background: #2a1a0a; color: var(--accent); }
+  .tp-p2 { background: #1a200a; color: var(--accent-secondary); }
+  .tp-p3 { background: #0a1a1a; color: var(--success); }
+  .tp-p4 { background: #1a0a1a; color: #c084fc; }
+  .tp-p5 { background: #0a1520; color: #60a5fa; }
+  .tp-p6 { background: #1a1210; color: var(--gray-warm-300); }
+
+  .arch-section { margin-bottom: 40px; }
+  .arch-svg-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 24px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+  }
+  .arch-svg-container svg { display: block; margin: 0 auto; }
+  .arch-legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .arch-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .arch-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .data-flow-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+  .data-flow-table th {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-flow-table td {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-flow-table td code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: var(--bg-secondary);
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .new-tag {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--success);
+    background: rgba(78, 205, 196, 0.1);
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-left: 6px;
+  }
+
+  .phase-block { margin-bottom: 32px; }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .phase-id {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(239, 111, 46, 0.1);
+    padding: 4px 10px;
+    border-radius: 2px;
+  }
+  .phase-name {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+  }
+  .phase-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .phase-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .batch-sequential {
+    color: var(--accent-secondary);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+  .batch-parallel {
+    color: var(--success);
+    background: rgba(78, 205, 196, 0.1);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+  }
+  .phase-dep {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .task-list { list-style: none; }
+  .task-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+  }
+  .task-item:hover { border-color: var(--border-light); }
+  .task-item.completed { opacity: 0.55; }
+  .task-item.completed .task-title { text-decoration: line-through; }
+
+  .task-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  .task-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .task-checkbox:checked {
+    background: var(--success);
+    border-color: var(--success);
+  }
+  .task-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--bg-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .task-id {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    min-width: 50px;
+  }
+  .task-title {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+  .task-file {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--gray-warm-500);
+  }
+  .task-expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+  }
+  .task-expand-btn.expanded { transform: rotate(180deg); }
+
+  .task-prompt { display: none; padding: 0 16px 16px 44px; }
+  .task-prompt.visible { display: block; }
+  .task-prompt pre {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+  .parallel-map-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 32px;
+    overflow-x: auto;
+    min-height: 500px;
+  }
+  .pm-svg text { font-family: var(--font-mono); -webkit-font-smoothing: antialiased; }
+  .pm-node { cursor: pointer; transition: opacity 0.3s; }
+  .pm-node rect, .pm-node ellipse { transition: stroke 0.3s, stroke-width 0.3s; }
+  .pm-node.dimmed { opacity: 0.15; }
+  .pm-node.highlighted rect, .pm-node.highlighted ellipse { stroke-width: 2.5; }
+  .pm-edge { transition: opacity 0.3s, stroke 0.3s; }
+  .pm-edge.dimmed { opacity: 0.08; }
+  .pm-edge.highlighted-upstream { stroke: var(--accent-secondary) !important; stroke-width: 2 !important; opacity: 1 !important; }
+  .pm-edge.highlighted-downstream { stroke: var(--success) !important; stroke-width: 2 !important; opacity: 1 !important; }
+
+  .assessment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 768px) { .assessment-grid { grid-template-columns: 1fr; } }
+  .assessment-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 20px;
+  }
+  .assessment-section h3 { margin-bottom: 16px; }
+  .assessment-list { list-style: none; }
+  .assessment-list li {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .assessment-list li:last-child { border-bottom: none; }
+  .assessment-list li::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .strengths-list li::before { background: var(--success); }
+  .optimizations-list li::before { background: var(--accent); }
+
+  .risk-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .risk-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .risk-level {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .risk-high {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .risk-medium {
+    color: var(--accent-secondary);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+  .risk-low {
+    color: var(--success);
+    background: rgba(78, 205, 196, 0.1);
+    border: 1px solid rgba(78, 205, 196, 0.2);
+  }
+  .risk-desc { font-size: 0.85rem; color: var(--text-primary); margin-bottom: 6px; }
+  .risk-mitigation { font-size: 0.8rem; color: var(--text-muted); }
+  .risk-mitigation strong { color: var(--text-secondary); font-weight: 500; }
+
+  .estimate-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 24px;
+    margin-top: 32px;
+  }
+  .estimate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .estimate-item {
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+  }
+  .estimate-item .phase-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .estimate-item .hours { font-size: 0.85rem; color: var(--text-primary); }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeSlideUp 0.4s ease forwards; opacity: 0; }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .dot-pulse { animation: dotPulse 2s ease-in-out infinite; }
+
+  @media (max-width: 640px) {
+    html { font-size: 13px; }
+    .header { padding: 0 1rem; }
+    .tab-nav { padding: 0 1rem; overflow-x: auto; }
+    .tab-btn { padding: 12px 14px; }
+    .tab-content { padding: 1.5rem 1rem; }
+    .progress-container { padding: 12px 1rem; }
+    .overview-grid { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .parallel-map-container { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Parallax Stage Mode</h1>
+      <span class="badge">Blueprint</span>
+    </div>
+    <div class="header-meta">
+      <span>Hackathon Feb 10-16</span>
+      <span>Next.js 16 + Supabase + Claude</span>
+    </div>
+  </div>
+</header>
+
+<div class="progress-container">
+  <div class="progress-header">
+    <div class="progress-label">
+      <span class="dot dot-pulse"></span>
+      Build Progress
+    </div>
+    <div class="progress-count">
+      <span class="num" id="completed-count">0</span> / <span id="total-count">0</span> tasks
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+  </div>
+</div>
+
+<nav class="tab-nav" id="tab-nav">
+  <button class="tab-btn active" data-tab="overview">Overview</button>
+  <button class="tab-btn" data-tab="architecture">Architecture</button>
+  <button class="tab-btn" data-tab="phases">Phases</button>
+  <button class="tab-btn" data-tab="parallel-map">Parallel Map</button>
+  <button class="tab-btn" data-tab="assessment">Assessment</button>
+</nav>
+
+<!-- OVERVIEW TAB -->
+<div class="tab-content active" id="tab-overview">
+  <div class="section-label"><span class="dot"></span> Project Summary</div>
+
+  <div class="overview-grid animate-in stagger-1">
+    <div class="overview-card">
+      <div class="label">Total Phases</div>
+      <div class="value stat-accent">6</div>
+    </div>
+    <div class="overview-card">
+      <div class="label">Total Tasks</div>
+      <div class="value" id="overview-task-count">0</div>
+    </div>
+    <div class="overview-card">
+      <div class="label">Estimated Hours</div>
+      <div class="value">16<span class="unit">-20h</span></div>
+    </div>
+    <div class="overview-card">
+      <div class="label">New Components</div>
+      <div class="value stat-success">9</div>
+    </div>
+  </div>
+
+  <div class="overview-description animate-in stagger-2">
+    <h3>What is Stage Mode?</h3>
+    <p>Stage Mode is a new presentation layer for Parallax -- a single shared "X-ray" screen that both people look at together during in-person conflict resolution. Instead of a split-screen chat, it presents a mediation instrument with a real-time scoreboard.</p>
+    <p>When someone speaks, Claude extracts discrete issues from their message. When the other person responds, Claude grades which issues they addressed. The result is a living scoreboard where both sides can see -- in real-time -- which concerns are being heard and which are being ignored.</p>
+    <p>This transforms conflict mediation from an opaque process into a transparent, visible experience where progress is mutual and accountability is built into the interface.</p>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Core Features</div>
+
+  <div class="feature-grid animate-in stagger-3">
+    <div class="feature-card">
+      <h4><span class="status-dot status-green"></span> Turn Mediation</h4>
+      <p>System controls who speaks when with visual indicators, pacing timer, and turn counter per person.</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="status-dot status-amber"></span> Issue Extraction</h4>
+      <p>When someone speaks, Claude extracts discrete issues ("I have problems with X, Y, Z" becomes 3 trackable cards).</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="status-dot status-red"></span> Response Grading</h4>
+      <p>When the other person responds, Claude grades which issues they addressed, partially addressed, or made worse.</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="status-dot status-gray"></span> Issue Scoreboard</h4>
+      <p>Extracted issues displayed as cards with status colors: green (addressed), red (worsened), amber (partial), gray (pending).</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="status-dot status-green"></span> Living Document</h4>
+      <p>Accumulates both sides' points with visual hierarchy per person. Score summary tracks progress in real-time.</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="status-dot status-amber"></span> Nudging System</h4>
+      <p>Prompts the responder toward unaddressed issues when turn timer runs long. Escalates with specific suggestions.</p>
+    </div>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Hackathon Timeline</div>
+
+  <div class="timeline-bar animate-in stagger-4">
+    <div class="timeline-row">
+      <span class="timeline-date">Feb 10-11</span>
+      <div class="timeline-phases">
+        <span class="timeline-phase tp-p1">P1 Prompts</span>
+        <span class="timeline-phase tp-p2">P2 API Routes</span>
+      </div>
+    </div>
+    <div class="timeline-row">
+      <span class="timeline-date">Feb 12-13</span>
+      <div class="timeline-phases">
+        <span class="timeline-phase tp-p3">P3 Scoreboard UI</span>
+        <span class="timeline-phase tp-p4">P4 Polish</span>
+      </div>
+    </div>
+    <div class="timeline-row">
+      <span class="timeline-date">Feb 14</span>
+      <div class="timeline-phases">
+        <span class="timeline-phase tp-p5">P5 Integration</span>
+      </div>
+    </div>
+    <div class="timeline-row">
+      <span class="timeline-date">Feb 15-16</span>
+      <div class="timeline-phases">
+        <span class="timeline-phase tp-p6">P6 Ship</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Status Colors Reference</div>
+  <div class="feature-grid animate-in stagger-5">
+    <div class="feature-card">
+      <h4 style="color: var(--success);">Addressed</h4>
+      <p>#4ecdc4 (teal) -- Issue was directly and satisfactorily addressed in response.</p>
+    </div>
+    <div class="feature-card">
+      <h4 style="color: var(--accent-secondary);">Partially Addressed</h4>
+      <p>#f59e0b (amber) -- Issue was acknowledged but not fully resolved.</p>
+    </div>
+    <div class="feature-card">
+      <h4 style="color: var(--danger);">Worsened</h4>
+      <p>#ef4444 (red) -- Response made this issue worse or was dismissive.</p>
+    </div>
+    <div class="feature-card">
+      <h4 style="color: var(--gray-warm-500);">Not Addressed</h4>
+      <p>#3a3632 (warm gray) -- Issue has not been addressed yet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE TAB -->
+<div class="tab-content" id="tab-architecture">
+  <div class="section-label"><span class="dot"></span> Remote Mode (Existing)</div>
+  <div class="arch-section">
+    <div class="arch-svg-container" id="arch-existing"></div>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Stage Mode (New)</div>
+  <div class="arch-section">
+    <div class="arch-svg-container" id="arch-new"></div>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Shared Backbone</div>
+  <div class="arch-section">
+    <div class="overview-description">
+      <p>Both Remote Mode and Stage Mode share the same session backend. The mode is determined by URL (/session/[code] vs /session/[code]/stage). No session row changes needed.</p>
+      <p>Shared infrastructure: sessions table, messages table, Supabase Realtime subscriptions, Claude API client (opus.ts), NVC prompts, room code generation.</p>
+    </div>
+
+    <h3>New Database Table: Issues</h3>
+    <table class="data-flow-table">
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>uuid (PK)</td><td>Auto-generated</td></tr>
+        <tr><td><code>session_id</code></td><td>uuid (FK)</td><td>References sessions.id</td></tr>
+        <tr><td><code>source_message_id</code></td><td>uuid (FK)</td><td>The message this issue was extracted from</td></tr>
+        <tr><td><code>person</code></td><td>text</td><td>'person_a' or 'person_b'</td></tr>
+        <tr><td><code>description</code></td><td>text</td><td>Short description (5-15 words)</td></tr>
+        <tr><td><code>severity</code></td><td>text</td><td>'high', 'medium', or 'low'</td></tr>
+        <tr><td><code>status</code></td><td>text</td><td>'not_addressed', 'partially_addressed', 'addressed', 'worsened'</td></tr>
+        <tr><td><code>addressed_by_message_id</code></td><td>uuid (FK, nullable)</td><td>The response message that addressed this issue</td></tr>
+        <tr><td><code>grade_explanation</code></td><td>text (nullable)</td><td>Claude's explanation of the grade</td></tr>
+        <tr><td><code>created_at</code></td><td>timestamptz</td><td>Auto-generated</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Data Flow Comparison</div>
+  <div class="arch-section">
+    <h3>Remote Mode (Existing)</h3>
+    <table class="data-flow-table">
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>PersonPanel</code></td><td><code>/api/messages</code></td><td>POST message content</td></tr>
+        <tr><td>2</td><td><code>/api/messages</code></td><td><code>messages table</code></td><td>INSERT row</td></tr>
+        <tr><td>3</td><td><code>SessionView</code></td><td><code>/api/mediate</code></td><td>POST {session_id, message_id}</td></tr>
+        <tr><td>4</td><td><code>/api/mediate</code></td><td><code>Claude API</code></td><td>NVC analysis call</td></tr>
+        <tr><td>5</td><td><code>/api/mediate</code></td><td><code>messages table</code></td><td>UPDATE nvc_analysis column</td></tr>
+        <tr><td>6</td><td><code>Supabase</code></td><td><code>useMessages</code></td><td>Realtime UPDATE event</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top: 24px;">Stage Mode (New) <span class="new-tag">new</span></h3>
+    <table class="data-flow-table">
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>XRayView</code></td><td><code>/api/messages</code></td><td>POST message content</td></tr>
+        <tr><td>2</td><td><code>/api/messages</code></td><td><code>messages table</code></td><td>INSERT row</td></tr>
+        <tr><td>3a</td><td><code>XRayView</code></td><td><code>/api/mediate</code></td><td>POST NVC analysis (parallel)</td></tr>
+        <tr><td>3b</td><td><code>XRayView</code></td><td><code>/api/extract-issues</code> <span class="new-tag">new</span></td><td>POST issue extraction (parallel)</td></tr>
+        <tr><td>3c</td><td><code>XRayView</code></td><td><code>/api/grade-response</code> <span class="new-tag">new</span></td><td>POST response grading (if response)</td></tr>
+        <tr><td>4</td><td><code>/api/extract-issues</code></td><td><code>issues table</code> <span class="new-tag">new</span></td><td>INSERT extracted issues</td></tr>
+        <tr><td>5</td><td><code>/api/grade-response</code></td><td><code>issues table</code></td><td>UPDATE issue statuses</td></tr>
+        <tr><td>6</td><td><code>Supabase</code></td><td><code>useIssues</code> <span class="new-tag">new</span></td><td>Realtime INSERT + UPDATE events</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PHASES TAB -->
+<div class="tab-content" id="tab-phases">
+  <div class="section-label"><span class="dot"></span> Implementation Phases</div>
+  <div id="phases-container"></div>
+</div>
+
+<!-- PARALLEL MAP TAB -->
+<div class="tab-content" id="tab-parallel-map">
+  <div class="section-label"><span class="dot"></span> Dependency Graph</div>
+  <p style="margin-bottom: 16px;">Hover over any task to trace its dependency chain. Upstream dependencies highlight in <span style="color: var(--accent-secondary);">amber</span>, downstream dependents highlight in <span style="color: var(--success);">teal</span>.</p>
+  <div class="parallel-map-container" id="parallel-map"></div>
+  <div class="arch-legend" style="margin-top: 16px;">
+    <div class="arch-legend-item"><div class="arch-legend-dot" style="background: var(--accent);"></div> Phase boundary</div>
+    <div class="arch-legend-item"><div class="arch-legend-dot" style="background: var(--accent-secondary);"></div> Upstream dependency</div>
+    <div class="arch-legend-item"><div class="arch-legend-dot" style="background: var(--success);"></div> Downstream dependent</div>
+    <div class="arch-legend-item"><div class="arch-legend-dot" style="background: var(--border-light);"></div> Not connected</div>
+  </div>
+</div>
+
+<!-- ASSESSMENT TAB -->
+<div class="tab-content" id="tab-assessment">
+  <div class="section-label"><span class="dot"></span> Build Assessment</div>
+
+  <div class="assessment-grid">
+    <div class="assessment-section">
+      <h3>Strengths</h3>
+      <ul class="assessment-list strengths-list" id="strengths-list"></ul>
+    </div>
+    <div class="assessment-section">
+      <h3>Optimizations</h3>
+      <ul class="assessment-list optimizations-list" id="optimizations-list"></ul>
+    </div>
+  </div>
+
+  <div class="section-label"><span class="dot"></span> Risk Matrix</div>
+  <div id="risks-container"></div>
+
+  <div class="section-label"><span class="dot"></span> Time Estimate</div>
+  <div class="estimate-card" id="estimate-container"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var dataEl = document.getElementById('blueprint-data');
+  var DATA = JSON.parse(dataEl.textContent);
+  var STORAGE_KEY = 'parallax-stage-mode-blueprint-v1';
+
+  var taskStates = loadStates();
+
+  function loadStates() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e) { return {}; }
+  }
+
+  function saveStates() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(taskStates));
+  }
+
+  function isCompleted(taskId) {
+    return taskStates[taskId] === true;
+  }
+
+  function toggleTask(taskId) {
+    taskStates[taskId] = !isCompleted(taskId);
+    saveStates();
+    updateProgress();
+    updateTaskUI(taskId);
+  }
+
+  function getAllTaskIds() {
+    var ids = [];
+    DATA.phases.forEach(function(p) { p.tasks.forEach(function(t) { ids.push(t.id); }); });
+    return ids;
+  }
+
+  function updateProgress() {
+    var allIds = getAllTaskIds();
+    var total = allIds.length;
+    var completed = allIds.filter(function(id) { return isCompleted(id); }).length;
+    var pct = total > 0 ? (completed / total * 100) : 0;
+
+    document.getElementById('completed-count').textContent = completed;
+    document.getElementById('total-count').textContent = total;
+    document.getElementById('overview-task-count').textContent = total;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  function updateTaskUI(taskId) {
+    var item = document.querySelector('[data-task-id="' + taskId + '"]');
+    if (!item) return;
+    var cb = item.querySelector('.task-checkbox');
+    var done = isCompleted(taskId);
+    cb.checked = done;
+    if (done) { item.classList.add('completed'); } else { item.classList.remove('completed'); }
+  }
+
+  // TABS
+  document.getElementById('tab-nav').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var tabId = btn.getAttribute('data-tab');
+
+    var allBtns = document.querySelectorAll('.tab-btn');
+    var allContents = document.querySelectorAll('.tab-content');
+    for (var i = 0; i < allBtns.length; i++) { allBtns[i].classList.remove('active'); }
+    for (var j = 0; j < allContents.length; j++) { allContents[j].classList.remove('active'); }
+
+    btn.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  });
+
+  // RENDER PHASES
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+  }
+
+  function findTask(taskId) {
+    for (var pi = 0; pi < DATA.phases.length; pi++) {
+      for (var ti = 0; ti < DATA.phases[pi].tasks.length; ti++) {
+        if (DATA.phases[pi].tasks[ti].id === taskId) return DATA.phases[pi].tasks[ti];
+      }
+    }
+    return null;
+  }
+
+  function renderPhases() {
+    var container = document.getElementById('phases-container');
+    var html = '';
+
+    DATA.phases.forEach(function(phase) {
+      var depText = phase.depends_on.length > 0
+        ? 'Depends on: ' + phase.depends_on.join(', ')
+        : 'No dependencies';
+      var batchClass = phase.batch === 'parallel' ? 'batch-parallel' : 'batch-sequential';
+      var batchLabel = phase.batch === 'parallel' ? 'Parallel' : 'Sequential';
+
+      var tasksHtml = '';
+      phase.tasks.forEach(function(task) {
+        var done = isCompleted(task.id);
+        var fileHtml = task.file ? '<span class="task-file">' + escapeHtml(task.file) + '</span>' : '';
+        tasksHtml += '<li class="task-item ' + (done ? 'completed' : '') + '" data-task-id="' + task.id + '">';
+        tasksHtml += '<div class="task-header">';
+        tasksHtml += '<input type="checkbox" class="task-checkbox" ' + (done ? 'checked' : '') + ' data-task-id="' + task.id + '" />';
+        tasksHtml += '<span class="task-id">' + task.id + '</span>';
+        tasksHtml += '<span class="task-title">' + escapeHtml(task.title) + '</span>';
+        tasksHtml += fileHtml;
+        tasksHtml += '<button class="task-expand-btn" data-expand="' + task.id + '" title="Show prompt">&#9660;</button>';
+        tasksHtml += '</div>';
+        tasksHtml += '<div class="task-prompt" id="prompt-' + task.id + '">';
+        tasksHtml += '<pre>' + escapeHtml(task.prompt) + '<button class="copy-btn" data-copy="' + task.id + '">Copy</button></pre>';
+        tasksHtml += '</div>';
+        tasksHtml += '</li>';
+      });
+
+      html += '<div class="phase-block animate-in">';
+      html += '<div class="phase-header">';
+      html += '<div class="phase-header-left">';
+      html += '<span class="phase-id">' + phase.id + '</span>';
+      html += '<span class="phase-name">' + escapeHtml(phase.name) + '</span>';
+      html += '</div>';
+      html += '<div class="phase-meta">';
+      html += '<span class="phase-badge ' + batchClass + '">' + batchLabel + '</span>';
+      html += '<span class="phase-dep">' + depText + '</span>';
+      html += '</div>';
+      html += '</div>';
+      html += '<ul class="task-list">' + tasksHtml + '</ul>';
+      html += '</div>';
+    });
+
+    container.innerHTML = html;
+
+    container.addEventListener('change', function(e) {
+      var cb = e.target.closest('.task-checkbox');
+      if (cb) toggleTask(cb.getAttribute('data-task-id'));
+    });
+
+    container.addEventListener('click', function(e) {
+      var expandBtn = e.target.closest('.task-expand-btn');
+      if (expandBtn) {
+        var tid = expandBtn.getAttribute('data-expand');
+        var prompt = document.getElementById('prompt-' + tid);
+        if (prompt.classList.contains('visible')) {
+          prompt.classList.remove('visible');
+          expandBtn.classList.remove('expanded');
+        } else {
+          prompt.classList.add('visible');
+          expandBtn.classList.add('expanded');
+        }
+        return;
+      }
+
+      var copyBtn = e.target.closest('.copy-btn');
+      if (copyBtn) {
+        var copyTid = copyBtn.getAttribute('data-copy');
+        var task = findTask(copyTid);
+        if (task && navigator.clipboard) {
+          navigator.clipboard.writeText(task.prompt).then(function() {
+            copyBtn.textContent = 'Copied';
+            copyBtn.classList.add('copied');
+            setTimeout(function() {
+              copyBtn.textContent = 'Copy';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          });
+        }
+      }
+    });
+  }
+
+  // ARCHITECTURE DIAGRAMS
+  var TYPE_COLORS = {
+    page: { fill: '#1a150f', stroke: '#ef6f2e' },
+    component: { fill: '#0f1a1a', stroke: '#4ecdc4' },
+    api: { fill: '#1a1510', stroke: '#f59e0b' },
+    hook: { fill: '#150f1a', stroke: '#c084fc' },
+    database: { fill: '#0f1518', stroke: '#60a5fa' },
+    external: { fill: '#1a0f0f', stroke: '#ef4444' }
+  };
+
+  function buildArchSVG(w, h, nodes, edges) {
+    var nodeMap = {};
+    nodes.forEach(function(n) { nodeMap[n.id] = n; });
+
+    var svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" style="font-family: var(--font-mono);">';
+
+    // Edges
+    edges.forEach(function(e) {
+      var from = nodeMap[e.from];
+      var to = nodeMap[e.to];
+      if (!from || !to) return;
+      var x1 = from.x + from.w / 2;
+      var y1 = from.y + from.h / 2;
+      var x2 = to.x + to.w / 2;
+      var y2 = to.y + to.h / 2;
+      var mx = (x1 + x2) / 2;
+      var my = (y1 + y2) / 2;
+
+      svg += '<path d="M' + x1 + ',' + y1 + ' Q' + mx + ',' + y1 + ' ' + mx + ',' + my + ' Q' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '" fill="none" stroke="#3a3632" stroke-width="1" stroke-dasharray="4,4" />';
+      svg += '<text x="' + mx + '" y="' + (my - 6) + '" text-anchor="middle" fill="#6b6560" font-size="8" letter-spacing="0.5">' + escapeHtml(e.label) + '</text>';
+    });
+
+    // Nodes
+    nodes.forEach(function(n) {
+      var tc = TYPE_COLORS[n.type] || TYPE_COLORS.component;
+
+      if (n.type === 'database') {
+        svg += '<g>';
+        svg += '<ellipse cx="' + (n.x + n.w/2) + '" cy="' + (n.y + 8) + '" rx="' + (n.w/2) + '" ry="8" fill="' + tc.fill + '" stroke="' + tc.stroke + '" stroke-width="1" />';
+        svg += '<rect x="' + n.x + '" y="' + (n.y + 8) + '" width="' + n.w + '" height="' + (n.h - 8) + '" fill="' + tc.fill + '" stroke="none" />';
+        svg += '<line x1="' + n.x + '" y1="' + (n.y + 8) + '" x2="' + n.x + '" y2="' + (n.y + n.h) + '" stroke="' + tc.stroke + '" stroke-width="1" />';
+        svg += '<line x1="' + (n.x + n.w) + '" y1="' + (n.y + 8) + '" x2="' + (n.x + n.w) + '" y2="' + (n.y + n.h) + '" stroke="' + tc.stroke + '" stroke-width="1" />';
+        svg += '<ellipse cx="' + (n.x + n.w/2) + '" cy="' + (n.y + n.h) + '" rx="' + (n.w/2) + '" ry="8" fill="' + tc.fill + '" stroke="' + tc.stroke + '" stroke-width="1" />';
+        svg += '<text x="' + (n.x + n.w/2) + '" y="' + (n.y + n.h/2 + 8) + '" text-anchor="middle" fill="#eeeeee" font-size="10" letter-spacing="0.5">' + escapeHtml(n.label) + '</text>';
+        if (n.isNew) svg += '<text x="' + (n.x + n.w - 4) + '" y="' + (n.y + 4) + '" text-anchor="end" fill="#4ecdc4" font-size="7" font-weight="600" letter-spacing="1">NEW</text>';
+        svg += '</g>';
+      } else {
+        svg += '<g>';
+        svg += '<rect x="' + n.x + '" y="' + n.y + '" width="' + n.w + '" height="' + n.h + '" rx="3" fill="' + tc.fill + '" stroke="' + tc.stroke + '" stroke-width="1" />';
+        svg += '<text x="' + (n.x + n.w/2) + '" y="' + (n.y + n.h/2 + 4) + '" text-anchor="middle" fill="#eeeeee" font-size="10" letter-spacing="0.5">' + escapeHtml(n.label) + '</text>';
+        if (n.isNew) svg += '<text x="' + (n.x + n.w - 4) + '" y="' + (n.y + 10) + '" text-anchor="end" fill="#4ecdc4" font-size="7" font-weight="600" letter-spacing="1">NEW</text>';
+        svg += '</g>';
+      }
+    });
+
+    svg += '</svg>';
+
+    var legendHtml = '<div class="arch-legend">';
+    var types = ['page', 'component', 'api', 'hook', 'database', 'external'];
+    types.forEach(function(type) {
+      var c = TYPE_COLORS[type];
+      legendHtml += '<div class="arch-legend-item"><div class="arch-legend-dot" style="background: ' + c.stroke + ';"></div> ' + type + '</div>';
+    });
+    legendHtml += '</div>';
+
+    return svg + legendHtml;
+  }
+
+  function renderArchDiagrams() {
+    // Existing (Remote Mode)
+    var existingNodes = [
+      { id: 'landing', label: 'Landing Page', x: 60, y: 50, w: 120, h: 36, type: 'page' },
+      { id: 'session-page', label: 'Session Page', x: 240, y: 50, w: 120, h: 36, type: 'page' },
+      { id: 'session-view', label: 'SessionView', x: 420, y: 50, w: 120, h: 36, type: 'component' },
+      { id: 'person-panel', label: 'PersonPanel x2', x: 610, y: 50, w: 130, h: 36, type: 'component' },
+      { id: 'message-card', label: 'MessageCard', x: 790, y: 50, w: 110, h: 36, type: 'component' },
+      { id: 'api-messages', label: '/api/messages', x: 610, y: 160, w: 130, h: 36, type: 'api' },
+      { id: 'api-mediate', label: '/api/mediate', x: 610, y: 240, w: 130, h: 36, type: 'api' },
+      { id: 'lib-opus', label: 'Claude API', x: 420, y: 240, w: 120, h: 36, type: 'external' },
+      { id: 'db-messages', label: 'messages', x: 420, y: 340, w: 120, h: 44, type: 'database' },
+      { id: 'db-sessions', label: 'sessions', x: 240, y: 340, w: 120, h: 44, type: 'database' },
+      { id: 'hook-messages', label: 'useMessages', x: 610, y: 340, w: 130, h: 36, type: 'hook' },
+      { id: 'hook-session', label: 'useSession', x: 240, y: 240, w: 120, h: 36, type: 'hook' }
+    ];
+    var existingEdges = [
+      { from: 'landing', to: 'session-page', label: 'Create/Join' },
+      { from: 'session-page', to: 'session-view', label: 'renders' },
+      { from: 'session-view', to: 'person-panel', label: 'renders x2' },
+      { from: 'person-panel', to: 'message-card', label: 'renders' },
+      { from: 'person-panel', to: 'api-messages', label: 'POST' },
+      { from: 'session-view', to: 'api-mediate', label: 'POST' },
+      { from: 'api-mediate', to: 'lib-opus', label: 'Claude call' },
+      { from: 'api-messages', to: 'db-messages', label: 'INSERT' },
+      { from: 'api-mediate', to: 'db-messages', label: 'UPDATE' },
+      { from: 'db-messages', to: 'hook-messages', label: 'Realtime' },
+      { from: 'db-sessions', to: 'hook-session', label: 'Realtime' }
+    ];
+    document.getElementById('arch-existing').innerHTML = buildArchSVG(920, 420, existingNodes, existingEdges);
+
+    // New (Stage Mode)
+    var newNodes = [
+      { id: 'landing', label: 'Landing + Picker', x: 60, y: 50, w: 130, h: 36, type: 'page' },
+      { id: 'stage-page', label: 'Stage Page', x: 250, y: 50, w: 120, h: 36, type: 'page', isNew: true },
+      { id: 'xray-view', label: 'XRayView', x: 430, y: 50, w: 120, h: 36, type: 'component', isNew: true },
+      { id: 'issue-board', label: 'IssueBoardCol x2', x: 620, y: 20, w: 140, h: 36, type: 'component', isNew: true },
+      { id: 'issue-card', label: 'IssueCard', x: 810, y: 20, w: 110, h: 36, type: 'component', isNew: true },
+      { id: 'turn-banner', label: 'TurnBanner', x: 620, y: 80, w: 140, h: 36, type: 'component', isNew: true },
+      { id: 'api-messages', label: '/api/messages', x: 430, y: 160, w: 130, h: 36, type: 'api' },
+      { id: 'api-mediate', label: '/api/mediate', x: 250, y: 160, w: 120, h: 36, type: 'api' },
+      { id: 'api-extract', label: '/api/extract-issues', x: 620, y: 160, w: 150, h: 36, type: 'api', isNew: true },
+      { id: 'api-grade', label: '/api/grade-response', x: 620, y: 240, w: 150, h: 36, type: 'api', isNew: true },
+      { id: 'lib-opus', label: 'Claude API', x: 250, y: 300, w: 120, h: 36, type: 'external' },
+      { id: 'db-messages', label: 'messages', x: 430, y: 390, w: 120, h: 44, type: 'database' },
+      { id: 'db-sessions', label: 'sessions', x: 250, y: 390, w: 120, h: 44, type: 'database' },
+      { id: 'db-issues', label: 'issues', x: 620, y: 390, w: 120, h: 44, type: 'database', isNew: true },
+      { id: 'hook-issues', label: 'useIssues', x: 810, y: 390, w: 110, h: 36, type: 'hook', isNew: true },
+      { id: 'hook-messages', label: 'useMessages', x: 430, y: 300, w: 130, h: 36, type: 'hook' }
+    ];
+    var newEdges = [
+      { from: 'landing', to: 'stage-page', label: 'Stage Mode' },
+      { from: 'stage-page', to: 'xray-view', label: 'renders' },
+      { from: 'xray-view', to: 'issue-board', label: 'renders x2' },
+      { from: 'issue-board', to: 'issue-card', label: 'renders N' },
+      { from: 'xray-view', to: 'turn-banner', label: 'renders' },
+      { from: 'xray-view', to: 'api-messages', label: 'POST' },
+      { from: 'xray-view', to: 'api-mediate', label: 'POST (NVC)' },
+      { from: 'xray-view', to: 'api-extract', label: 'POST (issues)' },
+      { from: 'xray-view', to: 'api-grade', label: 'POST (grade)' },
+      { from: 'api-extract', to: 'lib-opus', label: 'Claude' },
+      { from: 'api-grade', to: 'lib-opus', label: 'Claude' },
+      { from: 'api-mediate', to: 'lib-opus', label: 'Claude' },
+      { from: 'api-messages', to: 'db-messages', label: 'INSERT' },
+      { from: 'api-extract', to: 'db-issues', label: 'INSERT' },
+      { from: 'api-grade', to: 'db-issues', label: 'UPDATE' },
+      { from: 'db-issues', to: 'hook-issues', label: 'Realtime' },
+      { from: 'db-messages', to: 'hook-messages', label: 'Realtime' }
+    ];
+    document.getElementById('arch-new').innerHTML = buildArchSVG(960, 470, newNodes, newEdges);
+  }
+
+  // PARALLEL MAP
+  function renderParallelMap() {
+    var container = document.getElementById('parallel-map');
+    var PHASE_WIDTH = 160;
+    var PHASE_GAP = 20;
+    var TASK_HEIGHT = 34;
+    var TASK_GAP = 10;
+    var TOP_MARGIN = 60;
+    var tasks = [];
+    var phaseXOffsets = {};
+    var currentX = 40;
+
+    DATA.phases.forEach(function(phase, pi) {
+      phaseXOffsets[phase.id] = currentX;
+      phase.tasks.forEach(function(task, ti) {
+        tasks.push({
+          id: task.id,
+          phaseId: phase.id,
+          label: task.id,
+          fullLabel: task.title.length > 26 ? task.title.substring(0, 26) + '...' : task.title,
+          x: currentX,
+          y: TOP_MARGIN + ti * (TASK_HEIGHT + TASK_GAP),
+          w: PHASE_WIDTH,
+          h: TASK_HEIGHT,
+          phaseIndex: pi,
+          phaseDeps: phase.depends_on
+        });
+      });
+      currentX += PHASE_WIDTH + PHASE_GAP;
+    });
+
+    var svgW = currentX + 20;
+    var maxTasks = 0;
+    DATA.phases.forEach(function(p) { if (p.tasks.length > maxTasks) maxTasks = p.tasks.length; });
+    var svgH = TOP_MARGIN + maxTasks * (TASK_HEIGHT + TASK_GAP) + 40;
+
+    var taskMap = {};
+    tasks.forEach(function(t) { taskMap[t.id] = t; });
+
+    // Build edges
+    var edges = [];
+    DATA.phases.forEach(function(phase) {
+      if (phase.batch === 'sequential') {
+        for (var i = 1; i < phase.tasks.length; i++) {
+          edges.push({ from: phase.tasks[i-1].id, to: phase.tasks[i].id, type: 'seq' });
+        }
+      }
+    });
+
+    tasks.forEach(function(t) {
+      if (t.phaseDeps.length === 0) return;
+      t.phaseDeps.forEach(function(depPhaseId) {
+        var depPhase = null;
+        DATA.phases.forEach(function(p) { if (p.id === depPhaseId) depPhase = p; });
+        if (!depPhase) return;
+        var lastTaskId = depPhase.tasks[depPhase.tasks.length - 1].id;
+        var firstTaskId = DATA.phases.filter(function(p) { return p.id === t.phaseId; })[0].tasks[0].id;
+        if (t.id === firstTaskId) {
+          edges.push({ from: lastTaskId, to: t.id, type: 'phase-dep' });
+        }
+      });
+    });
+
+    // Adjacency for hover
+    var upstream = {};
+    var downstream = {};
+    tasks.forEach(function(t) { upstream[t.id] = {}; downstream[t.id] = {}; });
+
+    function computeUpstream(tid) {
+      edges.forEach(function(e) {
+        if (e.to === tid && !upstream[tid][e.from]) {
+          upstream[tid][e.from] = true;
+          computeUpstream(e.from);
+          for (var k in upstream[e.from]) { upstream[tid][k] = true; }
+        }
+      });
+    }
+    function computeDownstream(tid) {
+      edges.forEach(function(e) {
+        if (e.from === tid && !downstream[tid][e.to]) {
+          downstream[tid][e.to] = true;
+          computeDownstream(e.to);
+          for (var k in downstream[e.to]) { downstream[tid][k] = true; }
+        }
+      });
+    }
+    tasks.forEach(function(t) { computeUpstream(t.id); computeDownstream(t.id); });
+
+    var phaseColors = ['#ef6f2e', '#f59e0b', '#4ecdc4', '#c084fc', '#60a5fa', '#a09890'];
+
+    var svg = '<svg width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '" class="pm-svg" xmlns="http://www.w3.org/2000/svg">';
+
+    // Phase headers and column backgrounds
+    DATA.phases.forEach(function(phase, pi) {
+      var x = phaseXOffsets[phase.id];
+      svg += '<text x="' + (x + PHASE_WIDTH/2) + '" y="22" text-anchor="middle" fill="' + phaseColors[pi] + '" font-size="11" font-weight="600" letter-spacing="1.5">' + phase.id + '</text>';
+      svg += '<text x="' + (x + PHASE_WIDTH/2) + '" y="40" text-anchor="middle" fill="#6b6560" font-size="8" letter-spacing="0.5">' + escapeHtml(phase.name.substring(0, 26)) + '</text>';
+      svg += '<rect x="' + (x - 8) + '" y="' + (TOP_MARGIN - 10) + '" width="' + (PHASE_WIDTH + 16) + '" height="' + (svgH - TOP_MARGIN) + '" rx="3" fill="none" stroke="' + phaseColors[pi] + '" stroke-width="0.5" stroke-dasharray="4,8" opacity="0.25" />';
+    });
+
+    // Edges
+    edges.forEach(function(e) {
+      var from = taskMap[e.from];
+      var to = taskMap[e.to];
+      if (!from || !to) return;
+
+      if (e.type === 'seq') {
+        var sx = from.x + from.w / 2;
+        var sy1 = from.y + from.h;
+        var sy2 = to.y;
+        svg += '<line x1="' + sx + '" y1="' + sy1 + '" x2="' + sx + '" y2="' + sy2 + '" stroke="#3a3632" stroke-width="1" class="pm-edge" data-from="' + e.from + '" data-to="' + e.to + '" />';
+        svg += '<polygon points="' + (sx-3) + ',' + (sy2-6) + ' ' + (sx+3) + ',' + (sy2-6) + ' ' + sx + ',' + sy2 + '" fill="#3a3632" class="pm-edge" data-from="' + e.from + '" data-to="' + e.to + '" />';
+      } else {
+        var x1 = from.x + from.w;
+        var y1 = from.y + from.h / 2;
+        var x2 = to.x;
+        var y2 = to.y + to.h / 2;
+        var mx = (x1 + x2) / 2;
+        svg += '<path d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '" fill="none" stroke="#3a3632" stroke-width="1" class="pm-edge" data-from="' + e.from + '" data-to="' + e.to + '" />';
+        svg += '<polygon points="' + (x2-6) + ',' + (y2-3) + ' ' + (x2-6) + ',' + (y2+3) + ' ' + x2 + ',' + y2 + '" fill="#3a3632" class="pm-edge" data-from="' + e.from + '" data-to="' + e.to + '" />';
+      }
+    });
+
+    // Task nodes
+    tasks.forEach(function(t) {
+      var pc = phaseColors[t.phaseIndex] || '#a09890';
+      var done = isCompleted(t.id);
+      var fillColor = done ? '#0a1a1a' : '#141210';
+      var strokeColor = done ? '#4ecdc4' : pc;
+
+      svg += '<g class="pm-node" data-task-id="' + t.id + '">';
+      svg += '<rect x="' + t.x + '" y="' + t.y + '" width="' + t.w + '" height="' + t.h + '" rx="3" fill="' + fillColor + '" stroke="' + strokeColor + '" stroke-width="1" />';
+      svg += '<text x="' + (t.x + 8) + '" y="' + (t.y + t.h/2 + 1) + '" fill="' + (done ? '#4ecdc4' : '#eeeeee') + '" font-size="8" font-weight="600" letter-spacing="0.5" dominant-baseline="middle">' + t.label + '</text>';
+      svg += '<text x="' + (t.x + 52) + '" y="' + (t.y + t.h/2 + 1) + '" fill="#a09890" font-size="7" letter-spacing="0.3" dominant-baseline="middle">' + escapeHtml(t.fullLabel) + '</text>';
+      if (done) {
+        svg += '<text x="' + (t.x + t.w - 10) + '" y="' + (t.y + t.h/2 + 1) + '" text-anchor="end" fill="#4ecdc4" font-size="11" dominant-baseline="middle">&#10003;</text>';
+      }
+      svg += '</g>';
+    });
+
+    svg += '</svg>';
+    container.innerHTML = svg;
+
+    // Hover interaction
+    var svgEl = container.querySelector('svg');
+    var allNodes = svgEl.querySelectorAll('.pm-node');
+    var allEdges = svgEl.querySelectorAll('.pm-edge');
+
+    allNodes.forEach(function(node) {
+      node.addEventListener('mouseenter', function() {
+        var tid = node.getAttribute('data-task-id');
+        var ups = upstream[tid] || {};
+        var downs = downstream[tid] || {};
+
+        allNodes.forEach(function(n) {
+          var nid = n.getAttribute('data-task-id');
+          if (nid === tid || ups[nid] || downs[nid]) {
+            n.classList.remove('dimmed');
+            n.classList.add('highlighted');
+          } else {
+            n.classList.add('dimmed');
+            n.classList.remove('highlighted');
+          }
+        });
+
+        allEdges.forEach(function(edge) {
+          var efrom = edge.getAttribute('data-from');
+          var eto = edge.getAttribute('data-to');
+          var isUp = (ups[efrom] || efrom === tid) && (ups[eto] || eto === tid);
+          var isDown = (downs[efrom] || efrom === tid) && (downs[eto] || eto === tid);
+
+          if (isUp) {
+            edge.classList.add('highlighted-upstream');
+            edge.classList.remove('dimmed');
+          } else if (isDown) {
+            edge.classList.add('highlighted-downstream');
+            edge.classList.remove('dimmed');
+          } else {
+            edge.classList.add('dimmed');
+          }
+        });
+      });
+
+      node.addEventListener('mouseleave', function() {
+        allNodes.forEach(function(n) { n.classList.remove('dimmed', 'highlighted'); });
+        allEdges.forEach(function(e) { e.classList.remove('dimmed', 'highlighted-upstream', 'highlighted-downstream'); });
+      });
+    });
+  }
+
+  // ASSESSMENT
+  function renderAssessment() {
+    var a = DATA.assessment;
+
+    var sl = document.getElementById('strengths-list');
+    sl.innerHTML = a.strengths.map(function(s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('');
+
+    var ol = document.getElementById('optimizations-list');
+    ol.innerHTML = a.optimizations.map(function(o) { return '<li>' + escapeHtml(o) + '</li>'; }).join('');
+
+    var rc = document.getElementById('risks-container');
+    rc.innerHTML = a.risks.map(function(r) {
+      return '<div class="risk-item"><div class="risk-header"><span class="risk-level risk-' + r.level.toLowerCase() + '">' + r.level + '</span></div><div class="risk-desc">' + escapeHtml(r.description) + '</div><div class="risk-mitigation"><strong>Mitigation:</strong> ' + escapeHtml(r.mitigation) + '</div></div>';
+    }).join('');
+
+    var ec = document.getElementById('estimate-container');
+    var est = a.estimate;
+    var phaseHtml = '';
+    var keys = Object.keys(est.phase_breakdown);
+    keys.forEach(function(phase) {
+      phaseHtml += '<div class="estimate-item"><div class="phase-label">' + phase + '</div><div class="hours">' + escapeHtml(est.phase_breakdown[phase]) + '</div></div>';
+    });
+
+    ec.innerHTML = '<h3>Total Estimate: ' + escapeHtml(est.total_hours) + '</h3><p style="margin-top: 4px; font-size: 0.85rem;">Critical path: ' + escapeHtml(est.critical_path) + '</p><p style="font-size: 0.85rem;">Timeline: ' + escapeHtml(est.hackathon_timeline) + '</p><div class="estimate-grid">' + phaseHtml + '</div>';
+  }
+
+  // INIT
+  renderPhases();
+  renderArchDiagrams();
+  renderParallelMap();
+  renderAssessment();
+  updateProgress();
+})();
+</script>
+</body>
+</html>

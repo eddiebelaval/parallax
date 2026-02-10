@@ -346,11 +346,78 @@ Quick wins to tighten the codebase:
 
 ---
 
+## The Expansion: From Chat to X-Ray (Day 1, Hour 5)
+
+Five hours into the hackathon, we had a working product — split-screen chat, NVC mediation, The Melt animation, voice input, session summary. Stages 1 through 6+8 complete. We were about to enter Stage 9+10 (Ship).
+
+Then we stopped. Looked at the screen. And asked the hard question: **is this the demo?**
+
+### The Realization
+
+The split-screen chat works. The NVC analysis is genuinely good. But on stage, it looks like... a chat app with analysis bolted on. Two panels, messages scrolling, expandable sections. It's functional. It's not theater.
+
+**What Eddie articulated:**
+
+> "When we create a session, it looks like two text panels. That's not it. We need to create a UI that is one panel, one space — an X-ray to what both people are saying."
+
+The insight: the current UI shows you what was said, with annotations. But what if the UI showed you **what's actually happening between two people?** Not a chat — a mediation instrument.
+
+> "Maybe someone says 'I have issues with X, Y, and Z.' Three things pop up on the screen. Then the other person responds, and as they respond, we semantically see — do they address any of those three things? Green if they did. Red if they made it worse. Gray if they haven't touched it yet."
+
+> "You can watch it like a scoreboard."
+
+### Two Modes, One Product
+
+This isn't a pivot — it's an expansion. What we built is one half of Parallax:
+
+| Mode | Experience | Use Case | Status |
+|------|-----------|----------|--------|
+| **Remote Mode** | Split-screen chat with NVC analysis | Two people, different locations, async | Built (Stages 4-6+8) |
+| **Stage Mode** | Single shared X-ray scoreboard | Two people, same room, live mediation | **Building now** |
+
+Same backend. Same session system. Same Claude engine. Different presentation layer. Remote Mode becomes the everyday tool. Stage Mode becomes the demo, the therapy office experience, the on-stage moment.
+
+### What Stage Mode Needs
+
+1. **Issue Extraction** — Claude identifies discrete complaints/issues from each message and surfaces them as trackable items
+2. **Issue Scoreboard** — extracted issues displayed as cards with status: green (addressed), red (poorly addressed), gray (not yet touched)
+3. **Response Grading** — when the other person responds, Claude grades which issues they addressed and how well
+4. **Single Panel UI** — one shared view, both people looking at the same screen, color-coded per person
+5. **Turn Mediation** — visual pacing, clear indicators of whose turn it is, nudges toward unaddressed issues
+6. **Living Document** — the screen accumulates a structured record of the conversation's substance, not just its chronology
+
+### Why This Matters for Judging
+
+- **Demo (30%):** A live X-ray scoreboard on stage is theater. Two people talk, issues appear, responses light up green or red. The audience watches understanding happen in real time.
+- **Impact (25%):** "Break the Barriers" — this isn't just translating conflict, it's making the invisible dynamics visible. The scoreboard creates accountability you can see.
+- **Opus Use (25%):** Three distinct Claude analysis layers: NVC analysis (existing), issue extraction (new), response grading (new). Deep, multi-pass AI reasoning.
+- **Depth (20%):** Expanding from one mode to two modes mid-hackathon — iterating based on what we learned from building.
+
+### Going Back Through the Pipeline
+
+We're not done. We're taking Stage Mode through the same pipeline:
+
+| Stage | What | Status |
+|-------|------|--------|
+| 3 | Architecture Sketch — blueprint for Stage Mode | In Progress |
+| 4 | Foundation — new prompt layer, data model, route | Next |
+| 5 | Feature — scoreboard UI, issue tracking, grading | Next |
+| 6+8 | Integration — both modes working, polish | Next |
+| 9+10 | Ship — demo with Stage Mode, README, submit | Next |
+
+We have 6 days of runway. We used 5 hours to build Remote Mode. Let's see what we can do with Stage Mode.
+
+---
+
 ## What's Ahead
 
-| Stage | Name | Day | Gate Question |
-|-------|------|-----|---------------|
-| 9+10 | Ship | Day 6 | Is it submitted before 3 PM? |
+| Stage | Name | Focus | Gate Question |
+|-------|------|-------|---------------|
+| 3-Exp | Architecture Sketch | Stage Mode blueprint | "Can I see the boxes and arrows?" |
+| 4-Exp | Foundation | Issue extraction prompt + data model | "Does Claude extract discrete issues?" |
+| 5-Exp | Feature | X-ray scoreboard UI + response grading | "Does the scoreboard show addressed issues?" |
+| 6+8-Exp | Polish | Both modes integrated, landing page mode picker | "Does the demo flow work on stage?" |
+| 9+10 | Ship | Demo video, README, submit | "Is it submitted before 3 PM?" |
 
 ---
 
