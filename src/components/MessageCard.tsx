@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   getTemperatureColor,
   getTemperatureLabel,
 } from "@/lib/temperature";
+import { useMelt, MeltText } from "./TheMelt";
 import type { NvcAnalysis, MessageSender } from "@/types/database";
 
 interface MessageCardProps {
@@ -47,6 +48,14 @@ export function MessageCard({
   const style = SENDER_STYLES[sender];
   const hasAnalysis = nvcAnalysis != null;
 
+  const meltPhase = useMelt(hasAnalysis);
+  const isCrystallizing = meltPhase === "crystallizing";
+
+  // Auto-expand analysis when crystallize phase begins
+  useEffect(() => {
+    if (isCrystallizing) setExpanded(true);
+  }, [isCrystallizing]);
+
   const tempColor = hasAnalysis
     ? getTemperatureColor(nvcAnalysis.emotionalTemperature)
     : undefined;
@@ -88,51 +97,62 @@ export function MessageCard({
           )}
         </div>
 
-        {/* Message content */}
-        <p
+        {/* Message content — dissolves during The Melt */}
+        <MeltText
+          content={content}
+          phase={meltPhase}
+          temperatureColor={tempColor}
           className={`text-sm leading-relaxed ${
             sender === "mediator"
               ? "text-factory-gray-300 italic"
               : "text-foreground"
           }`}
-        >
-          {content}
-        </p>
+        />
 
         {/* NVC Analysis — expand/collapse */}
         {hasAnalysis && (
           <div className="mt-3">
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-factory-gray-500 hover:text-factory-gray-300 transition-colors"
-            >
-              <span
-                className="inline-block w-1 h-1 rounded-full"
-                style={{ background: tempColor }}
-              />
-              {expanded ? "Hide analysis" : "What's beneath"}
-              <svg
-                width="8"
-                height="8"
-                viewBox="0 0 8 8"
-                className={`transition-transform duration-200 ${
-                  expanded ? "rotate-180" : ""
-                }`}
+            {/* Toggle hidden during crystallize — analysis appears directly */}
+            {!isCrystallizing && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-factory-gray-500 hover:text-factory-gray-300 transition-colors"
               >
-                <path
-                  d="M1 3L4 6L7 3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  className="inline-block w-1 h-1 rounded-full"
+                  style={{ background: tempColor }}
                 />
-              </svg>
-            </button>
+                {expanded ? "Hide analysis" : "What's beneath"}
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 8 8"
+                  className={`transition-transform duration-200 ${
+                    expanded ? "rotate-180" : ""
+                  }`}
+                >
+                  <path
+                    d="M1 3L4 6L7 3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
 
-            <div className="analysis-reveal" data-expanded={expanded}>
+            <div
+              className="analysis-reveal"
+              data-expanded={expanded || isCrystallizing}
+            >
               <div>
-                <div className="pt-3 pb-1 space-y-4">
+                <div
+                  className={`pt-3 pb-1 space-y-4 ${
+                    isCrystallizing ? "melt-crystallize-active" : ""
+                  }`}
+                >
                   {/* Subtext */}
                   <AnalysisBlock label="Subtext">
                     <p className="text-factory-gray-300 text-sm leading-relaxed">
