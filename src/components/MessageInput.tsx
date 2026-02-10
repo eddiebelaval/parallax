@@ -37,7 +37,7 @@ export function MessageInput({
         <button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}
-          className="px-4 py-1 font-mono text-xs uppercase tracking-wider text-accent hover:text-factory-amber transition-colors disabled:opacity-40 disabled:hover:text-accent"
+          className="px-4 min-h-[44px] font-mono text-xs uppercase tracking-wider text-accent hover:text-factory-amber transition-colors disabled:opacity-40 disabled:hover:text-accent"
         >
           Send
         </button>

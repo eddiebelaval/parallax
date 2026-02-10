@@ -273,11 +273,83 @@ Voice transcripts flow through the exact same `handleSendA`/`handleSendB` → `t
 
 ---
 
+## Stage 6+8: Integration + Polish (Day 5)
+
+**Gate question:** "What breaks if someone does something stupid?"
+
+This stage was built differently from Stages 4-5c. Instead of writing new features and then testing, we **reviewed first and built from the findings.** Two automated code reviews (a code reviewer and a code simplifier) audited all 25 source files, producing a merged task list ranked by severity.
+
+**The review-first approach:**
+1. Code reviewer found 7 issues (3 CRITICAL, 4 HIGH) — silent failures, race conditions, missing validation
+2. Code simplifier found 10 opportunities (1 HIGH, 4 MEDIUM, 5 LOW) — duplicated code, dead exports, overly complex logic
+3. Both independently flagged the same `currentTurn` nested ternary — convergent analysis
+4. The merged findings became the Stage 6+8 task list, executed in dependency order
+
+**What we built:**
+
+### Error Handling Hardening (River)
+
+Three demo-critical fixes:
+- **Env validation at init:** `opus.ts` and `supabase.ts` now throw clear errors if API keys are missing — fail fast on startup, not silently mid-demo
+- **Mediation error UI:** `triggerMediation` no longer silently swallows failures. New `mediationError` state shows "Analysis unavailable" inline when Claude API fails. Clears on next message send.
+- **useSession race condition:** Previously, the Realtime subscription was set up *after* the initial fetch — if Person B joined between fetch and subscribe, Person A would miss the UPDATE and see "Waiting" forever. Fixed by subscribing via `room_code` (known upfront) before the fetch fires.
+
+### PersonPanel Extraction + Code Simplification (Luna)
+
+The biggest refactor of the build:
+- **PersonPanel.tsx (new):** Extracted the duplicated Person A / Person B blocks from SessionView (lines 141-219 and 222-303 were nearly identical). SessionView went from 328 to 204 lines. `preJoinContent` slot handles the A/B-specific pre-join states.
+- **icons.tsx (new):** `MicIcon` and `KeyboardIcon` replace 5 inline SVG duplicates across SessionView and VoiceInput.
+- **currentTurn simplification:** Replaced a nested ternary with embedded IIFE (flagged by both reviewer and simplifier) with a 5-line `getCurrentTurn()` helper that filters to human messages and alternates.
+
+### Landing Page Hero (Luna)
+
+The create/join lobby now has a compelling hero section above it:
+- **Headline:** "See the conversation you're actually having"
+- **Problem statement:** Professional mediation costs $300-500/hr — most conflicts never get help
+- **"How it works" pills:** Three numbered steps (Start a session / Take turns speaking / See what's beneath) — horizontal on desktop, vertical on mobile
+- **Factory design:** Section indicators, Geist Mono labels, orange accent numbers, border-only step pills
+
+### Mobile Responsive (Luna)
+
+Session split-screen adapted for mobile:
+- Compact header gaps and padding on narrow viewports
+- Touch targets: all interactive elements meet 44px minimum (Apple HIG)
+- VoiceInput push-to-talk button enlarged for thumb interaction
+- SessionSummary: responsive padding and tighter section spacing
+
+### Cleanup Batch (River)
+
+Quick wins to tighten the codebase:
+- **Shared helpers:** New `conversation.ts` with `buildNameMap`, `toConversationHistory`, `stripCodeFences` — DRY'd two API routes
+- **extractText helper** in `opus.ts` — replaced duplicated response parsing
+- **Dead code removed:** Unused type exports (`Json`, `SessionInsert`, `MessageInsert`), unused `onEndSession` prop
+- **SessionSummary type** moved from API route to `types/database.ts` — proper architecture boundary
+- **Room code collision retry:** Session creation now retries up to 3x on Postgres unique violation
+- **Voice stale closure:** `onTranscriptRef` pattern ensures recognition callback always calls latest handler
+
+**Gate verification (Casey, 13/13 criteria):**
+- [x] Build passes (`npm run build && npx tsc --noEmit`)
+- [x] Landing page renders with hero section, problem statement, create/join lobby
+- [x] Session creation works — create session, get room code
+- [x] Session join works — enter room code, both sides active
+- [x] Messaging works — send message, NVC analysis appears
+- [x] TheMelt animation CSS properly structured (3-phase system)
+- [x] Signal Rail renders with temperature colors, latest pulses
+- [x] Voice input with Web Speech API, SSR-safe detection
+- [x] End Session sets status to completed
+- [x] Error handling — env validation throws, mediation error state visible
+- [x] Mobile layout — responsive grid, 44px touch targets
+- [x] No TypeScript errors
+- [x] No unused exports or dead code in key files
+
+**Gate: PASSED**
+
+---
+
 ## What's Ahead
 
 | Stage | Name | Day | Gate Question |
 |-------|------|-----|---------------|
-| 6+8 | Integration + Polish | Day 5 | What breaks if someone does something stupid? |
 | 9+10 | Ship | Day 6 | Is it submitted before 3 PM? |
 
 ---

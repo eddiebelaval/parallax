@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MicIcon } from "./icons";
 
 // Chrome implements SpeechRecognition with webkit prefix
 interface SpeechRecognitionEvent {
@@ -43,6 +44,11 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const finalTranscriptRef = useRef("");
+  const onTranscriptRef = useRef(onTranscript);
+
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
 
   // Check support after mount (SSR-safe)
   useEffect(() => {
@@ -105,7 +111,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
       setListening(false);
       const result = finalTranscriptRef.current.trim();
       if (result) {
-        onTranscript(result);
+        onTranscriptRef.current(result);
       }
       setInterim("");
     };
@@ -113,7 +119,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
-  }, [disabled, onTranscript]);
+  }, [disabled]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -143,7 +149,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
           onTouchEnd={stopListening}
           onMouseLeave={listening ? stopListening : undefined}
           disabled={disabled}
-          className="relative flex items-center justify-center w-10 h-10 rounded-full border border-border transition-colors hover:border-factory-gray-600 disabled:opacity-40"
+          className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:border-factory-gray-600 disabled:opacity-40"
           aria-label={listening ? "Listening..." : "Hold to speak"}
         >
           {/* Pulsing ring when active */}
@@ -151,19 +157,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
             <span className="absolute inset-0 rounded-full border-2 border-accent animate-pulse" />
           )}
 
-          {/* Mic icon SVG */}
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className={listening ? "text-accent" : "text-factory-gray-500"}
-          >
-            <rect x="5.5" y="1" width="5" height="9" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 7.5C3 10.26 5.24 12.5 8 12.5C10.76 12.5 13 10.26 13 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="8" y1="12.5" x2="8" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="5.5" y1="15" x2="10.5" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <MicIcon className={listening ? "text-accent" : "text-factory-gray-500"} />
         </button>
 
         {/* Status label */}

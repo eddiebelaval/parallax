@@ -95,22 +95,16 @@ export function useMessages(sessionId: string | undefined) {
     return await res.json() as Message
   }, [sessionId])
 
-  // Determine whose turn it is
-  const currentTurn: MessageSender = messages.length === 0
-    ? 'person_a'
-    : messages[messages.length - 1].sender === 'person_a'
+  // Determine whose turn it is (alternates between A/B, ignoring mediator messages)
+  function getCurrentTurn(msgs: Message[]): MessageSender {
+    const humanMessages = msgs.filter((m) => m.sender !== 'mediator')
+    if (humanMessages.length === 0) return 'person_a'
+    return humanMessages[humanMessages.length - 1].sender === 'person_a'
       ? 'person_b'
-      : messages[messages.length - 1].sender === 'person_b'
-        ? 'person_a'
-        : // After mediator, same person whose turn triggered the mediation goes next
-          // For now, alternate between a/b ignoring mediator messages
-          (() => {
-            const humanMessages = messages.filter((m) => m.sender !== 'mediator')
-            if (humanMessages.length === 0) return 'person_a' as MessageSender
-            return humanMessages[humanMessages.length - 1].sender === 'person_a'
-              ? 'person_b' as MessageSender
-              : 'person_a' as MessageSender
-          })()
+      : 'person_a'
+  }
+
+  const currentTurn = getCurrentTurn(messages)
 
   return { messages, loading, sendMessage, currentTurn }
 }

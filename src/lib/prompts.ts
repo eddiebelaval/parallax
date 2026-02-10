@@ -1,4 +1,5 @@
 import type { NvcAnalysis } from '@/types/database'
+import { stripCodeFences } from '@/lib/conversation'
 
 /**
  * NVC System Prompt for Parallax
@@ -86,13 +87,7 @@ The other person in this conversation is ${otherPersonName}.`
  */
 export function parseNvcAnalysis(raw: string): NvcAnalysis | null {
   try {
-    // Strip markdown code fences if present
-    let cleaned = raw.trim()
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    }
-
-    const parsed = JSON.parse(cleaned)
+    const parsed = JSON.parse(stripCodeFences(raw))
 
     // Validate required fields exist
     if (!parsed.observation || !parsed.feeling || !parsed.subtext) {

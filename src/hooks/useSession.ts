@@ -9,17 +9,32 @@ export function useSession(roomCode: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch session on mount
+  // Subscribe to Realtime AND fetch initial data in one effect.
+  // Subscribing with room_code (known upfront) avoids the race where an
+  // UPDATE fires between the initial fetch and the subscription setup.
   useEffect(() => {
     let cancelled = false
+
+    const channel = supabase
+      .channel(`session-room-${roomCode}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sessions',
+          filter: `room_code=eq.${roomCode}`,
+        },
+        (payload) => {
+          if (!cancelled) setSession(payload.new as Session)
+        }
+      )
+      .subscribe()
 
     async function fetchSession() {
       const res = await fetch(`/api/sessions/${roomCode}`)
       if (!res.ok) {
-        if (!cancelled) {
-          // Session doesn't exist yet — that's okay, we'll create it
-          setLoading(false)
-        }
+        if (!cancelled) setLoading(false)
         return
       }
       const data = await res.json()
@@ -30,33 +45,12 @@ export function useSession(roomCode: string) {
     }
 
     fetchSession()
-    return () => { cancelled = true }
-  }, [roomCode])
-
-  // Subscribe to session changes via Realtime
-  useEffect(() => {
-    if (!session?.id) return
-
-    const channel = supabase
-      .channel(`session-${session.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sessions',
-          filter: `id=eq.${session.id}`,
-        },
-        (payload) => {
-          setSession(payload.new as Session)
-        }
-      )
-      .subscribe()
 
     return () => {
+      cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [session?.id])
+  }, [roomCode])
 
   // Create a new session
   const createSession = useCallback(async (personAName?: string) => {

@@ -2,6 +2,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, buildMediationPrompt } from '@/lib/prompts'
 import type { MessageSender } from '@/types/database'
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  throw new Error('Missing ANTHROPIC_API_KEY — add it to .env.local')
+}
+
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
@@ -9,6 +13,13 @@ const client = new Anthropic({
 export interface ConversationEntry {
   sender: string
   content: string
+}
+
+function extractText(response: Anthropic.Message): string {
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('')
 }
 
 /**
@@ -37,13 +48,7 @@ export async function mediateMessage(
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  // Extract text from the response content blocks
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-
-  return text
+  return extractText(response)
 }
 
 /**
@@ -75,10 +80,5 @@ ${transcript}`
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-
-  return text
+  return extractText(response)
 }

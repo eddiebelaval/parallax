@@ -8,10 +8,11 @@
 **PR #3:** Stage 5b merged to main
 **PR #4:** Artifacts for judges
 **PR #5:** Stage 5c merged to main
+**PR #6:** Stage 6+8 merged to main
 
 ---
 
-## Current Stage: 6+8 — Integration + Polish (NEXT)
+## Current Stage: 9+10 — Ship (NEXT)
 
 | Stage | Name | Status | Branch | Gate |
 |-------|------|--------|--------|------|
@@ -22,8 +23,28 @@
 | 5a | Opus Mediation Engine | PASSED | `parallax/stage-5a-opus-engine` (merged) | NVC analysis works |
 | 5b | The Melt | PASSED | `parallax/stage-5b-melt-viz` (merged) | Animation + Signal Rail |
 | 5c | Voice + Flow | PASSED | `parallax/stage-5c-voice-flow` (merged) | Voice + summary + session flow |
-| **6+8** | **Integration + Polish** | **NEXT** | - | Error handling, mobile |
-| 9+10 | Ship | PENDING | - | Submitted before 3 PM Sun |
+| 6+8 | Integration + Polish | PASSED | `parallax/stage-6-polish` (merged) | Error handling, mobile, landing page |
+| **9+10** | **Ship** | **NEXT** | - | Submitted before 3 PM Sun |
+
+## Stage 6+8 Results (Day 5 — Sat Feb 15)
+
+All 5 tasks completed + 1 gate verification. Gate PASSED.
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 1 | Error handling hardening (env validation, mediation error UI, useSession race fix) | River | DONE |
+| 2 | Extract PersonPanel + SVG icons + simplify currentTurn | Luna | DONE |
+| 3 | Landing page hero (headline, problem statement, how-it-works) | Luna | DONE |
+| 4 | Mobile responsive layout (touch targets, compact headers) | Luna | DONE |
+| 5 | Cleanup batch (shared helpers, dead code, type move, room code retry) | River | DONE |
+| 6 | Stage 6+8 gate verification (13/13 criteria) | Casey | PASSED |
+
+**What shipped:**
+- Error handling: env validation at init, mediation error UI, useSession race condition fix
+- PersonPanel extraction: SessionView 328 -> 204 lines, SVG icon dedup, currentTurn simplification
+- Landing page: hero section, problem statement, how-it-works pills
+- Mobile responsive: 44px touch targets, compact headers, responsive padding
+- Code cleanup: shared helpers (conversation.ts), dead code removal, type reorganization, room code retry
 
 ## Stage 5a Results (Day 2 — Wed Feb 11)
 

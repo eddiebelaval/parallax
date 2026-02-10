@@ -43,64 +43,103 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-24">
-      <div className="max-w-md w-full text-center">
-        <p className="section-indicator justify-center mb-6">
-          Conflict Resolution
-        </p>
-        <h1 className="text-4xl mb-4">See the other side</h1>
-        <p className="text-muted text-lg leading-relaxed mb-12">
-          Real-time two-person sessions that help you understand each other
-          through structured, turn-based dialogue.
-        </p>
+    <div className="flex flex-1 flex-col">
+      {/* Hero */}
+      <section className="px-6 pt-16 sm:pt-24 pb-12 sm:pb-16">
+        <div className="max-w-2xl mx-auto">
+          <p className="section-indicator mb-6">Real-time Mediation</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl leading-tight mb-6">
+            See the conversation you&apos;re actually having
+          </h1>
+          <p className="text-muted text-base sm:text-lg leading-relaxed max-w-xl">
+            Professional mediation costs $300-500/hr. Most conflicts never get
+            help. Parallax puts NVC-powered conflict resolution in
+            everyone&apos;s hands — powered by Claude.
+          </p>
+        </div>
+      </section>
 
-        <div className="space-y-8">
-          {/* Create session */}
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className="w-full px-6 py-4 bg-accent text-factory-black font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-60"
-          >
-            {creating ? "Creating..." : "Create Session"}
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-muted font-mono text-xs uppercase tracking-wider">
-              or
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Join session */}
-          <div className="space-y-3">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={joinCode}
-                onChange={(e) => {
-                  setJoinCode(e.target.value.toUpperCase().slice(0, 6));
-                  setError("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                placeholder="ROOM CODE"
-                maxLength={6}
-                className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-factory-gray-600 focus:border-factory-gray-600 focus:outline-none transition-colors"
-              />
-              <button
-                onClick={handleJoin}
-                className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-factory-gray-600 transition-colors"
-              >
-                Join
-              </button>
-            </div>
-            {error && (
-              <p className="text-accent font-mono text-xs">{error}</p>
-            )}
+      {/* How it works */}
+      <section className="px-6 pb-12 sm:pb-16">
+        <div className="max-w-2xl mx-auto">
+          <p className="section-indicator mb-6">How it works</p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Step number="01" label="Start a session" />
+            <Step number="02" label="Take turns speaking" />
+            <Step number="03" label="See what's beneath" />
           </div>
         </div>
+      </section>
+
+      {/* Divider */}
+      <div className="mx-6">
+        <div className="max-w-2xl mx-auto h-px bg-border" />
       </div>
+
+      {/* Create / Join lobby */}
+      <section className="flex-1 flex flex-col items-center justify-center px-6 py-12 sm:py-16">
+        <div className="max-w-md w-full text-center">
+          <div className="space-y-8">
+            {/* Create session */}
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="w-full px-6 py-4 bg-accent text-factory-black font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              {creating ? "Creating..." : "Create Session"}
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-muted font-mono text-xs uppercase tracking-wider">
+                or
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Join session */}
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value.toUpperCase().slice(0, 6));
+                    setError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                  placeholder="ROOM CODE"
+                  maxLength={6}
+                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-factory-gray-600 focus:border-factory-gray-600 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={handleJoin}
+                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-factory-gray-600 transition-colors"
+                >
+                  Join
+                </button>
+              </div>
+              {error && (
+                <p className="text-accent font-mono text-xs">{error}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Step({ number, label }: { number: string; label: string }) {
+  return (
+    <div className="flex items-center gap-3 sm:flex-1 px-4 py-3 border border-border">
+      <span className="font-mono text-[10px] text-accent tracking-widest">
+        {number}
+      </span>
+      <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-400">
+        {label}
+      </span>
     </div>
   );
 }
