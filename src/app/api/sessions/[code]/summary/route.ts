@@ -1,29 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { summarizeSession } from '@/lib/opus'
-import type { ConversationEntry } from '@/lib/opus'
-import type { Message, MessageSender } from '@/types/database'
+import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
+import type { Message, SessionSummaryData } from '@/types/database'
 
-export interface SessionSummary {
-  temperatureArc: string
-  keyMoments: string[]
-  personANeeds: string
-  personBNeeds: string
-  personATakeaway: string
-  personBTakeaway: string
-  personAStrength: string
-  personBStrength: string
-  overallInsight: string
-}
-
-function parseSessionSummary(raw: string): SessionSummary | null {
+function parseSessionSummary(raw: string): SessionSummaryData | null {
   try {
-    let cleaned = raw.trim()
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    }
-
-    const parsed = JSON.parse(cleaned)
+    const parsed = JSON.parse(stripCodeFences(raw))
 
     if (!parsed.temperatureArc || !parsed.overallInsight) {
       return null
@@ -90,17 +73,11 @@ export async function POST(
     )
   }
 
-  const nameMap: Record<MessageSender, string> = {
-    person_a: session.person_a_name ?? 'Person A',
-    person_b: session.person_b_name ?? 'Person B',
-    mediator: 'Claude',
-  }
+  const nameMap = buildNameMap(session)
 
-  const conversationHistory: ConversationEntry[] = messages.map(
-    (m: Message) => ({
-      sender: nameMap[m.sender],
-      content: m.content,
-    }),
+  const conversationHistory = toConversationHistory(
+    messages as Message[],
+    nameMap,
   )
 
   // Call Claude for session summary

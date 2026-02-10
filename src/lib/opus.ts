@@ -15,6 +15,13 @@ export interface ConversationEntry {
   content: string
 }
 
+function extractText(response: Anthropic.Message): string {
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('')
+}
+
 /**
  * Call Claude to produce an NVC mediation analysis for a message.
  *
@@ -41,13 +48,7 @@ export async function mediateMessage(
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  // Extract text from the response content blocks
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-
-  return text
+  return extractText(response)
 }
 
 /**
@@ -79,10 +80,5 @@ ${transcript}`
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-
-  return text
+  return extractText(response)
 }

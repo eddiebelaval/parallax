@@ -1,11 +1,3 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export type SessionStatus = 'waiting' | 'active' | 'completed'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
 
@@ -110,6 +102,16 @@ export interface Database {
 
 // Convenience types
 export type Session = Database['public']['Tables']['sessions']['Row']
-export type SessionInsert = Database['public']['Tables']['sessions']['Insert']
 export type Message = Database['public']['Tables']['messages']['Row']
-export type MessageInsert = Database['public']['Tables']['messages']['Insert']
+
+export interface SessionSummaryData {
+  temperatureArc: string
+  keyMoments: string[]
+  personANeeds: string
+  personBNeeds: string
+  personATakeaway: string
+  personBTakeaway: string
+  personAStrength: string
+  personBStrength: string
+  overallInsight: string
+}

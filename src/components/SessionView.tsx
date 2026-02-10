@@ -12,10 +12,9 @@ type InputMode = "text" | "voice";
 
 interface SessionViewProps {
   roomCode: string;
-  onEndSession?: () => void;
 }
 
-export function SessionView({ roomCode, onEndSession }: SessionViewProps) {
+export function SessionView({ roomCode }: SessionViewProps) {
   const { session, loading: sessionLoading, createSession, joinSession } = useSession(roomCode);
   const { messages, sendMessage, currentTurn } = useMessages(session?.id);
 
@@ -96,11 +95,10 @@ export function SessionView({ roomCode, onEndSession }: SessionViewProps) {
   const endSession = useCallback(async () => {
     try {
       await fetch(`/api/sessions/${roomCode}/end`, { method: "POST" });
-      onEndSession?.();
     } catch {
       // Session end failed — Realtime won't fire, no-op
     }
-  }, [roomCode, onEndSession]);
+  }, [roomCode]);
 
   const handleSendA = useCallback(async (content: string) => {
     setMediationError(null);

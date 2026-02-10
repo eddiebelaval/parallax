@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { SessionSummary as SessionSummaryData } from '@/app/api/sessions/[code]/summary/route'
+import type { SessionSummaryData } from '@/types/database'
 
 interface SessionSummaryProps {
   roomCode: string

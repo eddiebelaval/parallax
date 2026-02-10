@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { mediateMessage } from '@/lib/opus'
 import { parseNvcAnalysis } from '@/lib/prompts'
-import type { ConversationEntry } from '@/lib/opus'
-import type { Message, MessageSender } from '@/types/database'
+import { buildNameMap, toConversationHistory } from '@/lib/conversation'
+import type { Message } from '@/types/database'
 
 /**
  * POST /api/mediate
@@ -56,11 +56,10 @@ export async function POST(request: Request) {
     .eq('id', session_id)
     .single()
 
-  const nameMap: Record<MessageSender, string> = {
-    person_a: session?.person_a_name ?? 'Person A',
-    person_b: session?.person_b_name ?? 'Person B',
-    mediator: 'Claude',
-  }
+  const nameMap = buildNameMap({
+    person_a_name: session?.person_a_name ?? null,
+    person_b_name: session?.person_b_name ?? null,
+  })
 
   const senderName = nameMap[targetMessage.sender]
   const otherPersonName = targetMessage.sender === 'person_a'
@@ -75,11 +74,9 @@ export async function POST(request: Request) {
     .lt('created_at', targetMessage.created_at)
     .order('created_at', { ascending: true })
 
-  const conversationHistory: ConversationEntry[] = (history ?? []).map(
-    (m: Message) => ({
-      sender: nameMap[m.sender],
-      content: m.content,
-    }),
+  const conversationHistory = toConversationHistory(
+    (history ?? []) as Message[],
+    nameMap,
   )
 
   // Call Claude for NVC analysis
