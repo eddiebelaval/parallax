@@ -2,6 +2,14 @@
 
 A build journal for Parallax — real-time conflict resolution powered by Claude.
 
+**Visual artifacts:** The [`artifacts/`](./artifacts/) folder contains interactive HTML visualizations of our architecture, build plan, and process. Open them in a browser to explore the system spatially.
+
+| Artifact | What It Shows |
+|----------|---------------|
+| [`parallax-blueprint.html`](./artifacts/parallax-blueprint.html) | The full interactive build plan — phases, parallel batches, task prompts, dependency graph. Created during Stage 3 (Architecture Sketch) to plan the entire 6-day build before writing a single line of code. |
+| [`id8pipeline-sdk-architecture.html`](./artifacts/id8pipeline-sdk-architecture.html) | How the ID8 Pipeline methodology maps onto Claude Code SDK features — team orchestration, task management, gate verification. Created to visualize the relationship between our build process and the tools powering it. |
+| [`claude-code-hackathon-kickoff-transcript.html`](./artifacts/claude-code-hackathon-kickoff-transcript.html) | The hackathon organizers' kickoff session — judging criteria, submission requirements, what "Break the Barriers" means. Our north star. Every decision we make gets checked against this. |
+
 ---
 
 ## The Pipeline: How We Build
