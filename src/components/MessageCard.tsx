@@ -5,19 +5,14 @@ import {
   getTemperatureColor,
   getTemperatureLabel,
 } from "@/lib/temperature";
+import type { NvcAnalysis, MessageSender } from "@/types/database";
 
 interface MessageCardProps {
-  sender: "person_a" | "person_b" | "mediator";
+  sender: MessageSender;
   senderName: string;
   content: string;
   timestamp: string;
-  nvcAnalysis?: {
-    subtext: string;
-    blindSpots: string[];
-    unmetNeeds: string[];
-    nvcTranslation: string;
-    emotionalTemperature: number; // 0.0 - 1.0
-  } | null;
+  nvcAnalysis?: NvcAnalysis | null;
 }
 
 const SENDER_STYLES: Record<
