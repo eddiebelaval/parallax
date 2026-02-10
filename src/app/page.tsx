@@ -2,16 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { generateRoomCode, isValidRoomCode } from "@/lib/room-code";
+import { isValidRoomCode } from "@/lib/room-code";
 
 export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  function handleCreate() {
-    const code = generateRoomCode();
-    router.push(`/session/${code}`);
+  async function handleCreate() {
+    setCreating(true);
+    setError("");
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        setError("Failed to create session");
+        return;
+      }
+      const session = await res.json();
+      router.push(`/session/${session.room_code}`);
+    } catch {
+      setError("Failed to create session");
+    } finally {
+      setCreating(false);
+    }
   }
 
   function handleJoin() {
@@ -40,9 +58,10 @@ export default function Home() {
           {/* Create session */}
           <button
             onClick={handleCreate}
-            className="w-full px-6 py-4 bg-accent text-factory-black font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity"
+            disabled={creating}
+            className="w-full px-6 py-4 bg-accent text-factory-black font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-60"
           >
-            Create Session
+            {creating ? "Creating..." : "Create Session"}
           </button>
 
           {/* Divider */}
