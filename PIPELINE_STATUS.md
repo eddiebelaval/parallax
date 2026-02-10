@@ -3,12 +3,13 @@
 **Project:** Parallax (Real-time Conflict Resolution)
 **Hackathon:** Claude Code Hackathon, Feb 10-16, 2026
 **Repo:** github.com/eddiebelaval/parallax
-**PR #1:** Stage 4 merged to main (squash)
-**PR #2:** Stage 5a merged to main (squash)
+**PR #1:** Stage 4 merged to main
+**PR #2:** Stage 5a merged to main
+**PR #3:** Stage 5b merged to main
 
 ---
 
-## Current Stage: 5b — The Melt (NEXT)
+## Current Stage: 5c — Voice + Flow (NEXT)
 
 | Stage | Name | Status | Branch | Gate |
 |-------|------|--------|--------|------|
@@ -17,8 +18,8 @@
 | 3 | Architecture Sketch | PASSED | - | Blueprint generated |
 | 4 | Foundation Pour | PASSED | `parallax/stage-4-foundation` (merged) | Two-tab realtime messaging |
 | 5a | Opus Mediation Engine | PASSED | `parallax/stage-5a-opus-engine` (merged) | NVC analysis works |
-| **5b** | **The Melt** | **NEXT** | `parallax/stage-5b-melt-viz` | Visual transformation |
-| 5c | Voice + Flow | PENDING | - | Voice-enabled E2E |
+| 5b | The Melt | PASSED | `parallax/stage-5b-melt-viz` (merged) | Animation + Signal Rail |
+| **5c** | **Voice + Flow** | **NEXT** | - | Voice-enabled E2E |
 | 6+8 | Integration + Polish | PENDING | - | Error handling, mobile |
 | 9+10 | Ship | PENDING | - | Submitted before 3 PM Sun |
 
@@ -52,14 +53,43 @@ All 4 tasks completed. Gate PASSED.
 - [x] Build passes (`npm run build && npx tsc --noEmit`)
 - [x] Turn logic correct (filters mediator, alternates human turns)
 
-## Stage 5b Plan (Day 3 — Thu Feb 12)
+## Stage 5b Results (Day 3 — Thu Feb 12)
+
+All 3 tasks completed. Gate PASSED.
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 1 | The Melt animation (TheMelt.tsx + MessageCard integration) | Luna | DONE |
+| 2 | Signal Rail (SignalRail.tsx + MessageArea integration) | River | DONE |
+| 3 | Stage 5b gate verification (9/9 criteria) | Casey | PASSED |
+
+**What shipped:**
+- TheMelt.tsx: 3-phase animation engine (idle/dissolving/crystallizing/settled) with Knuth hash particle scatter
+- MeltText component: character-level dissolve with CSS custom properties bridge
+- SignalRail.tsx: temperature timeline bar with flex-proportional segments + pulse on latest
+- MessageCard rewired: useMelt hook, auto-expand on crystallize, toggle hidden during animation
+- CSS keyframes: melt-dissolve, melt-reform, melt-crystallize (staggered), signal-segment-in, signal-pulse
+
+## Stage 5b Gate Criteria
+- [x] Dissolve animation plays on new NVC arrival
+- [x] Crystallize animation plays after dissolve
+- [x] History messages skip animation (settled on mount)
+- [x] Signal Rail renders with correct temperature colors
+- [x] Signal Rail latest segment pulses
+- [x] MessageCard expand/collapse works post-animation
+- [x] Melt phase transitions correct (idle -> dissolving -> crystallizing -> settled)
+- [x] Build passes (`npm run build && npx tsc --noEmit`)
+- [x] No regressions in existing mediation flow
+
+## Stage 5c Plan (Day 4 — Fri Feb 13)
 
 | Task | Owner | Depends On |
 |------|-------|-----------|
-| Temperature color system refinement + MessageCard polish | Luna | - |
-| The Melt animation (noise dissolves, NVC crystallizes) | Luna | MessageCard |
-| Signal Rail (vertical temperature timeline bar) | River | - |
-| Stage 5b gate verification | Casey | All above |
+| Web Speech API VoiceInput component (push-to-talk) | River | - |
+| Session header + turn indicator polish | Luna | - |
+| Session summary prompt + endpoint wiring | Director | - |
+| End-to-end UX pass (disabled states, loading, transitions) | Luna | VoiceInput |
+| Stage 5c gate verification | Casey | All above |
 
 ---
 
@@ -87,4 +117,4 @@ All 6 tasks completed. Gate PASSED.
 
 ---
 
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-11*
