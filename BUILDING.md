@@ -8,6 +8,7 @@ A build journal for Parallax — real-time conflict resolution powered by Claude
 |----------|---------------|
 | [`parallax-blueprint.html`](./artifacts/parallax-blueprint.html) | The full interactive build plan — phases, parallel batches, task prompts, dependency graph. Created during Stage 3 (Architecture Sketch) to plan the entire 6-day build before writing a single line of code. |
 | [`id8pipeline-sdk-architecture.html`](./artifacts/id8pipeline-sdk-architecture.html) | How the ID8 Pipeline methodology maps onto Claude Code SDK features — team orchestration, task management, gate verification. Created to visualize the relationship between our build process and the tools powering it. |
+| [`parallax-stage-mode-blueprint.html`](./artifacts/parallax-stage-mode-blueprint.html) | The Stage Mode expansion blueprint — X-ray scoreboard concept, issue extraction architecture, response grading pipeline. Created mid-build after realizing the demo needed a single shared panel, not split-screen chat. |
 | [`claude-code-hackathon-kickoff-transcript.html`](./artifacts/claude-code-hackathon-kickoff-transcript.html) | The hackathon organizers' kickoff session — judging criteria, submission requirements, what "Break the Barriers" means. Our north star. Every decision we make gets checked against this. |
 
 ---
@@ -70,6 +71,9 @@ The pipeline isn't just a planning tool — it's integrated into how we use Clau
 [Stage 5a: Opus Engine]  — NVC prompt engineering, Claude API, analysis UI
 [Stage 5b: The Melt]     — Visual transformation animation
 [Stage 5c: Voice + Flow] — Voice input, session flow, summary
+[Stage 6+8: Polish]      — Error handling, code extraction, landing page, mobile
+[Stage 9: Ship]          — README, LICENSE, production deployment
+[Stage 10: Ship]         — Final docs, pipeline status, submission prep
 ```
 
 Each stage ends with a `verify: gate PASSED` commit — that's our sign-off that everything works before moving on.
@@ -346,7 +350,49 @@ Quick wins to tighten the codebase:
 
 ---
 
-## The Expansion: From Chat to X-Ray (Day 1, Hour 5)
+## Stage 9+10: Ship (Day 1, Hour 4)
+
+**Gate question:** "Could a stranger use this without asking me questions?"
+
+After 6+8 passed, Remote Mode was production-complete. Time to make the repo judge-ready.
+
+**What we shipped:**
+
+### README.md — The 60-Second Pitch
+
+Written for hackathon judges who will skim before watching the demo. Structure:
+- One-liner tagline ("See the conversation you're actually having")
+- Live production URL
+- 4-step "How It Works"
+- The NVC Lens explained (dual analysis framework)
+- Architecture table (6 layers, each with technology + reasoning)
+- Build process narrative (stages, gates, team system)
+- Setup instructions (4 commands from clone to running)
+- Design system reference
+
+### OSS Compliance
+
+- **MIT LICENSE** at project root (hackathon requires open source)
+- **`.env.example`** with placeholder values (no real keys)
+- **`.gitignore`** properly excludes `.env*` while allowing `.env.example`
+
+### Production Verification
+
+Full end-to-end walkthrough on `parallax-ebon-three.vercel.app`:
+- Create session, join with room code
+- Exchange messages, NVC analysis appears on both sides
+- The Melt animation plays, Signal Rail updates
+- Voice input works (Chrome)
+- End session, see conversation summary
+- Zero console errors
+
+**Key fix during verification:** Supabase Realtime WebSocket auth was failing in production — trailing newlines in Vercel env vars were getting URL-encoded as `%0A` and baked into the JS bundle at build time. Fixed by stripping whitespace during `vercel env add` and redeploying.
+
+**Gate: PASSED** — Repo is public, documented, and a stranger can clone, configure, and run it.
+
+---
+
+
 
 Five hours into the hackathon, we had a working product — split-screen chat, NVC mediation, The Melt animation, voice input, session summary. Stages 1 through 6+8 complete. We were about to enter Stage 9+10 (Ship).
 
