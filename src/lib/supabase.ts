@@ -1,16 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Missing Supabase env vars — set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
-  )
-}
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 // Browser client — uses anon key + RLS
+// NEXT_PUBLIC_ vars are inlined at build time by Next.js, so they're always available
+// in production. Empty string fallback prevents build-time crashes during static analysis.
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // Server client — uses service role key, bypasses RLS

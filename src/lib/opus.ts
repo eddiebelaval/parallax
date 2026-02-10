@@ -2,13 +2,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, buildMediationPrompt } from '@/lib/prompts'
 import type { MessageSender } from '@/types/database'
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error('Missing ANTHROPIC_API_KEY — add it to .env.local')
+function getClient(): Anthropic {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('Missing ANTHROPIC_API_KEY — add it to .env.local')
+  }
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 }
-
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
 
 export interface ConversationEntry {
   sender: string
@@ -41,7 +40,7 @@ export async function mediateMessage(
     otherPersonName,
   )
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 1024,
     system: NVC_SYSTEM_PROMPT,
@@ -73,7 +72,7 @@ export async function summarizeSession(
 FULL CONVERSATION:
 ${transcript}`
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 2048,
     system: SESSION_SUMMARY_PROMPT,
