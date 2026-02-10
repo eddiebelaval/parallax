@@ -210,11 +210,73 @@ The existing MessageCard was rewired to use the Melt:
 
 ---
 
+## Stage 5c: Voice + Flow (Day 4)
+
+**Gate question:** "Does this feature work completely, right now?"
+
+This stage transforms Parallax from a text-messaging app into a full conversation experience. People in conflict don't want to carefully compose text — they want to speak. And when the conversation ends, they need a summary of what happened, not just a scroll of messages.
+
+**What we built:**
+
+### VoiceInput.tsx — Web Speech API Push-to-Talk (186 lines)
+
+A hold-to-speak button that transcribes voice into text using the browser's `SpeechRecognition` API (Chrome). Three states: idle (gray mic, "Hold to speak"), listening (pulsing orange ring with live interim transcript), unsupported (graceful fallback message).
+
+**Key technical decisions:**
+- **SSR-safe support detection:** Browser APIs don't exist during Next.js server rendering. We defer the `isSupported()` check to a `useEffect` so the initial render is hydration-safe.
+- **`finalTranscriptRef` pattern:** The `onresult` callback needs to accumulate final transcript segments across multiple events. Using a ref instead of state avoids stale closure issues — the callback always reads the latest accumulated value.
+- **`onMouseLeave` guard:** If a user presses the mic button and drags their mouse off it, we stop recognition. Without this, the user would have no way to release.
+
+### SessionSummary.tsx — Conversation Arc Analysis (170 lines)
+
+When the session ends, Claude analyzes the full conversation arc and produces a structured summary. The UI displays:
+- **Overall Insight** — a hero quote with orange left border (the emotional landing)
+- **Temperature Arc** — how emotions shifted over the conversation
+- **Key Moments** — pivotal points with orange dot markers
+- **Per-person sections** (side by side): what they needed, their takeaway, what they did well (teal highlight for strengths)
+
+**Key decision:** The summary API endpoint was built as forward work in Stage 5a (River saw it coming). The SessionSummary UI calls POST `/api/sessions/{code}/summary` on mount and uses a discriminated union state (`loading | error | ready`) for clean state management. Claude generates the summary after the session ends — this takes 2-4 seconds, during which a pulsing loading state plays.
+
+### End Session Flow
+
+Either person can click "End" in their session header. The flow:
+1. POST `/api/sessions/{code}/end` sets status to `'completed'`
+2. Supabase Realtime pushes the UPDATE to both sides
+3. `useSession` receives the update, `session.status` changes to `'completed'`
+4. `SessionView` detects `isCompleted` and renders `<SessionSummary>` full-width instead of the split-screen message panels
+5. Both people see the same summary simultaneously
+
+### Voice/Text Toggle + Session Header Polish
+
+Each side of the split-screen gets:
+- **Room code** in small monospace (so participants can reference it)
+- **Turn indicator** with pulsing orange dot on the active turn
+- **"End" button** to conclude the session
+- **Mic/keyboard toggle** in the input bar — independent per side (Person A can speak while Person B types)
+
+Voice transcripts flow through the exact same `handleSendA`/`handleSendB` → `triggerMediation` pipeline as typed messages. Zero code duplication — voice is just another way to produce a string.
+
+**Gate verification (Casey, 11/11 criteria):**
+- [x] VoiceInput exists, uses Web Speech API
+- [x] VoiceInput handles unsupported browsers gracefully
+- [x] Voice/text toggle independent per side
+- [x] Session summary API returns valid data
+- [x] SessionSummary UI displays all 8 fields
+- [x] "End Session" button visible and functional (both sides)
+- [x] Ending session triggers summary on both sides via Realtime
+- [x] Turn indicator with pulsing orange dot
+- [x] Room code displayed in session header
+- [x] Build passes (`npm run build && npx tsc --noEmit`)
+- [x] No regressions in messaging, NVC analysis, Melt, Signal Rail
+
+**Gate: PASSED**
+
+---
+
 ## What's Ahead
 
 | Stage | Name | Day | Gate Question |
 |-------|------|-----|---------------|
-| 5c | Voice + Flow | Day 4 | Does voice-enabled flow work end-to-end? |
 | 6+8 | Integration + Polish | Day 5 | What breaks if someone does something stupid? |
 | 9+10 | Ship | Day 6 | Is it submitted before 3 PM? |
 
