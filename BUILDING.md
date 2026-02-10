@@ -152,16 +152,53 @@ We spent significant time crafting a prompt that analyzes each message through t
 
 ---
 
-## Stage 5b: The Melt (Day 3) — NEXT
+## Stage 5b: The Melt (Day 3)
 
 **Gate question:** "Does this feature work completely, right now?"
 
 The Melt is Parallax's visual signature — noise particles dissolve and NVC understanding crystallizes. This is where the product becomes a demo.
 
-**Planned:**
-- The Melt animation (raw message noise dissolves, structured NVC bullets emerge)
-- Signal Rail (vertical temperature timeline showing how the conversation's emotional charge evolves)
-- MessageCard visual polish
+**What we built:**
+
+### TheMelt.tsx — The Core Animation Engine (112 lines)
+
+The Melt is a three-phase state machine:
+1. **Idle** — message displays normally, waiting for Claude's analysis
+2. **Dissolving** — each character scatters outward with blur and fade (1.2s). This is the "noise breaking apart" moment.
+3. **Crystallizing** — text reforms, NVC analysis sections slide in with staggered timing (0.5s per section, 150ms offsets). This is "understanding emerging."
+4. **Settled** — static state. Messages loaded from history skip directly here (no animation replay).
+
+**Key technical decisions:**
+- **Knuth multiplicative hash** for particle scatter directions. We need deterministic randomness because `Math.random()` would cause React hydration mismatches (server and client generate different values). The Knuth hash `(index * 2654435761) >>> 0` is deterministic per character index — same scatter every render.
+- **CSS custom properties bridge:** JavaScript computes `--melt-dx`, `--melt-dy`, `--melt-delay`, `--melt-color` per character. CSS `@keyframes melt-dissolve` consumes them via `var()`. This keeps animation logic in CSS (GPU-accelerated) while keeping the math in JS (composable).
+- **History-skip via `useRef`:** The `useMelt` hook captures whether analysis was already present on mount. If so, it returns "settled" immediately — users scrolling through history don't see animations replay.
+
+### SignalRail.tsx — Temperature Timeline (33 lines)
+
+A 4px-wide vertical bar running alongside the conversation. Each message gets a segment colored by its emotional temperature. As the conversation progresses, the rail paints a visual story: hot reds at the top (conflict) fading to cool teals at the bottom (resolution). The latest segment pulses gently.
+
+**Key decision:** We render one `div` per message with `flex-1` so segments auto-size to equal height. No absolute positioning, no calculation — flexbox handles the proportional layout. Messages without analysis yet show a warm gray (`#3a3632`) placeholder.
+
+### MessageCard Integration
+
+The existing MessageCard was rewired to use the Melt:
+- `useMelt(hasAnalysis)` drives the phase state machine
+- `MeltText` replaces the static `<p>` tag — it renders normal text in idle/settled, character-level particles during dissolve
+- Analysis sections auto-expand during crystallize (no user click needed)
+- The expand/collapse toggle hides during the animation so the crystallize effect is uninterrupted
+
+**Gate verification (Casey, 9/9 criteria):**
+- [x] Dissolve animation plays on new NVC arrival
+- [x] Crystallize animation plays after dissolve
+- [x] History messages skip animation (settled on mount)
+- [x] Signal Rail renders with correct temperature colors
+- [x] Signal Rail latest segment pulses
+- [x] MessageCard expand/collapse still works post-animation
+- [x] Melt phases transition correctly (idle → dissolving → crystallizing → settled)
+- [x] Build passes (`npm run build && npx tsc --noEmit`)
+- [x] No regressions in existing mediation flow
+
+**Gate: PASSED**
 
 ---
 
