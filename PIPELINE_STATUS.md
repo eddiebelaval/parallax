@@ -6,10 +6,12 @@
 **PR #1:** Stage 4 merged to main
 **PR #2:** Stage 5a merged to main
 **PR #3:** Stage 5b merged to main
+**PR #4:** Artifacts for judges
+**PR #5:** Stage 5c merged to main
 
 ---
 
-## Current Stage: 5c — Voice + Flow (NEXT)
+## Current Stage: 6+8 — Integration + Polish (NEXT)
 
 | Stage | Name | Status | Branch | Gate |
 |-------|------|--------|--------|------|
@@ -19,8 +21,8 @@
 | 4 | Foundation Pour | PASSED | `parallax/stage-4-foundation` (merged) | Two-tab realtime messaging |
 | 5a | Opus Mediation Engine | PASSED | `parallax/stage-5a-opus-engine` (merged) | NVC analysis works |
 | 5b | The Melt | PASSED | `parallax/stage-5b-melt-viz` (merged) | Animation + Signal Rail |
-| **5c** | **Voice + Flow** | **NEXT** | - | Voice-enabled E2E |
-| 6+8 | Integration + Polish | PENDING | - | Error handling, mobile |
+| 5c | Voice + Flow | PASSED | `parallax/stage-5c-voice-flow` (merged) | Voice + summary + session flow |
+| **6+8** | **Integration + Polish** | **NEXT** | - | Error handling, mobile |
 | 9+10 | Ship | PENDING | - | Submitted before 3 PM Sun |
 
 ## Stage 5a Results (Day 2 — Wed Feb 11)
