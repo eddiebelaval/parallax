@@ -12,7 +12,7 @@
 
 ---
 
-## Current Stage: 9+10 — Ship (NEXT)
+## Current Stage: 9+10 — Ship (IN PROGRESS)
 
 | Stage | Name | Status | Branch | Gate |
 |-------|------|--------|--------|------|
@@ -24,7 +24,34 @@
 | 5b | The Melt | PASSED | `parallax/stage-5b-melt-viz` (merged) | Animation + Signal Rail |
 | 5c | Voice + Flow | PASSED | `parallax/stage-5c-voice-flow` (merged) | Voice + summary + session flow |
 | 6+8 | Integration + Polish | PASSED | `parallax/stage-6-polish` (merged) | Error handling, mobile, landing page |
-| **9+10** | **Ship** | **NEXT** | - | Submitted before 3 PM Sun |
+| **9+10** | **Ship** | **IN PROGRESS** | `parallax/stage-9-ship` (PR #7 merged), `parallax/stage-10-license` (PR #8) | Submitted before 3 PM Sun |
+
+## Stage 9+10 Results (Day 1 — Mon Feb 10)
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 1 | Stage Mode expansion vision in BUILDING.md | Director | DONE |
+| 2 | Stage Mode blueprint artifact | Director | DONE |
+| 3 | Comprehensive README for hackathon judges | Director | DONE (PR #7) |
+| 4 | MIT LICENSE file | Director | DONE (PR #8) |
+| 5 | Production deployment verified | Director | DONE |
+| 6 | Build + TypeScript verification | Director | PASSED |
+| 7 | Demo video (3 min) | Eddie (manual) | PENDING |
+| 8 | 100-200 word summary | Eddie (manual) | PENDING |
+| 9 | Submission form | Eddie (manual) | PENDING |
+
+**What shipped:**
+- README.md: project overview, NVC lens explanation, architecture table, build process narrative, setup instructions, design system
+- LICENSE: MIT (hackathon OSS requirement)
+- BUILDING.md expansion: "From Chat to X-Ray" section documenting the Stage Mode vision
+- Stage Mode blueprint: interactive HTML artifact (`parallax-stage-mode-blueprint.html`)
+- Production: `parallax-ebon-three.vercel.app` verified working (full flow: create, join, message, NVC analysis, voice, end, summary)
+- GitHub repo: public at `github.com/eddiebelaval/parallax`
+
+**Remaining (Eddie's tasks):**
+- Record 3-min demo video showcasing Remote Mode flow
+- Write 100-200 word summary for submission
+- Submit via hackathon submission form
 
 ## Stage 6+8 Results (Day 5 — Sat Feb 15)
 
