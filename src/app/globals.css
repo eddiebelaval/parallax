@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* ─── Factory Design System Tokens ─── */
+
+:root {
+  /* Core palette */
+  --factory-black: #020202;
+  --factory-white: #eeeeee;
+
+  /* Warm neutral grays (brownish tones, never cool/blue) */
+  --factory-gray-50: #faf9f7;
+  --factory-gray-100: #f5f3f0;
+  --factory-gray-200: #e8e5e0;
+  --factory-gray-300: #d4d0c8;
+  --factory-gray-400: #b0a99e;
+  --factory-gray-500: #8a8279;
+  --factory-gray-600: #6b6358;
+  --factory-gray-700: #4d4639;
+  --factory-gray-800: #302a20;
+  --factory-gray-900: #1a1610;
+  --factory-gray-950: #0d0b08;
+
+  /* Accent colors */
+  --factory-orange: #ef6f2e;
+  --factory-amber: #f59e0b;
+  --factory-teal: #4ecdc4;
+
+  /* Temperature scale (conversation heat) */
+  --temp-hot: #ef4444;
+  --temp-warm: #f59e0b;
+  --temp-cool: #4ecdc4;
+  --temp-neutral: #eeeeee;
+
+  /* Semantic mapping — dark mode by default */
+  --background: var(--factory-black);
+  --foreground: var(--factory-white);
+  --muted: var(--factory-gray-500);
+  --border: var(--factory-gray-800);
+  --surface: var(--factory-gray-950);
+  --accent: var(--factory-orange);
+  --accent-secondary: var(--factory-amber);
+  --success: var(--factory-teal);
+}
+
+/* ─── Tailwind v4 Theme Integration ─── */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-accent: var(--accent);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-success: var(--success);
+
+  --color-factory-black: var(--factory-black);
+  --color-factory-white: var(--factory-white);
+  --color-factory-gray-50: var(--factory-gray-50);
+  --color-factory-gray-100: var(--factory-gray-100);
+  --color-factory-gray-200: var(--factory-gray-200);
+  --color-factory-gray-300: var(--factory-gray-300);
+  --color-factory-gray-400: var(--factory-gray-400);
+  --color-factory-gray-500: var(--factory-gray-500);
+  --color-factory-gray-600: var(--factory-gray-600);
+  --color-factory-gray-700: var(--factory-gray-700);
+  --color-factory-gray-800: var(--factory-gray-800);
+  --color-factory-gray-900: var(--factory-gray-900);
+  --color-factory-gray-950: var(--factory-gray-950);
+  --color-factory-orange: var(--factory-orange);
+  --color-factory-amber: var(--factory-amber);
+  --color-factory-teal: var(--factory-teal);
+
+  --color-temp-hot: var(--temp-hot);
+  --color-temp-warm: var(--temp-warm);
+  --color-temp-cool: var(--temp-cool);
+  --color-temp-neutral: var(--temp-neutral);
+
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+}
+
+/* ─── Base Styles ─── */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Factory headings: weight 400 (light), tight tracking */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* Section indicator pattern: orange dot + uppercase mono label */
+.section-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.section-indicator::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ─── Analysis Reveal Animation ─── */
+
+.analysis-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms ease-out;
+}
+
+.analysis-reveal[data-expanded="true"] {
+  grid-template-rows: 1fr;
+}
+
+.analysis-reveal > div {
+  overflow: hidden;
+}
