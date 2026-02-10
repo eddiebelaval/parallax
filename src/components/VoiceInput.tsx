@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MicIcon } from "./icons";
 
 // Chrome implements SpeechRecognition with webkit prefix
 interface SpeechRecognitionEvent {
@@ -151,19 +152,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
             <span className="absolute inset-0 rounded-full border-2 border-accent animate-pulse" />
           )}
 
-          {/* Mic icon SVG */}
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className={listening ? "text-accent" : "text-factory-gray-500"}
-          >
-            <rect x="5.5" y="1" width="5" height="9" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 7.5C3 10.26 5.24 12.5 8 12.5C10.76 12.5 13 10.26 13 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="8" y1="12.5" x2="8" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="5.5" y1="15" x2="10.5" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <MicIcon className={listening ? "text-accent" : "text-factory-gray-500"} />
         </button>
 
         {/* Status label */}
