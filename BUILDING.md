@@ -429,3 +429,95 @@ After building V3 (Conflict Intelligence Engine) and V4 (Strategy Arena), we ran
 - `npx tsc --noEmit` -- clean
 - `npm run build` -- production build succeeds
 - UI for browsing Arena results and strategy performance
+
+---
+
+## Stage 8: In-Person Mode — X-Ray Glance View
+
+**Date:** 2026-02-11
+**Gate:** "Would you show this to a stranger?"
+
+### What We Built
+
+A complete reimagining of the in-person mode. The old flow used form-based onboarding (3 manual steps: names, stage, goals) followed by a basic XRayView that buried NVC analysis inside expandable MessageCards. Two people sitting down to resolve a conflict shouldn't fill out forms.
+
+**The X-Ray Glance View** is a voice-first, three-column layout where Parallax (the AI mediator) drives the entire session — from introductions through goal-setting to facilitation — via adaptive conversation.
+
+### Architecture
+
+| Component | Purpose |
+|-----------|---------|
+| `XRayGlanceView.tsx` | Three-column orchestrator: signals left, messages center, signals right |
+| `ParallaxPresence.tsx` | Teal orb entity — the AI's visual presence in the room |
+| `SignalCard.tsx` | Compact 2-3 line NVC signal card (temperature dot, insight, unmet needs) |
+| `ActionPanel.tsx` | Issue tracking panel per person (replaces XRayScoreboard) |
+| `IssueDrawer.tsx` | Overlay drawer with full issue board |
+| `ActiveSpeakerBar.tsx` | Turn indicator + voice/text input |
+| `useParallaxVoice.ts` | Web Speech API TTS for mediator messages |
+
+### Key Decisions
+
+1. **Adaptive Conductor** — A single Claude prompt (`buildAdaptivePrompt()`) replaces the 4-phase remote conductor for in-person mode. Claude extracts names from natural speech ("I'm Sarah" → `names.a: "Sarah"`), decides pacing, and transitions to active phase when both sides are heard.
+
+2. **Voice-first** — TTS speaks every mediator message. The ActiveSpeakerBar defaults to voice input. Text is the visual backup layer, not the primary interface.
+
+3. **Retroactive analysis** — When transitioning from onboarding to active phase, the last 2 human messages are retroactively sent to NVC analysis and issue extraction so the side panels seed immediately.
+
+4. **Intervention system** — After each active-phase message, a delayed conductor check detects escalation patterns and can inject mediator interventions. Also detects resolution moments.
+
+### What Got Replaced
+
+The following components were made obsolete by XRayGlanceView and kept as dead code (removed in Stage 9):
+- `OnboardingFlow.tsx` — 3-step form-based onboarding
+- `XRayView.tsx` — Old in-person message viewer
+- `XRayScoreboard.tsx` — Old two-column issue board
+- `InsightPanel.tsx` — Unused insight display
+- `api/sessions/[code]/onboarding/route.ts` — Form-based onboarding API
+
+---
+
+## Stage 9: Integration Audit & Assessment Fixes
+
+**Date:** 2026-02-12
+**Gate:** "Is the launch checklist complete?"
+
+### Integration Audit
+
+Ran a full-stack integration audit across all layers (DB → API → Types → State → UI → Page). Results:
+
+- **17 features** identified across the full stack
+- **11 COMPLETE** (73%) — fully wired end-to-end
+- **4 ORPHANED** — components replaced by XRayGlanceView (cleaned up below)
+- **2 BACKEND ONLY** — Health Check (intentional), Strategy Arena (test-only)
+
+Interactive audit artifact: `artifacts/integration-audit.html`
+
+### Assessment Fixes
+
+| Item | What We Did |
+|------|-------------|
+| **Remove orphaned components** | Deleted 5 files: OnboardingFlow.tsx, XRayView.tsx, XRayScoreboard.tsx, InsightPanel.tsx, and the onboarding API route. Zero remaining imports — clean removal. |
+| **Wire SignalCard into XRayGlanceView** | SignalCard now renders in both side columns: Person A's NVC signals on the left rail, Person B's on the right. Each message with `nvc_analysis` gets a compact signal card showing temperature, primary insight, and unmet needs. |
+| **Rate limiting on Claude API routes** | Created `src/lib/rate-limit.ts` — in-memory rate limiter (Map with IP → timestamps, 30 req/min). Wired into all 4 Claude-calling routes: mediate, conductor, issues/analyze, summary. Returns 429 on exceed. |
+| **Messages UPDATE RLS policy** | Added migration `20260212000000_add_messages_update_rls.sql` — allows UPDATE on messages table so the mediate route can patch `nvc_analysis` and `emotional_temperature` after Claude analysis completes. |
+| **Strategy Arena documentation** | Documented in this file (see V4 section above). The Arena is a backtesting framework that validates Conflict Intelligence output against planted conflict patterns. 15 family scenarios, 5 scoring dimensions, 36 unit tests. Intentionally test-only — no UI needed. Run with `npx vitest run`. |
+
+### Quality Assurance: Strategy Arena
+
+The Strategy Arena (`src/lib/arena/`) is Parallax's empirical validation system. It applies algorithmic trading's backtesting methodology to conflict resolution:
+
+- **What it does:** Replays pre-authored conflict scenarios through the exact same analysis pipeline used in live sessions
+- **Scoring:** 5 dimensions — de-escalation effectiveness (25%), blind spot detection (25%), NVC translation quality (20%), lens activation relevance (15%), insight depth (15%)
+- **Coverage:** 15 family scenarios across 5 sub-types (parent-adult child, siblings, in-laws, blended family, generational)
+- **Tests:** 36 unit tests across 4 test files — all passing
+- **Run:** `npx vitest run`
+- **Intentionally test-only** — no API routes or UI. The Arena validates the analysis pipeline; results are used to tune prompts, not displayed to users.
+
+### Verification
+
+- **86 tests across 6 suites** — all passing
+- `npx tsc --noEmit` — clean
+- `npm run build` — production build succeeds
+- No orphaned components remaining
+- SignalCard visible in three-column layout
+- Rate limiting active on all Claude API routes

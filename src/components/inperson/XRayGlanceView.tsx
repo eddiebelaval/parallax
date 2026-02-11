@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ParallaxPresence } from "./ParallaxPresence";
+import { SignalCard } from "./SignalCard";
 import { ActionPanel } from "./ActionPanel";
 import { IssueDrawer } from "./IssueDrawer";
 import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
@@ -284,8 +285,19 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Three-column layout: Insight panels + Messages */}
       <div className="flex-1 flex min-h-0">
-        {/* Left panel — Person A issues (desktop only) */}
+        {/* Left panel — Person A signals + issues (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <div className="space-y-1 p-2">
+            {messages
+              .filter((m) => m.sender === "person_a" && m.nvc_analysis)
+              .map((m) => (
+                <SignalCard
+                  key={`signal-${m.id}`}
+                  analysis={m.nvc_analysis!}
+                  side="left"
+                />
+              ))}
+          </div>
           <ActionPanel
             personName={personAName}
             issues={personAIssues}
@@ -339,8 +351,19 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           </div>
         </div>
 
-        {/* Right panel — Person B issues (desktop only) */}
+        {/* Right panel — Person B signals + issues (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <div className="space-y-1 p-2">
+            {messages
+              .filter((m) => m.sender === "person_b" && m.nvc_analysis)
+              .map((m) => (
+                <SignalCard
+                  key={`signal-${m.id}`}
+                  analysis={m.nvc_analysis!}
+                  side="right"
+                />
+              ))}
+          </div>
           <ActionPanel
             personName={personBName}
             issues={personBIssues}
