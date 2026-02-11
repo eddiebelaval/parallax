@@ -91,15 +91,16 @@
   --ember-teal: #3d8a6e;
   --ember-hot: #a84428;
 
-  --glow-hot: rgba(168, 68, 40, 0.25);
-  --glow-hot-soft: rgba(168, 68, 40, 0.10);
-  --glow-hot-ambient: rgba(168, 68, 40, 0.05);
-  --glow-warm: rgba(184, 136, 42, 0.25);
-  --glow-warm-soft: rgba(184, 136, 42, 0.10);
-  --glow-warm-ambient: rgba(184, 136, 42, 0.05);
-  --glow-cool: rgba(61, 138, 110, 0.25);
-  --glow-cool-soft: rgba(61, 138, 110, 0.10);
-  --glow-cool-ambient: rgba(61, 138, 110, 0.05);
+  /* Light-mode glows need higher opacity — competing with bright background */
+  --glow-hot: rgba(168, 68, 40, 0.45);
+  --glow-hot-soft: rgba(168, 68, 40, 0.22);
+  --glow-hot-ambient: rgba(168, 68, 40, 0.10);
+  --glow-warm: rgba(184, 136, 42, 0.45);
+  --glow-warm-soft: rgba(184, 136, 42, 0.22);
+  --glow-warm-ambient: rgba(184, 136, 42, 0.10);
+  --glow-cool: rgba(61, 138, 110, 0.45);
+  --glow-cool-soft: rgba(61, 138, 110, 0.22);
+  --glow-cool-ambient: rgba(61, 138, 110, 0.10);
 
   --background: var(--ember-dark);
   --foreground: var(--ember-heading);
@@ -229,6 +230,27 @@ h1, h2, h3, h4, h5, h6 {
 .backlit-cool-strong::before {
   background: radial-gradient(ellipse at right center, var(--glow-cool) 0%, transparent 70%);
   filter: blur(10px);
+}
+
+/* ─── Light Mode Backlit Adaptation ─── */
+/* On light backgrounds, glow shifts from "luminous bloom" to "watercolor stain". */
+/* A solid left border anchors the color; wider blur spreads the wash. */
+
+.light .backlit {
+  border-left: 2px solid transparent;
+}
+
+.light .backlit-hot { border-left-color: rgba(168, 68, 40, 0.30); }
+.light .backlit-warm { border-left-color: rgba(184, 136, 42, 0.30); }
+.light .backlit-cool { border-left-color: rgba(61, 138, 110, 0.30); }
+.light .backlit-hot-strong { border-left-color: rgba(168, 68, 40, 0.50); }
+.light .backlit-warm-strong { border-left-color: rgba(184, 136, 42, 0.50); }
+.light .backlit-cool-strong { border-left-color: rgba(61, 138, 110, 0.50); }
+
+.light .backlit::before {
+  filter: blur(12px);
+  width: 60px;
+  left: -56px;
 }
 
 /* Ambient background pools — subtle gradient depth */
