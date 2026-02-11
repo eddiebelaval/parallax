@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, buildMediationPrompt } from '@/lib/prompts'
+import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, ISSUE_ANALYSIS_PROMPT, buildMediationPrompt, buildIssueAnalysisPrompt } from '@/lib/prompts'
 import type { MessageSender } from '@/types/database'
 
 function getClient(): Anthropic {
@@ -41,9 +41,39 @@ export async function mediateMessage(
   )
 
   const response = await getClient().messages.create({
-    model: 'claude-sonnet-4-5-20250929',
+    model: 'claude-opus-4-6',
     max_tokens: 1024,
     system: NVC_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
+  })
+
+  return extractText(response)
+}
+
+/**
+ * Call Claude to analyze a message for issues (extract new + grade existing).
+ *
+ * Returns the raw text. Caller should parse with parseIssueAnalysis().
+ */
+export async function analyzeIssues(
+  messageContent: string,
+  sender: MessageSender,
+  senderName: string,
+  otherPersonName: string,
+  conversationHistory: ConversationEntry[],
+  existingIssues: Array<{ id: string; label: string; description: string; raised_by: string; status: string }>,
+): Promise<string> {
+  const userPrompt = buildIssueAnalysisPrompt(
+    conversationHistory,
+    { sender, senderName, content: messageContent },
+    otherPersonName,
+    existingIssues,
+  )
+
+  const response = await getClient().messages.create({
+    model: 'claude-opus-4-6',
+    max_tokens: 1024,
+    system: ISSUE_ANALYSIS_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
 
@@ -73,7 +103,7 @@ FULL CONVERSATION:
 ${transcript}`
 
   const response = await getClient().messages.create({
-    model: 'claude-sonnet-4-5-20250929',
+    model: 'claude-opus-4-6',
     max_tokens: 2048,
     system: SESSION_SUMMARY_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
