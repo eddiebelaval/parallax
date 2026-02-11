@@ -119,9 +119,9 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-8 items-start">
               <div className="hidden sm:block">
                 <p className="font-mono text-4xl md:text-5xl text-accent leading-none">$300</p>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mt-1">per hour</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mt-1">per hour</p>
               </div>
-              <div className="space-y-4 text-factory-gray-400 text-sm leading-relaxed">
+              <div className="space-y-4 text-ember-400 text-sm leading-relaxed">
                 <p>
                   Professional mediation costs $300-500/hr. Therapy waitlists stretch for months.
                   Most people just keep arguing the same way — talking past each other, building
@@ -240,12 +240,12 @@ export default function Home() {
 
           {/* Example message with analysis */}
           <Reveal delay={100}>
-            <div className="border border-border">
+            <div className="backlit backlit-warm border border-border rounded-sm">
               {/* Raw message */}
               <div className="p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="font-mono text-xs uppercase tracking-wider text-blue-400">Sarah</span>
-                  <span className="font-mono text-[10px] text-factory-gray-700">2:34 PM</span>
+                  <span className="font-mono text-[10px] text-ember-700">2:34 PM</span>
                   <span className="ml-auto px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-temp-warm border border-temp-warm/30">
                     0.72
                   </span>
@@ -268,20 +268,20 @@ export default function Home() {
               {/* Analysis sections */}
               <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1">Subtext</p>
-                  <p className="text-factory-gray-400 text-xs leading-relaxed">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">Subtext</p>
+                  <p className="text-ember-400 text-xs leading-relaxed">
                     I keep putting my trust in your promises and getting let down. I&apos;m not just frustrated about chores — I&apos;m questioning whether my needs matter to you.
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1">Blind Spots</p>
-                  <p className="text-factory-gray-400 text-xs leading-relaxed">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">Blind Spots</p>
+                  <p className="text-ember-400 text-xs leading-relaxed">
                     &ldquo;Always&rdquo; and &ldquo;only one who cares&rdquo; are absolutes that erase any effort the other person has made — even if it wasn&apos;t enough.
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1">NVC Translation</p>
-                  <p className="text-factory-teal text-xs leading-relaxed italic">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">NVC Translation</p>
+                  <p className="text-ember-teal text-xs leading-relaxed italic">
                     &ldquo;When we agree on something and it doesn&apos;t happen, I feel hurt and invisible. I need to know that my time and energy matter. Could we make a concrete plan together — one we both actually commit to?&rdquo;
                   </p>
                 </div>
@@ -290,7 +290,7 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={200}>
-            <p className="text-factory-gray-600 text-xs font-mono uppercase tracking-wider text-center mt-6">
+            <p className="text-ember-600 text-xs font-mono uppercase tracking-wider text-center mt-6">
               Same person. Same feeling. Completely different conversation.
             </p>
           </Reveal>
@@ -369,11 +369,11 @@ export default function Home() {
                   onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                   placeholder="ROOM CODE"
                   maxLength={6}
-                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-factory-gray-600 focus:border-factory-gray-600 focus:outline-none transition-colors"
+                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
                 />
                 <button
                   onClick={handleJoin}
-                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-factory-gray-600 transition-colors"
+                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-ember-600 transition-colors"
                 >
                   Join
                 </button>
@@ -389,10 +389,10 @@ export default function Home() {
       {/* ─── Footer ─── */}
       <section className="px-6 py-12 border-t border-border">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-factory-gray-600 text-xs font-mono uppercase tracking-wider mb-2">
+          <p className="text-ember-600 text-xs font-mono uppercase tracking-wider mb-2">
             Built for the Claude Code Hackathon
           </p>
-          <p className="text-factory-gray-700 text-xs">
+          <p className="text-ember-700 text-xs">
             Parallax uses Claude Opus 4.6 for NVC analysis. No conversations are stored beyond the session.
           </p>
         </div>
@@ -421,7 +421,7 @@ function ProcessStep({
         <p className="font-mono text-sm uppercase tracking-wider text-foreground mb-1.5">
           {title}
         </p>
-        <p className="text-factory-gray-400 text-sm leading-relaxed">
+        <p className="text-ember-400 text-sm leading-relaxed">
           {description}
         </p>
       </div>
@@ -437,11 +437,11 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="px-4 py-4 border border-border hover:border-factory-gray-600 transition-colors">
+    <div className="px-4 py-4 border border-border hover:border-ember-600 transition-colors">
       <p className="font-mono text-xs uppercase tracking-wider text-accent mb-1.5">
         {label}
       </p>
-      <p className="text-factory-gray-400 text-xs leading-relaxed">
+      <p className="text-ember-400 text-xs leading-relaxed">
         {description}
       </p>
     </div>
@@ -476,7 +476,7 @@ function ModeCard({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`group text-left border border-border border-t-2 ${topBorder} hover:border-factory-gray-600 transition-colors disabled:opacity-60 flex flex-col`}
+      className={`group text-left border border-border border-t-2 ${topBorder} hover:border-ember-600 transition-colors disabled:opacity-60 flex flex-col`}
     >
       <div className="px-5 py-4 border-b border-border">
         <p className="font-mono text-sm uppercase tracking-wider text-foreground mb-1">
@@ -488,14 +488,14 @@ function ModeCard({
         <ul className="space-y-1.5">
           {features.map((f) => (
             <li key={f} className="flex items-start gap-2">
-              <span className="w-1 h-1 rounded-full bg-factory-gray-600 mt-1.5 flex-shrink-0" />
-              <span className="text-factory-gray-500 text-xs leading-relaxed">{f}</span>
+              <span className="w-1 h-1 rounded-full bg-ember-600 mt-1.5 flex-shrink-0" />
+              <span className="text-ember-500 text-xs leading-relaxed">{f}</span>
             </li>
           ))}
         </ul>
       </div>
       <div className="px-5 py-3 border-t border-border">
-        <span className={`font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 ${hoverText} transition-colors`}>
+        <span className={`font-mono text-[10px] uppercase tracking-widest text-ember-600 ${hoverText} transition-colors`}>
           Start session
         </span>
       </div>

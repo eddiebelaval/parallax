@@ -84,7 +84,7 @@ export function MessageCard({
           >
             {sender === "mediator" ? "Claude" : senderName}
           </span>
-          <span className="font-mono text-xs text-factory-gray-700">
+          <span className="font-mono text-xs text-ember-700">
             {timestamp}
           </span>
           {hasAnalysis && (
@@ -104,7 +104,7 @@ export function MessageCard({
           temperatureColor={tempColor}
           className={`text-sm leading-relaxed ${
             sender === "mediator"
-              ? "text-factory-gray-300 italic"
+              ? "text-ember-300 italic"
               : "text-foreground"
           }`}
         />
@@ -116,7 +116,7 @@ export function MessageCard({
             {!isCrystallizing && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-factory-gray-500 hover:text-factory-gray-300 transition-colors"
+                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-ember-500 hover:text-ember-300 transition-colors"
               >
                 <span
                   className="inline-block w-1 h-1 rounded-full"
@@ -155,7 +155,7 @@ export function MessageCard({
                 >
                   {/* Subtext */}
                   <AnalysisBlock label="Subtext">
-                    <p className="text-factory-gray-300 text-sm leading-relaxed">
+                    <p className="text-ember-300 text-sm leading-relaxed">
                       {nvcAnalysis.subtext}
                     </p>
                   </AnalysisBlock>
@@ -167,9 +167,9 @@ export function MessageCard({
                         {nvcAnalysis.blindSpots.map((spot, i) => (
                           <li
                             key={i}
-                            className="text-factory-gray-400 text-sm flex items-start gap-2"
+                            className="text-ember-400 text-sm flex items-start gap-2"
                           >
-                            <span className="mt-1.5 block w-1 h-1 rounded-full bg-factory-gray-600 flex-shrink-0" />
+                            <span className="mt-1.5 block w-1 h-1 rounded-full bg-ember-600 flex-shrink-0" />
                             {spot}
                           </li>
                         ))}
@@ -184,7 +184,7 @@ export function MessageCard({
                         {nvcAnalysis.unmetNeeds.map((need, i) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 border border-border text-factory-gray-400 font-mono text-[11px] uppercase tracking-wider"
+                            className="px-2 py-0.5 border border-border text-ember-400 font-mono text-[11px] uppercase tracking-wider"
                           >
                             {need}
                           </span>
@@ -218,7 +218,7 @@ function AnalysisBlock({
 }) {
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1.5">
+      <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1.5">
         {label}
       </p>
       {children}

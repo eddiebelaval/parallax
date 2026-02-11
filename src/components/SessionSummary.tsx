@@ -45,7 +45,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
         <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-        <p className="font-mono text-xs uppercase tracking-wider text-factory-gray-500">
+        <p className="font-mono text-xs uppercase tracking-wider text-ember-500">
           Generating summary...
         </p>
       </div>
@@ -58,7 +58,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
         <p className="font-mono text-xs uppercase tracking-wider text-red-400">
           Failed to generate summary
         </p>
-        <p className="text-factory-gray-500 text-sm text-center">{state.message}</p>
+        <p className="text-ember-500 text-sm text-center">{state.message}</p>
       </div>
     )
   }
@@ -77,7 +77,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
 
         {/* Temperature Arc */}
         <SummarySection label="Temperature Arc">
-          <p className="text-factory-gray-300 text-sm leading-relaxed">
+          <p className="text-ember-300 text-sm leading-relaxed">
             {data.temperatureArc}
           </p>
         </SummarySection>
@@ -87,7 +87,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
           <SummarySection label="Key Moments">
             <ul className="space-y-2">
               {data.keyMoments.map((moment, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-factory-gray-300">
+                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-ember-300">
                   <span className="mt-1.5 block w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
                   {moment}
                 </li>
@@ -119,7 +119,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
 function SummarySection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-3">
         {label}
       </p>
       {children}
@@ -145,21 +145,21 @@ function PersonSummary({
       </p>
 
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1.5">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1.5">
           What they needed
         </p>
-        <p className="text-factory-gray-300 text-sm leading-relaxed">{needs}</p>
+        <p className="text-ember-300 text-sm leading-relaxed">{needs}</p>
       </div>
 
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1.5">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1.5">
           Takeaway
         </p>
-        <p className="text-factory-gray-300 text-sm leading-relaxed">{takeaway}</p>
+        <p className="text-ember-300 text-sm leading-relaxed">{takeaway}</p>
       </div>
 
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-factory-gray-600 mb-1.5">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1.5">
           What they did well
         </p>
         <p className="text-success text-sm leading-relaxed">{strength}</p>

@@ -32,12 +32,12 @@ export function MessageInput({
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 bg-transparent text-foreground text-sm placeholder:text-factory-gray-600 focus:outline-none disabled:opacity-40"
+          className="flex-1 bg-transparent text-foreground text-sm placeholder:text-ember-600 focus:outline-none disabled:opacity-40"
         />
         <button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}
-          className="px-4 min-h-[44px] font-mono text-xs uppercase tracking-wider text-accent hover:text-factory-amber transition-colors disabled:opacity-40 disabled:hover:text-accent"
+          className="px-4 min-h-[44px] font-mono text-xs uppercase tracking-wider text-accent hover:text-ember-amber transition-colors disabled:opacity-40 disabled:hover:text-accent"
         >
           Send
         </button>
