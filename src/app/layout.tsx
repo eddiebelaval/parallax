@@ -16,8 +16,8 @@ const sourceSans = Source_Sans_3({
 
 const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-ibm-plex-mono",
-  weight: ["400", "500"],
   subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
 });
 

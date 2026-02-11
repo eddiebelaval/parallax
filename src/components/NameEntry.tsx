@@ -28,12 +28,12 @@ export function NameEntry({ onSubmit, side }: NameEntryProps) {
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           placeholder="Your name"
           maxLength={30}
-          className="flex-1 px-4 py-3 bg-surface border border-border text-foreground text-sm placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
+          className="flex-1 px-4 py-3 bg-surface border border-border text-foreground text-sm rounded placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
         />
         <button
           onClick={handleSubmit}
           disabled={!name.trim()}
-          className="px-4 py-3 bg-accent text-ember-black font-mono text-xs uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="px-4 py-3 bg-accent text-ember-dark font-mono text-xs uppercase tracking-wider rounded hover:opacity-90 transition-opacity disabled:opacity-40"
         >
           Join
         </button>

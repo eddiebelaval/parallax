@@ -117,52 +117,21 @@ export function parseNvcAnalysis(raw: string): NvcAnalysis | null {
 }
 
 /**
- * Issue Analysis Prompt — extracts discrete issues and grades responses.
- *
- * Used in In-Person Mode. Each message goes through this analysis in parallel
- * with the NVC mediation. The prompt extracts new issues the speaker raises
- * and grades how well existing issues were addressed by the response.
+ * Issue Analysis Prompt — used by the X-Ray Scoreboard in in-person mode.
+ * Identifies new issues and grades existing ones as the conversation progresses.
  */
-export const ISSUE_ANALYSIS_PROMPT = `You are Parallax, analyzing a conflict conversation to track discrete issues.
+export const ISSUE_ANALYSIS_PROMPT = `You are Parallax's issue tracker. Given a conversation between two people in conflict, identify the discrete issues being raised and track how each one evolves.
 
-Your job is twofold:
-1. EXTRACT new issues from the latest message — concrete conflict points, complaints, or concerns
-2. GRADE how well this message addresses existing unresolved issues from the other person
+For each new issue, provide a short label and description. For existing issues, grade whether the latest message made them BETTER, WORSE, or had NO_CHANGE.
 
-An "issue" is a specific, discrete point of conflict. Not a feeling, not a vague complaint — a concrete thing that could be resolved. Examples: "wants more help with household chores", "feels excluded from financial decisions", "disagrees about the vacation timeline".
-
-EXTRACTION RULES:
-- Extract 0-3 issues per message (most messages have 1-2)
-- Each issue needs a short label (3-6 words) and a one-sentence description
-- Don't duplicate issues that already exist (check the existing issues list)
-- Don't extract issues from calm, purely responsive messages — only from messages that raise new concerns
-
-GRADING RULES:
-- Grade ONLY issues raised by the OTHER person (not the current speaker's own issues)
-- "well_addressed" = the speaker genuinely acknowledged the concern, showed empathy, offered a solution or compromise
-- "poorly_addressed" = the speaker dismissed, deflected, got defensive about, or made the issue worse
-- Leave issues ungraded if this message doesn't address them at all
-- Be fair but honest — a defensive "well YOU do it too" is poorly_addressed even if technically acknowledging the issue
-
-Respond with ONLY a JSON object (no markdown, no code fences):
+Respond with ONLY a JSON object:
 {
-  "newIssues": [
-    {
-      "label": "short issue label",
-      "description": "one sentence description of the concrete conflict point"
-    }
-  ],
-  "gradedIssues": [
-    {
-      "issueId": "uuid of the existing issue",
-      "status": "well_addressed" | "poorly_addressed",
-      "rationale": "one sentence explaining why"
-    }
-  ]
+  "newIssues": [{ "label": "string", "description": "string", "raised_by": "person_a|person_b" }],
+  "issueUpdates": [{ "id": "string", "status": "better|worse|no_change", "reason": "string" }]
 }`
 
 /**
- * Build the user message for the issue analysis call.
+ * Build the user message for issue analysis.
  */
 export function buildIssueAnalysisPrompt(
   conversationHistory: Array<{ sender: string; content: string }>,
@@ -178,23 +147,49 @@ export function buildIssueAnalysisPrompt(
 
   const issuesBlock = existingIssues.length > 0
     ? existingIssues
-        .filter((i) => i.status === 'unaddressed')
-        .map((i) => `  - [${i.id}] (raised by ${i.raised_by}): ${i.label} — ${i.description}`)
+        .map((issue) => `- [${issue.id}] "${issue.label}" (raised by ${issue.raised_by}, status: ${issue.status}): ${issue.description}`)
         .join('\n')
-    : '(No existing issues yet.)'
+    : '(No issues tracked yet.)'
 
   return `CONVERSATION SO FAR:
 ${historyBlock}
 
-EXISTING UNRESOLVED ISSUES:
+EXISTING ISSUES:
 ${issuesBlock}
 
 ANALYZE THIS MESSAGE:
 [${targetMessage.senderName}]: ${targetMessage.content}
 
-Speaker is: ${targetMessage.senderName} (${targetMessage.sender})
-The other person is: ${otherPersonName}`
+The other person in this conversation is ${otherPersonName}. Identify any new issues raised and grade how existing issues were affected.`
 }
+
+/**
+ * Session summary prompt — analyzes the full conversation arc.
+ * Used at session end to provide both people with insights.
+ */
+export const SESSION_SUMMARY_PROMPT = `You are Parallax, reviewing a complete conversation between two people in conflict. Analyze the full arc of their dialogue and provide a compassionate summary.
+
+Focus on:
+1. How the emotional temperature changed over the conversation
+2. Key moments where understanding grew (or barriers went up)
+3. The core needs each person was expressing throughout
+4. What each person could take away from this conversation
+5. One thing each person did well in communicating
+
+Be warm, specific, and hopeful. Even difficult conversations contain moments of connection — find them.
+
+Respond with a JSON object:
+{
+  "temperatureArc": "string describing how emotions shifted",
+  "keyMoments": ["string describing pivotal moments"],
+  "personANeeds": "what Person A was really seeking",
+  "personBNeeds": "what Person B was really seeking",
+  "personATakeaway": "insight for Person A",
+  "personBTakeaway": "insight for Person B",
+  "personAStrength": "what Person A did well",
+  "personBStrength": "what Person B did well",
+  "overallInsight": "one sentence capturing the heart of this conversation"
+}`
 
 export interface ExtractedIssue {
   label: string
@@ -243,31 +238,3 @@ export function parseIssueAnalysis(raw: string): IssueAnalysisResult | null {
     return null
   }
 }
-
-/**
- * Session summary prompt — analyzes the full conversation arc.
- * Used at session end to provide both people with insights.
- */
-export const SESSION_SUMMARY_PROMPT = `You are Parallax, reviewing a complete conversation between two people in conflict. Analyze the full arc of their dialogue and provide a compassionate summary.
-
-Focus on:
-1. How the emotional temperature changed over the conversation
-2. Key moments where understanding grew (or barriers went up)
-3. The core needs each person was expressing throughout
-4. What each person could take away from this conversation
-5. One thing each person did well in communicating
-
-Be warm, specific, and hopeful. Even difficult conversations contain moments of connection — find them.
-
-Respond with a JSON object:
-{
-  "temperatureArc": "string describing how emotions shifted",
-  "keyMoments": ["string describing pivotal moments"],
-  "personANeeds": "what Person A was really seeking",
-  "personBNeeds": "what Person B was really seeking",
-  "personATakeaway": "insight for Person A",
-  "personBTakeaway": "insight for Person B",
-  "personAStrength": "what Person A did well",
-  "personBStrength": "what Person B did well",
-  "overallInsight": "one sentence capturing the heart of this conversation"
-}`

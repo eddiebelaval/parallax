@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   getTemperatureColor,
   getTemperatureLabel,
+  getBacklitClass,
 } from "@/lib/temperature";
 import { useMelt, MeltText } from "./TheMelt";
 import type { NvcAnalysis, MessageSender } from "@/types/database";
@@ -14,6 +15,7 @@ interface MessageCardProps {
   content: string;
   timestamp: string;
   nvcAnalysis?: NvcAnalysis | null;
+  isLatest?: boolean;
 }
 
 const SENDER_STYLES: Record<
@@ -43,6 +45,7 @@ export function MessageCard({
   content,
   timestamp,
   nvcAnalysis,
+  isLatest = false,
 }: MessageCardProps) {
   const [expanded, setExpanded] = useState(false);
   const style = SENDER_STYLES[sender];
@@ -63,6 +66,11 @@ export function MessageCard({
     ? getTemperatureLabel(nvcAnalysis.emotionalTemperature)
     : undefined;
 
+  // Backlit glow class — stronger for latest message
+  const backlitClass = hasAnalysis
+    ? getBacklitClass(nvcAnalysis.emotionalTemperature, isLatest)
+    : "";
+
   return (
     <div
       className={`${style.align} w-full ${
@@ -70,7 +78,7 @@ export function MessageCard({
       }`}
     >
       <div
-        className={`relative pl-4 ${style.borderClass}`}
+        className={`relative pl-4 ml-12 ${backlitClass} ${style.borderClass}`}
         style={
           hasAnalysis && sender !== "mediator"
             ? { borderLeft: `2px solid ${tempColor}` }
@@ -184,7 +192,7 @@ export function MessageCard({
                         {nvcAnalysis.unmetNeeds.map((need, i) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 border border-border text-ember-400 font-mono text-[11px] uppercase tracking-wider"
+                            className="px-2 py-0.5 border border-border text-ember-400 font-mono text-[11px] uppercase tracking-wider rounded"
                           >
                             {need}
                           </span>

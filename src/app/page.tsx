@@ -281,7 +281,7 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">NVC Translation</p>
-                  <p className="text-ember-teal text-xs leading-relaxed italic">
+                  <p className="text-temp-cool text-xs leading-relaxed italic">
                     &ldquo;When we agree on something and it doesn&apos;t happen, I feel hurt and invisible. I need to know that my time and energy matter. Could we make a concrete plan together — one we both actually commit to?&rdquo;
                   </p>
                 </div>
@@ -369,11 +369,11 @@ export default function Home() {
                   onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                   placeholder="ROOM CODE"
                   maxLength={6}
-                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
+                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center rounded placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
                 />
                 <button
                   onClick={handleJoin}
-                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-ember-600 transition-colors"
+                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider rounded hover:border-ember-600 transition-colors"
                 >
                   Join
                 </button>

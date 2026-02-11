@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       0
     )
     const raisedBy: 'person_a' | 'person_b' = targetMessage.sender === 'person_a' ? 'person_a' : 'person_b'
-    const inserts = result.newIssues.map((issue, i) => ({
+    const inserts = result.newIssues.map((issue: { label: string; description: string }, i: number) => ({
       session_id,
       raised_by: raisedBy,
       source_message_id: message_id,

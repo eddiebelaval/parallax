@@ -25,7 +25,6 @@ interface PersonPanelProps {
   personBName: string;
   analyzingMessageId: string | null;
   mediationError: string | null;
-  /** Rendered when the session isn't active yet (name entry, waiting state, etc.) */
   preJoinContent: ReactNode;
   className?: string;
 }
@@ -89,7 +88,7 @@ export function PersonPanel({
           />
           {mediationError && (
             <div className="px-4 py-1.5 border-t border-border">
-              <p className="font-mono text-xs text-accent">{mediationError}</p>
+              <p className="font-mono text-xs text-accent-secondary">{mediationError}</p>
             </div>
           )}
           <div className="border-t border-border">

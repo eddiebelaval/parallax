@@ -55,7 +55,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
   if (state.status === 'error') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-        <p className="font-mono text-xs uppercase tracking-wider text-red-400">
+        <p className="font-mono text-xs uppercase tracking-wider text-accent-secondary">
           Failed to generate summary
         </p>
         <p className="text-ember-500 text-sm text-center">{state.message}</p>
@@ -70,7 +70,7 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
       <div className="max-w-2xl mx-auto space-y-8 sm:space-y-10">
         {/* Overall Insight — hero quote */}
         <div className="border-l-2 border-accent pl-5 py-2">
-          <p className="text-foreground text-lg leading-relaxed">
+          <p className="text-foreground text-lg leading-relaxed font-serif">
             {data.overallInsight}
           </p>
         </div>

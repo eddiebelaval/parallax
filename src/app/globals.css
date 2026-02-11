@@ -1,51 +1,119 @@
 @import "tailwindcss";
 
 /* ─── Ember Design System Tokens ─── */
+/* Palette: Deep chocolate dark, warm parchment light */
+/* Philosophy: Light = Data — glow color/intensity encodes emotional temperature */
 
 :root {
-  /* Core palette */
-  --ember-black: #0a0806;
-  --ember-white: #f0ebe4;
+  /* Core palette — warm earth tones */
+  --ember-dark: #0f0b08;
+  --ember-surface: #1a1410;
+  --ember-elevated: #261e16;
+  --ember-border: #3a2e22;
+  --ember-muted: #7a6c58;
+  --ember-text: #c9b9a3;
+  --ember-heading: #ebe1d4;
 
-  /* Warm neutral scale (amber/brown undertones, never cool/blue) */
-  --ember-50: #faf7f2;
-  --ember-100: #f3ede3;
-  --ember-200: #e4d9c8;
-  --ember-300: #cec0a8;
-  --ember-400: #a89480;
-  --ember-500: #887261;
-  --ember-600: #6a574a;
-  --ember-700: #4d3e33;
-  --ember-800: #332820;
-  --ember-900: #1e1712;
-  --ember-950: #110d09;
+  /* Warm neutral scale */
+  --ember-100: #ebe1d4;
+  --ember-200: #d9cfc0;
+  --ember-300: #c9b9a3;
+  --ember-400: #a89582;
+  --ember-500: #8a7a66;
+  --ember-600: #7a6c58;
+  --ember-700: #4a3d2e;
+  --ember-800: #3a2e22;
+  --ember-900: #1a1410;
+  --ember-950: #0f0b08;
 
-  /* Accent colors */
-  --ember-orange: #ef6f2e;
-  --ember-amber: #f59e0b;
-  --ember-teal: #4ecdc4;
+  /* Temperature colors (conversation heat) */
+  --temp-hot: #c45c3c;
+  --temp-warm: #d4a040;
+  --temp-cool: #6aab8e;
+  --temp-neutral: #ebe1d4;
 
-  /* Temperature scale (conversation heat) */
-  --temp-hot: #ef4444;
-  --temp-warm: #f59e0b;
-  --temp-cool: #4ecdc4;
-  --temp-neutral: var(--ember-white);
+  /* Accent mapping */
+  --ember-accent: #d4a040;
+  --ember-teal: #6aab8e;
+  --ember-hot: #c45c3c;
+
+  /* Glow system — three intensity tiers per temperature */
+  --glow-hot: rgba(196, 92, 60, 0.35);
+  --glow-hot-soft: rgba(196, 92, 60, 0.12);
+  --glow-hot-ambient: rgba(196, 92, 60, 0.06);
+  --glow-warm: rgba(212, 160, 64, 0.35);
+  --glow-warm-soft: rgba(212, 160, 64, 0.12);
+  --glow-warm-ambient: rgba(212, 160, 64, 0.06);
+  --glow-cool: rgba(106, 171, 142, 0.35);
+  --glow-cool-soft: rgba(106, 171, 142, 0.12);
+  --glow-cool-ambient: rgba(106, 171, 142, 0.06);
 
   /* Semantic mapping — dark mode by default */
-  --background: var(--ember-black);
-  --foreground: var(--ember-white);
-  --muted: var(--ember-500);
-  --border: var(--ember-800);
-  --surface: var(--ember-950);
-  --accent: var(--ember-orange);
-  --accent-secondary: var(--ember-amber);
+  --background: var(--ember-dark);
+  --foreground: var(--ember-heading);
+  --muted: var(--ember-muted);
+  --border: var(--ember-border);
+  --surface: var(--ember-surface);
+  --accent: var(--ember-accent);
+  --accent-secondary: var(--ember-hot);
+  --success: var(--ember-teal);
+}
+
+/* ─── Light Mode ─── */
+
+.light {
+  --ember-dark: #f5efe6;
+  --ember-surface: #ede4d4;
+  --ember-elevated: #e2d6c4;
+  --ember-border: #d9cfc0;
+  --ember-muted: #7a6c58;
+  --ember-text: #3a2e22;
+  --ember-heading: #1e1810;
+
+  --ember-100: #1e1810;
+  --ember-200: #2e2418;
+  --ember-300: #3a2e22;
+  --ember-400: #5c4e3a;
+  --ember-500: #7a6c58;
+  --ember-600: #a89582;
+  --ember-700: #c9b9a3;
+  --ember-800: #d9cfc0;
+  --ember-900: #ede4d4;
+  --ember-950: #f5efe6;
+
+  /* Deepened accents for WCAG contrast on light bg */
+  --temp-hot: #a84428;
+  --temp-warm: #b8882a;
+  --temp-cool: #3d8a6e;
+  --temp-neutral: #3a2e22;
+
+  --ember-accent: #b8882a;
+  --ember-teal: #3d8a6e;
+  --ember-hot: #a84428;
+
+  --glow-hot: rgba(168, 68, 40, 0.25);
+  --glow-hot-soft: rgba(168, 68, 40, 0.10);
+  --glow-hot-ambient: rgba(168, 68, 40, 0.05);
+  --glow-warm: rgba(184, 136, 42, 0.25);
+  --glow-warm-soft: rgba(184, 136, 42, 0.10);
+  --glow-warm-ambient: rgba(184, 136, 42, 0.05);
+  --glow-cool: rgba(61, 138, 110, 0.25);
+  --glow-cool-soft: rgba(61, 138, 110, 0.10);
+  --glow-cool-ambient: rgba(61, 138, 110, 0.05);
+
+  --background: var(--ember-dark);
+  --foreground: var(--ember-heading);
+  --muted: var(--ember-muted);
+  --border: var(--ember-border);
+  --surface: var(--ember-surface);
+  --accent: var(--ember-accent);
+  --accent-secondary: var(--ember-hot);
   --success: var(--ember-teal);
 }
 
 /* ─── Tailwind v4 Theme Integration ─── */
 
 @theme inline {
-  /* Semantic tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -55,10 +123,7 @@
   --color-accent-secondary: var(--accent-secondary);
   --color-success: var(--success);
 
-  /* Ember palette */
-  --color-ember-black: var(--ember-black);
-  --color-ember-white: var(--ember-white);
-  --color-ember-50: var(--ember-50);
+  --color-ember-dark: var(--ember-dark);
   --color-ember-100: var(--ember-100);
   --color-ember-200: var(--ember-200);
   --color-ember-300: var(--ember-300);
@@ -69,37 +134,17 @@
   --color-ember-800: var(--ember-800);
   --color-ember-900: var(--ember-900);
   --color-ember-950: var(--ember-950);
-  --color-ember-orange: var(--ember-orange);
-  --color-ember-amber: var(--ember-amber);
+  --color-ember-accent: var(--ember-accent);
   --color-ember-teal: var(--ember-teal);
+  --color-ember-hot: var(--ember-hot);
 
-  /* Backward compat: factory-* aliases → ember-* values */
-  --color-factory-black: var(--ember-black);
-  --color-factory-white: var(--ember-white);
-  --color-factory-gray-50: var(--ember-50);
-  --color-factory-gray-100: var(--ember-100);
-  --color-factory-gray-200: var(--ember-200);
-  --color-factory-gray-300: var(--ember-300);
-  --color-factory-gray-400: var(--ember-400);
-  --color-factory-gray-500: var(--ember-500);
-  --color-factory-gray-600: var(--ember-600);
-  --color-factory-gray-700: var(--ember-700);
-  --color-factory-gray-800: var(--ember-800);
-  --color-factory-gray-900: var(--ember-900);
-  --color-factory-gray-950: var(--ember-950);
-  --color-factory-orange: var(--ember-orange);
-  --color-factory-amber: var(--ember-amber);
-  --color-factory-teal: var(--ember-teal);
-
-  /* Temperature */
   --color-temp-hot: var(--temp-hot);
   --color-temp-warm: var(--temp-warm);
   --color-temp-cool: var(--temp-cool);
   --color-temp-neutral: var(--temp-neutral);
 
-  /* Fonts */
-  --font-serif: var(--font-source-serif), "Georgia", serif;
-  --font-sans: var(--font-source-sans), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-source-sans), -apple-system, system-ui, sans-serif;
   --font-mono: var(--font-ibm-plex-mono), ui-monospace, "Cascadia Code", monospace;
 }
 
@@ -111,14 +156,14 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Ember headings: serif, weight 400, tight tracking */
+/* Ember headings: Source Serif 4, weight 400 (light), tight tracking */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   font-weight: 400;
   letter-spacing: -0.02em;
 }
 
-/* Section indicator pattern: orange dot + uppercase mono label */
+/* Section indicator pattern: accent dot + uppercase mono label */
 .section-indicator {
   display: flex;
   align-items: center;
@@ -140,6 +185,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ─── Backlit Glow System ─── */
+/* Light = Data: glow radiates outward from the border, away from content */
 
 .backlit {
   position: relative;
@@ -148,37 +194,66 @@ h1, h2, h3, h4, h5, h6 {
 .backlit::before {
   content: "";
   position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  opacity: 0.12;
+  left: -48px;
+  top: -6px;
+  bottom: -6px;
+  width: 52px;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  border-radius: 50% 0 0 50%;
+  filter: blur(6px);
 }
 
 .backlit-hot::before {
-  background: radial-gradient(ellipse at 50% 0%, var(--temp-hot) 0%, transparent 70%);
+  background: radial-gradient(ellipse at right center, var(--glow-hot-soft) 0%, transparent 70%);
 }
 
 .backlit-warm::before {
-  background: radial-gradient(ellipse at 50% 0%, var(--temp-warm) 0%, transparent 70%);
+  background: radial-gradient(ellipse at right center, var(--glow-warm-soft) 0%, transparent 70%);
 }
 
 .backlit-cool::before {
-  background: radial-gradient(ellipse at 50% 0%, var(--temp-cool) 0%, transparent 70%);
+  background: radial-gradient(ellipse at right center, var(--glow-cool-soft) 0%, transparent 70%);
 }
 
-.backlit-accent::before {
-  background: radial-gradient(ellipse at 50% 0%, var(--accent) 0%, transparent 70%);
+/* Stronger glow for latest/active messages */
+.backlit-hot-strong::before {
+  background: radial-gradient(ellipse at right center, var(--glow-hot) 0%, transparent 70%);
+  filter: blur(10px);
 }
 
-/* ─── Ambient Backgrounds ─── */
-
-.ambient-warm {
-  background: radial-gradient(ellipse at 50% 30%, rgba(245, 158, 11, 0.04) 0%, transparent 60%);
+.backlit-warm-strong::before {
+  background: radial-gradient(ellipse at right center, var(--glow-warm) 0%, transparent 70%);
+  filter: blur(10px);
 }
 
-.ambient-cool {
-  background: radial-gradient(ellipse at 50% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 60%);
+.backlit-cool-strong::before {
+  background: radial-gradient(ellipse at right center, var(--glow-cool) 0%, transparent 70%);
+  filter: blur(10px);
+}
+
+/* Ambient background pools — subtle gradient depth */
+.ambient-glow {
+  position: relative;
+}
+
+.ambient-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.ambient-hot::after {
+  background: radial-gradient(ellipse at 30% 50%, var(--glow-hot-ambient) 0%, transparent 60%);
+}
+
+.ambient-warm::after {
+  background: radial-gradient(ellipse at 30% 50%, var(--glow-warm-ambient) 0%, transparent 60%);
+}
+
+.ambient-cool::after {
+  background: radial-gradient(ellipse at 30% 50%, var(--glow-cool-ambient) 0%, transparent 60%);
 }
 
 /* ─── Analysis Reveal Animation ─── */
@@ -222,6 +297,26 @@ h1, h2, h3, h4, h5, h6 {
 
 .signal-segment-latest {
   animation: signal-segment-in 300ms ease-out both, signal-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Orb Waveform Animations ─── */
+
+@keyframes orb-idle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes orb-glow-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.orb-idle {
+  animation: orb-idle 3s ease-in-out infinite;
+}
+
+.orb-glow {
+  animation: orb-glow-pulse 2s ease-in-out infinite;
 }
 
 /* ─── The Melt: Dissolve → Crystallize ─── */
@@ -303,7 +398,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: issue-appear 0.3s ease-out both;
 }
 
-/* Line clamp utility for issue descriptions */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

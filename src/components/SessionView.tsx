@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { PersonPanel } from "./PersonPanel";
+import { OrbStrip } from "./OrbStrip";
 import { NameEntry } from "./NameEntry";
 import { WaitingState } from "./WaitingState";
 import { SessionSummary } from "./SessionSummary";
@@ -196,7 +197,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
   );
 
   return (
-    <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
+    <div className="flex-1 flex flex-col">
+      {bothJoined && (
+        <OrbStrip
+          personAName={personAName}
+          personBName={personBName}
+          currentTurn={currentTurn}
+          isAnalyzing={analyzingMessageId != null}
+        />
+      )}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
       <PersonPanel
         side="A"
         name={personAName}
@@ -234,6 +244,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
         mediationError={mediationError}
         preJoinContent={preJoinB}
       />
+      </div>
     </div>
   );
 }
