@@ -160,9 +160,23 @@ export interface ConflictAnalysis extends NvcAnalysis {
   meta: AnalysisMeta
 }
 
+export type ConductorPhase =
+  | 'greeting'      // Mediator sends welcome
+  | 'gather_a'      // Waiting for Person A context
+  | 'gather_b'      // Waiting for Person B context
+  | 'synthesize'    // Mediator synthesizes + sets goals
+  | 'active'        // Normal conversation with interventions
+
 export interface OnboardingContext {
+  // Existing fields (in-person mode)
   stageDescription?: string
   goals?: string[]
+  // Conductor fields (remote mode)
+  conductorPhase?: ConductorPhase
+  personAContext?: string      // What Person A shared
+  personBContext?: string      // What Person B shared
+  sessionGoals?: string[]      // Goals proposed by mediator
+  contextSummary?: string      // Mediator's synthesis
 }
 
 export interface Database {
@@ -341,4 +355,7 @@ export interface SessionSummaryData {
   personAStrength: string
   personBStrength: string
   overallInsight: string
+  // V3: Lens-aware summary fields
+  lensInsights: string[]
+  resolutionTrajectory: string
 }

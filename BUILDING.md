@@ -240,4 +240,32 @@ Example planted patterns from the Family pilot:
 - Similarity search: retrieve relevant past Arena results during live conversations
 - Remaining 5 category scenario sets (75 more scenarios)
 - Automated batch runs across all scenarios
+
+---
+
+## Stage 5 Hardening: Assessment Fixes
+
+**Date:** 2026-02-11
+**Gate:** "Are all known issues from the feature assessment resolved?"
+
+### What We Fixed
+
+After building V3 (Conflict Intelligence Engine) and V4 (Strategy Arena), we ran a systematic assessment of every feature block. This pass hardened the codebase before integration and launch.
+
+| Item | What We Did |
+|------|-------------|
+| **V3 Pipeline Verification** | Traced context_mode from session DB row through mediateMessage() to buildConflictIntelligencePrompt(). Confirmed working end-to-end -- no fix needed. |
+| **parseConflictAnalysis V3 Tests** | Added 15 tests: full V3 payload, sparse lenses, V1 fallback wrapping, missing NVC root fields, invalid JSON, temperature/severity clamping, activeLenses fallback, resolutionDirection validation. |
+| **context-modes.ts Tests** | New test file with 13 invariant tests: every ContextMode has non-empty lenses, NVC is always first in every mode, LENS_METADATA covers all 14 LensIds, CONTEXT_MODE_INFO covers all 6 modes, no duplicate lenses per mode, family mode has exactly 7 lenses. |
+| **Session Summary V3 Upgrade** | Extended SessionSummaryData type with lensInsights and resolutionTrajectory. Summary route now extracts V3 ConflictAnalysis from message rows and enriches Claude's prompt with resolution direction trends, lens activation counts, and per-message primary insights. SessionSummary.tsx renders "Lens Insights" and "Resolution Trajectory" sections. |
+| **VoiceInput UX Polish** | Changed unsupported-browser behavior from hiding the entire component to showing a disabled mic button with "Voice requires Chrome" informational label. Text input remains fully functional. |
+| **UI Flow Audit** | Added endingSession state to prevent double-click on "End" button. Verified: send buttons have disabled states, error states are visible inline, mediation analysis has loading indicators, mobile responsive on all components, empty message submission prevented. |
+| **Conductor Integration** | Mediator renamed from "Claude" to "Parallax" for brand consistency. Conductor system added for guided onboarding in remote mode (greeting, context gathering, synthesis phases). |
+| **README Expansion** | Rewrote for hackathon judges: V3 Conflict Intelligence Engine section (14 lenses, 6 context modes), V4 Strategy Arena vision, updated architecture with lens-aware pipeline, environment variables, testing section. |
+
+### Test Results
+
+- **86 tests across 6 suites** -- all passing
+- `npx tsc --noEmit` -- clean
+- `npm run build` -- production build succeeds
 - UI for browsing Arena results and strategy performance

@@ -104,6 +104,7 @@ Focus on:
 3. The core needs each person was expressing throughout
 4. What each person could take away from this conversation
 5. One thing each person did well in communicating
+6. If lens analysis data is provided (resolution directions, primary insights, activated frameworks), synthesize the key patterns those lenses detected across the conversation arc
 
 Be warm, specific, and hopeful. Even difficult conversations contain moments of connection — find them.
 
@@ -117,7 +118,9 @@ Respond with a JSON object:
   "personBTakeaway": "insight for Person B",
   "personAStrength": "what Person A did well",
   "personBStrength": "what Person B did well",
-  "overallInsight": "one sentence capturing the heart of this conversation"
+  "overallInsight": "one sentence capturing the heart of this conversation",
+  "lensInsights": ["key patterns detected by analytical frameworks, e.g. 'Gottman: criticism-defensiveness cycle appeared in 3 of 5 messages'"],
+  "resolutionTrajectory": "overall direction of the conversation: did it escalate, stabilize, or de-escalate over time?"
 }`
 
 export interface ExtractedIssue {

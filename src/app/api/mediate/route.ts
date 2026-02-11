@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase'
 import { mediateMessage } from '@/lib/opus'
 import { parseConflictAnalysis } from '@/lib/prompts/index'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
-import type { Message, ContextMode } from '@/types/database'
+import type { Message, ContextMode, OnboardingContext } from '@/types/database'
 
 /**
  * POST /api/mediate
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   // Fetch session for participant names + context mode
   const { data: session } = await supabase
     .from('sessions')
-    .select('person_a_name, person_b_name, context_mode')
+    .select('person_a_name, person_b_name, context_mode, onboarding_context')
     .eq('id', session_id)
     .single()
 
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
   // Call Claude for Conflict Intelligence analysis
   let rawText: string
   try {
+    const onboarding = session?.onboarding_context as OnboardingContext | null
     rawText = await mediateMessage(
       targetMessage.content,
       targetMessage.sender,
@@ -93,6 +94,10 @@ export async function POST(request: Request) {
       otherPersonName,
       conversationHistory,
       contextMode,
+      onboarding?.sessionGoals ? {
+        goals: onboarding.sessionGoals,
+        contextSummary: onboarding.contextSummary,
+      } : undefined,
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Claude API error'

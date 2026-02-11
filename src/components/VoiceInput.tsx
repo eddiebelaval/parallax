@@ -127,30 +127,22 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
     }
   }, []);
 
-  if (!supported) {
-    return (
-      <div className="flex items-center gap-2 px-4 py-3">
-        <span className="font-mono text-xs uppercase tracking-wider text-ember-600">
-          Voice not available in this browser
-        </span>
-      </div>
-    );
-  }
+  const isDisabled = disabled || !supported;
 
   return (
-    <div className={`px-4 py-3 ${disabled ? "opacity-40 pointer-events-none" : ""}`}>
+    <div className={`px-4 py-3 ${isDisabled ? "opacity-40 pointer-events-none" : ""}`}>
       <div className="flex items-center gap-3">
         {/* Push-to-talk button */}
         <button
           type="button"
-          onMouseDown={startListening}
-          onMouseUp={stopListening}
-          onTouchStart={startListening}
-          onTouchEnd={stopListening}
+          onMouseDown={supported ? startListening : undefined}
+          onMouseUp={supported ? stopListening : undefined}
+          onTouchStart={supported ? startListening : undefined}
+          onTouchEnd={supported ? stopListening : undefined}
           onMouseLeave={listening ? stopListening : undefined}
-          disabled={disabled}
+          disabled={isDisabled}
           className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:border-ember-600 disabled:opacity-40"
-          aria-label={listening ? "Listening..." : "Hold to speak"}
+          aria-label={!supported ? "Voice requires Chrome" : listening ? "Listening..." : "Hold to speak"}
         >
           {/* Pulsing ring when active */}
           {listening && (
@@ -161,9 +153,16 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
         </button>
 
         {/* Status label */}
-        <span className="font-mono text-xs uppercase tracking-wider text-ember-600">
-          {listening ? "Listening..." : "Hold to speak"}
-        </span>
+        <div className="flex flex-col">
+          <span className="font-mono text-xs uppercase tracking-wider text-ember-600">
+            {!supported ? "Hold to speak" : listening ? "Listening..." : "Hold to speak"}
+          </span>
+          {!supported && (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ember-700 mt-0.5">
+              Voice requires Chrome
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Interim transcript display */}
