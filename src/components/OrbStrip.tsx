@@ -52,7 +52,7 @@ export function OrbStrip({
         size={52}
       />
       <AudioWaveformOrb
-        name="Claude"
+        name="Parallax"
         role="claude"
         waveform={claude.waveform}
         energy={claude.energy}
