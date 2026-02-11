@@ -88,5 +88,23 @@ export function useSession(roomCode: string) {
     return data as Session
   }, [roomCode])
 
-  return { session, loading, error, createSession, joinSession }
+  // Advance in-person onboarding to the next step
+  const advanceOnboarding = useCallback(async (payload: Record<string, unknown>) => {
+    setError(null)
+    const res = await fetch(`/api/sessions/${roomCode}/onboarding`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error || 'Failed to advance onboarding')
+      return null
+    }
+    const data = await res.json()
+    setSession(data)
+    return data as Session
+  }, [roomCode])
+
+  return { session, loading, error, createSession, joinSession, advanceOnboarding }
 }
