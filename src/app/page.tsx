@@ -240,7 +240,7 @@ export default function Home() {
 
           {/* Example message with analysis */}
           <Reveal delay={100}>
-            <div className="border border-border">
+            <div className="backlit backlit-warm border border-border rounded-sm">
               {/* Raw message */}
               <div className="p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-3">

@@ -86,34 +86,52 @@ Each participant gets an SVG orb with a real-time waveform driven by the Web Aud
 ```
 src/
   app/
-    page.tsx                    # Session lobby (create/join)
-    session/[code]/page.tsx     # Main session view
+    page.tsx                         # Landing page (mode selection, join)
+    globals.css                      # Ember design system tokens + animations
+    layout.tsx                       # Root layout (fonts, header)
+    session/[code]/page.tsx          # Main session view
     api/
-      sessions/route.ts         # Create session
-      sessions/[code]/route.ts  # Get/join session
-      messages/route.ts         # Send message
-      mediate/route.ts          # Claude Opus NVC analysis (streaming)
+      sessions/route.ts              # Create session
+      sessions/[code]/route.ts       # Get/join session
+      sessions/[code]/join/route.ts  # Join session
+      sessions/[code]/end/route.ts   # End session
+      sessions/[code]/onboarding/route.ts  # In-person onboarding state machine
+      sessions/[code]/summary/route.ts     # Session summary generation
+      messages/route.ts              # Send message
+      mediate/route.ts               # Claude Opus NVC analysis (streaming)
+      issues/analyze/route.ts        # Issue extraction + grading
   components/
-    AudioWaveformOrb.tsx        # Real-time SVG waveform orb per participant
-    SessionLobby.tsx
-    SessionView.tsx
-    MessageCard.tsx             # Backlit glow borders + NVC analysis reveal
+    AudioWaveformOrb.tsx             # Real-time SVG waveform orb per participant
+    SessionView.tsx                  # Mode branch: remote vs in-person
+    MessageCard.tsx                  # Backlit glow borders + NVC analysis reveal
     MessageInput.tsx
+    MessageArea.tsx                  # Message list + SignalRail
     VoiceInput.tsx
-    TheMelt.tsx                 # Core animation
-    SignalRail.tsx              # Temperature timeline with glow
-    WaitingState.tsx
+    TheMelt.tsx                      # Core dissolve → crystallize animation
+    SignalRail.tsx                   # Temperature timeline with glow
+    PersonPanel.tsx                  # Remote mode: per-person panel
+    NameEntry.tsx                    # Name input for remote joining
+    SessionSummary.tsx               # End-of-session summary
+    inperson/
+      OnboardingFlow.tsx             # 3-step guided onboarding
+      XRayView.tsx                   # Main in-person orchestrator
+      XRayScoreboard.tsx             # Two-column issue board
+      IssueCard.tsx                  # Single issue with status color
+      ActiveSpeakerBar.tsx           # Turn indicator + input
   hooks/
     useSession.ts
     useMessages.ts
+    useIssues.ts                     # Issues Realtime hook
     useVoiceInput.ts
-    useAudioAnalyser.ts         # Web Audio API mic → waveform data
+    useAudioAnalyser.ts              # Web Audio API mic → waveform data
   lib/
-    supabase.ts                # Client setup
-    opus.ts                    # Claude API wrapper
-    prompts.ts                 # NVC system prompt (core IP)
-    room-code.ts               # 6-char code generator
-    temperature.ts             # Color + glow class mapping
+    supabase.ts                      # Client setup
+    opus.ts                          # Claude API wrapper
+    prompts.ts                       # NVC system prompt + issue analysis (core IP)
+    room-code.ts                     # 6-char code generator
+    temperature.ts                   # Color + glow class mapping
+  types/
+    database.ts                      # Session, Message, Issue, OnboardingStep types
 ```
 
 ## Branch Protocol

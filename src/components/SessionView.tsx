@@ -6,6 +6,8 @@ import { OrbStrip } from "./OrbStrip";
 import { NameEntry } from "./NameEntry";
 import { WaitingState } from "./WaitingState";
 import { SessionSummary } from "./SessionSummary";
+import { OnboardingFlow } from "./inperson/OnboardingFlow";
+import { XRayView } from "./inperson/XRayView";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
 
@@ -16,7 +18,7 @@ interface SessionViewProps {
 }
 
 export function SessionView({ roomCode }: SessionViewProps) {
-  const { session, loading: sessionLoading, createSession, joinSession } = useSession(roomCode);
+  const { session, loading: sessionLoading, createSession, joinSession, advanceOnboarding } = useSession(roomCode);
   const { messages, sendMessage, currentTurn } = useMessages(session?.id);
 
   // Track which side the local user has claimed (for same-device split-screen)
@@ -126,6 +128,42 @@ export function SessionView({ roomCode }: SessionViewProps) {
       </div>
     );
   }
+
+  // --- In-Person Mode Branch ---
+  if (session?.mode === 'in_person') {
+    if (isCompleted) {
+      return (
+        <div className="flex-1 flex flex-col">
+          <SessionSummary
+            roomCode={roomCode}
+            personAName={personAName}
+            personBName={personBName}
+          />
+        </div>
+      );
+    }
+
+    if (session.onboarding_step !== 'complete') {
+      return <OnboardingFlow session={session} roomCode={roomCode} advanceOnboarding={advanceOnboarding} />;
+    }
+
+    return (
+      <XRayView
+        session={session}
+        roomCode={roomCode}
+        messages={messages}
+        sendMessage={sendMessage}
+        currentTurn={currentTurn}
+        triggerMediation={triggerMediation}
+        endSession={endSession}
+        analyzingMessageId={analyzingMessageId}
+        mediationError={mediationError}
+        setMediationError={setMediationError}
+      />
+    );
+  }
+
+  // --- Remote Mode (existing flow, unchanged) ---
 
   // When session is completed, show the summary spanning the full width
   if (isCompleted) {

@@ -190,3 +190,51 @@ Respond with a JSON object:
   "personBStrength": "what Person B did well",
   "overallInsight": "one sentence capturing the heart of this conversation"
 }`
+
+export interface ExtractedIssue {
+  label: string
+  description: string
+}
+
+export interface GradedIssue {
+  issueId: string
+  status: 'well_addressed' | 'poorly_addressed'
+  rationale: string
+}
+
+export interface IssueAnalysisResult {
+  newIssues: ExtractedIssue[]
+  gradedIssues: GradedIssue[]
+}
+
+/**
+ * Parse Claude's issue analysis response.
+ */
+export function parseIssueAnalysis(raw: string): IssueAnalysisResult | null {
+  try {
+    const parsed = JSON.parse(stripCodeFences(raw))
+
+    return {
+      newIssues: Array.isArray(parsed.newIssues)
+        ? parsed.newIssues
+            .filter((i: { label?: string; description?: string }) => i.label && i.description)
+            .map((i: { label: string; description: string }) => ({
+              label: String(i.label),
+              description: String(i.description),
+            }))
+        : [],
+      gradedIssues: Array.isArray(parsed.gradedIssues)
+        ? parsed.gradedIssues
+            .filter((g: { issueId?: string; status?: string }) =>
+              g.issueId && (g.status === 'well_addressed' || g.status === 'poorly_addressed'))
+            .map((g: { issueId: string; status: string; rationale?: string }) => ({
+              issueId: String(g.issueId),
+              status: g.status as 'well_addressed' | 'poorly_addressed',
+              rationale: String(g.rationale || ''),
+            }))
+        : [],
+    }
+  } catch {
+    return null
+  }
+}

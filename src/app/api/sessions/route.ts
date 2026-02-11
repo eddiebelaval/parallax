@@ -7,12 +7,22 @@ const MAX_RETRIES = 3
 export async function POST(request: Request) {
   const supabase = createServerClient()
   const body = await request.json()
-  const { person_a_name } = body
+  const { person_a_name, mode } = body
+
+  const insertData: Record<string, unknown> = {
+    person_a_name: person_a_name || null,
+  }
+
+  // In-person mode starts with onboarding; remote mode is the default
+  if (mode === 'in_person') {
+    insertData.mode = 'in_person'
+    insertData.onboarding_step = 'introductions'
+  }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { data, error } = await supabase
       .from('sessions')
-      .insert({ person_a_name: person_a_name || null })
+      .insert(insertData)
       .select()
       .single()
 
