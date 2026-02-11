@@ -8,7 +8,7 @@ export function WaitingState({ roomCode }: { roomCode: string }) {
       <p className="text-muted text-sm mb-8">
         Share this room code to get started
       </p>
-      <div className="px-6 py-3 border border-border font-mono text-2xl tracking-[0.3em] text-foreground select-all">
+      <div className="px-6 py-3 border border-border rounded font-mono text-2xl tracking-[0.3em] text-foreground select-all">
         {roomCode}
       </div>
     </div>

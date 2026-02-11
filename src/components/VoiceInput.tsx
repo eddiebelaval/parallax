@@ -130,7 +130,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
   if (!supported) {
     return (
       <div className="flex items-center gap-2 px-4 py-3">
-        <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-600">
+        <span className="font-mono text-xs uppercase tracking-wider text-ember-600">
           Voice not available in this browser
         </span>
       </div>
@@ -149,7 +149,7 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
           onTouchEnd={stopListening}
           onMouseLeave={listening ? stopListening : undefined}
           disabled={disabled}
-          className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:border-factory-gray-600 disabled:opacity-40"
+          className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:border-ember-600 disabled:opacity-40"
           aria-label={listening ? "Listening..." : "Hold to speak"}
         >
           {/* Pulsing ring when active */}
@@ -157,11 +157,11 @@ export function VoiceInput({ onTranscript, disabled = false }: VoiceInputProps) 
             <span className="absolute inset-0 rounded-full border-2 border-accent animate-pulse" />
           )}
 
-          <MicIcon className={listening ? "text-accent" : "text-factory-gray-500"} />
+          <MicIcon className={listening ? "text-accent" : "text-ember-500"} />
         </button>
 
         {/* Status label */}
-        <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-600">
+        <span className="font-mono text-xs uppercase tracking-wider text-ember-600">
           {listening ? "Listening..." : "Hold to speak"}
         </span>
       </div>

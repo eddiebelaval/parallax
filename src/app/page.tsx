@@ -84,7 +84,7 @@ export default function Home() {
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="w-full px-6 py-4 bg-accent text-factory-black font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-60"
+              className="w-full px-6 py-4 bg-accent text-ember-dark font-mono text-sm uppercase tracking-wider rounded hover:opacity-90 transition-opacity disabled:opacity-60"
             >
               {creating ? "Creating..." : "Create Session"}
             </button>
@@ -111,17 +111,17 @@ export default function Home() {
                   onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                   placeholder="ROOM CODE"
                   maxLength={6}
-                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center placeholder:text-factory-gray-600 focus:border-factory-gray-600 focus:outline-none transition-colors"
+                  className="flex-1 px-4 py-4 bg-surface border border-border text-foreground font-mono text-sm tracking-widest text-center rounded placeholder:text-ember-600 focus:border-ember-600 focus:outline-none transition-colors"
                 />
                 <button
                   onClick={handleJoin}
-                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider hover:border-factory-gray-600 transition-colors"
+                  className="px-6 py-4 border border-border text-foreground font-mono text-sm uppercase tracking-wider rounded hover:border-ember-600 transition-colors"
                 >
                   Join
                 </button>
               </div>
               {error && (
-                <p className="text-accent font-mono text-xs">{error}</p>
+                <p className="text-accent-secondary font-mono text-xs">{error}</p>
               )}
             </div>
           </div>
@@ -133,11 +133,11 @@ export default function Home() {
 
 function Step({ number, label }: { number: string; label: string }) {
   return (
-    <div className="flex items-center gap-3 sm:flex-1 px-4 py-3 border border-border">
+    <div className="flex items-center gap-3 sm:flex-1 px-4 py-3 border border-border rounded">
       <span className="font-mono text-[10px] text-accent tracking-widest">
         {number}
       </span>
-      <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-400">
+      <span className="font-mono text-xs uppercase tracking-wider text-ember-400">
         {label}
       </span>
     </div>
