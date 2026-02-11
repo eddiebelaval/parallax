@@ -1,7 +1,7 @@
 "use client";
 
 import { getTemperatureColor } from "@/lib/temperature";
-import type { Message } from "@/types/database";
+import type { Message, ConflictAnalysis } from "@/types/database";
 
 interface SignalRailProps {
   messages: Message[];
@@ -19,6 +19,16 @@ export function SignalRail({ messages }: SignalRailProps) {
           ? getTemperatureColor(msg.emotional_temperature!)
           : "var(--ember-800)";
 
+        // V3: Check for resolution direction to add directional glow
+        const analysis = msg.nvc_analysis as ConflictAnalysis | null;
+        const direction = analysis?.meta?.resolutionDirection;
+        const directionColor =
+          direction === "de-escalating"
+            ? "var(--temp-cool)"
+            : direction === "escalating"
+              ? "var(--temp-hot)"
+              : undefined;
+
         return (
           <div
             key={msg.id}
@@ -26,7 +36,7 @@ export function SignalRail({ messages }: SignalRailProps) {
             style={{
               backgroundColor: color,
               boxShadow: isLatest && hasAnalysis
-                ? `0 0 8px ${color}, 0 0 16px ${color}`
+                ? `0 0 8px ${directionColor || color}, 0 0 16px ${directionColor || color}`
                 : undefined,
             }}
           />

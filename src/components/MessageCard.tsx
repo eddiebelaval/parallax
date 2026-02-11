@@ -7,14 +7,19 @@ import {
   getBacklitClass,
 } from "@/lib/temperature";
 import { useMelt, MeltText } from "./TheMelt";
-import type { NvcAnalysis, MessageSender } from "@/types/database";
+import { LensBar } from "./lenses/LensBar";
+import type {
+  NvcAnalysis,
+  ConflictAnalysis,
+  MessageSender,
+} from "@/types/database";
 
 interface MessageCardProps {
   sender: MessageSender;
   senderName: string;
   content: string;
   timestamp: string;
-  nvcAnalysis?: NvcAnalysis | null;
+  nvcAnalysis?: NvcAnalysis | ConflictAnalysis | null;
   isLatest?: boolean;
 }
 
@@ -39,6 +44,13 @@ const SENDER_STYLES: Record<
   },
 };
 
+// Type guard for V3 analysis
+function isConflictAnalysis(
+  a: NvcAnalysis | ConflictAnalysis
+): a is ConflictAnalysis {
+  return "lenses" in a && "meta" in a;
+}
+
 export function MessageCard({
   sender,
   senderName,
@@ -51,8 +63,16 @@ export function MessageCard({
   const style = SENDER_STYLES[sender];
   const hasAnalysis = nvcAnalysis != null;
 
-  const meltPhase = useMelt(hasAnalysis);
+  // V3: Severity-aware Melt timing
+  const severity = hasAnalysis
+    ? (nvcAnalysis as ConflictAnalysis)?.meta?.overallSeverity ?? nvcAnalysis.emotionalTemperature
+    : 0.5;
+  const meltPhase = useMelt(hasAnalysis, severity);
   const isCrystallizing = meltPhase === "crystallizing";
+
+  // V3: Check if this is a multi-lens analysis
+  const isV3Analysis = hasAnalysis && isConflictAnalysis(nvcAnalysis);
+  const v3Analysis = isV3Analysis ? (nvcAnalysis as ConflictAnalysis) : null;
 
   // Auto-expand analysis when crystallize phase begins
   useEffect(() => {
@@ -85,7 +105,7 @@ export function MessageCard({
             : undefined
         }
       >
-        {/* Header: sender + timestamp + temperature badge */}
+        {/* Header: sender + timestamp + temperature badge + direction */}
         <div className="flex items-baseline gap-2 mb-1">
           <span
             className={`font-mono text-xs uppercase tracking-wider ${style.nameColor}`}
@@ -103,7 +123,18 @@ export function MessageCard({
               {tempLabel}
             </span>
           )}
+          {/* V3: Resolution direction indicator */}
+          {v3Analysis && (
+            <DirectionIndicator direction={v3Analysis.meta.resolutionDirection} />
+          )}
         </div>
+
+        {/* V3 Tier 1: Primary insight sentence (always visible when analysis present) */}
+        {v3Analysis && meltPhase === "settled" && (
+          <p className="text-ember-300 text-xs leading-relaxed mb-2 italic">
+            {v3Analysis.meta.primaryInsight}
+          </p>
+        )}
 
         {/* Message content — dissolves during The Melt */}
         <MeltText
@@ -207,6 +238,16 @@ export function MessageCard({
                       {nvcAnalysis.nvcTranslation}
                     </p>
                   </AnalysisBlock>
+
+                  {/* V3 Tier 2+3: Multi-lens analysis bar */}
+                  {v3Analysis && (
+                    <AnalysisBlock label="Lens Analysis">
+                      <LensBar
+                        activeLenses={v3Analysis.meta.activeLenses}
+                        lensResults={v3Analysis.lenses}
+                      />
+                    </AnalysisBlock>
+                  )}
                 </div>
               </div>
             </div>
@@ -231,5 +272,32 @@ function AnalysisBlock({
       </p>
       {children}
     </div>
+  );
+}
+
+function DirectionIndicator({
+  direction,
+}: {
+  direction: "escalating" | "stable" | "de-escalating";
+}) {
+  const config = {
+    escalating: { symbol: "^", color: "var(--temp-hot)", label: "escalating" },
+    stable: { symbol: "-", color: "var(--temp-warm)", label: "stable" },
+    "de-escalating": {
+      symbol: "v",
+      color: "var(--temp-cool)",
+      label: "de-escalating",
+    },
+  };
+  const c = config[direction];
+
+  return (
+    <span
+      className="font-mono text-[9px] uppercase tracking-wider"
+      style={{ color: c.color }}
+      title={c.label}
+    >
+      {c.symbol}
+    </span>
   );
 }

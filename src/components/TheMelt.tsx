@@ -4,8 +4,18 @@ import { useRef, useEffect, useState } from "react";
 
 export type MeltPhase = "idle" | "dissolving" | "crystallizing" | "settled";
 
-const DISSOLVE_MS = 1200;
-const TOTAL_MS = 2600;
+/**
+ * V3: Severity-aware dissolve timing.
+ * Low severity (0-0.3): fast dissolve — message was mild, quick transform.
+ * High severity (0.7-1.0): slow dissolve — heavy message, let it breathe.
+ */
+function getMeltTiming(severity: number) {
+  // Clamp to 0-1, map to 800ms-1800ms dissolve
+  const s = Math.max(0, Math.min(1, severity));
+  const dissolveMs = Math.round(800 + s * 1000);
+  const crystallizeMs = Math.round(dissolveMs * 1.15); // crystallize slightly longer than dissolve
+  return { dissolveMs, totalMs: dissolveMs + crystallizeMs };
+}
 
 /**
  * Tracks the null → non-null transition of NVC analysis and drives
@@ -13,8 +23,10 @@ const TOTAL_MS = 2600;
  *
  * If analysis is already present on mount (loaded from history),
  * the hook returns "settled" immediately — no animation plays.
+ *
+ * V3: Accepts optional severity for dynamic timing.
  */
-export function useMelt(analysisArrived: boolean): MeltPhase {
+export function useMelt(analysisArrived: boolean, severity = 0.5): MeltPhase {
   const mountedWith = useRef(analysisArrived);
   const triggered = useRef(false);
   const [phase, setPhase] = useState<MeltPhase>(
@@ -25,15 +37,17 @@ export function useMelt(analysisArrived: boolean): MeltPhase {
     if (mountedWith.current || !analysisArrived || triggered.current) return;
     triggered.current = true;
 
+    const { dissolveMs, totalMs } = getMeltTiming(severity);
+
     setPhase("dissolving");
-    const t1 = setTimeout(() => setPhase("crystallizing"), DISSOLVE_MS);
-    const t2 = setTimeout(() => setPhase("settled"), TOTAL_MS);
+    const t1 = setTimeout(() => setPhase("crystallizing"), dissolveMs);
+    const t2 = setTimeout(() => setPhase("settled"), totalMs);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [analysisArrived]);
+  }, [analysisArrived, severity]);
 
   return phase;
 }
