@@ -159,16 +159,17 @@ export function SessionView({ roomCode }: SessionViewProps) {
     }
   }, [session?.id]);
 
-  // End the session — status change flows through Realtime to both sides
+  // End the session — refresh to pick up status change (Realtime may not deliver)
   const endSession = useCallback(async () => {
     if (endingSession) return;
     setEndingSession(true);
     try {
       await fetch(`/api/sessions/${roomCode}/end`, { method: "POST" });
+      refreshSession();
     } catch {
       setEndingSession(false);
     }
-  }, [roomCode, endingSession]);
+  }, [roomCode, endingSession, refreshSession]);
 
   // Call conductor for onboarding messages (no NVC analysis during gather phases)
   const triggerConductor = useCallback(async (messageId: string) => {
