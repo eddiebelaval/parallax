@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { summarizeSession } from '@/lib/opus'
 import type { V3MessageContext } from '@/lib/opus'
 import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
@@ -63,9 +64,12 @@ function extractV3Context(messages: Message[]): V3MessageContext[] {
  * Response: { summary: SessionSummary }
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const { code } = await params
   const supabase = createServerClient()
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { conductorMessage } from '@/lib/opus'
 import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
 import {
@@ -23,6 +24,9 @@ type ConductorTrigger = 'session_active' | 'message_sent' | 'check_intervention'
  * Body: { session_id, trigger, message_id?, analysis? }
  */
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const body = await request.json()
   const { session_id, trigger, message_id } = body as {
     session_id: string

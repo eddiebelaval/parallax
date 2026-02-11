@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { analyzeIssues } from '@/lib/opus'
 import { parseIssueAnalysis } from '@/lib/prompts'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
@@ -7,6 +8,9 @@ import type { Message, MessageSender } from '@/types/database'
 
 // POST /api/issues/analyze — extract issues + grade existing ones
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const supabase = createServerClient()
   const { session_id, message_id } = await request.json()
 

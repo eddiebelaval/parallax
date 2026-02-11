@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { mediateMessage } from '@/lib/opus'
 import { parseConflictAnalysis } from '@/lib/prompts/index'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
@@ -21,6 +22,9 @@ import type { Message, ContextMode, OnboardingContext } from '@/types/database'
  * Response: { analysis: ConflictAnalysis, temperature: number }
  */
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const body = await request.json()
   const { session_id, message_id } = body as {
     session_id: string
