@@ -1,5 +1,8 @@
 export type SessionStatus = 'waiting' | 'active' | 'completed'
+export type SessionMode = 'remote' | 'in_person'
+export type OnboardingStep = 'introductions' | 'set_stage' | 'set_goals' | 'complete'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
+export type IssueStatus = 'unaddressed' | 'well_addressed' | 'poorly_addressed'
 
 export interface NvcAnalysis {
   // Classic NVC framework (Marshall Rosenberg's 4 components)
@@ -16,6 +19,11 @@ export interface NvcAnalysis {
   emotionalTemperature: number // 0.0 (calm/neutral) to 1.0 (heated/volatile)
 }
 
+export interface OnboardingContext {
+  stageDescription?: string
+  goals?: string[]
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -26,6 +34,9 @@ export interface Database {
           person_a_name: string | null
           person_b_name: string | null
           status: SessionStatus
+          mode: SessionMode
+          onboarding_step: OnboardingStep | null
+          onboarding_context: OnboardingContext | null
           created_at: string
           updated_at: string
         }
@@ -35,6 +46,9 @@ export interface Database {
           person_a_name?: string | null
           person_b_name?: string | null
           status?: SessionStatus
+          mode?: SessionMode
+          onboarding_step?: OnboardingStep | null
+          onboarding_context?: OnboardingContext | null
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +58,9 @@ export interface Database {
           person_a_name?: string | null
           person_b_name?: string | null
           status?: SessionStatus
+          mode?: SessionMode
+          onboarding_step?: OnboardingStep | null
+          onboarding_context?: OnboardingContext | null
           created_at?: string
           updated_at?: string
         }
@@ -87,6 +104,66 @@ export interface Database {
           }
         ]
       }
+      issues: {
+        Row: {
+          id: string
+          session_id: string
+          raised_by: 'person_a' | 'person_b'
+          source_message_id: string
+          label: string
+          description: string
+          status: IssueStatus
+          addressed_by_message_id: string | null
+          grading_rationale: string | null
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          raised_by: 'person_a' | 'person_b'
+          source_message_id: string
+          label: string
+          description: string
+          status?: IssueStatus
+          addressed_by_message_id?: string | null
+          grading_rationale?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          raised_by?: 'person_a' | 'person_b'
+          source_message_id?: string
+          label?: string
+          description?: string
+          status?: IssueStatus
+          addressed_by_message_id?: string | null
+          grading_rationale?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'issues_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'sessions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'issues_source_message_id_fkey'
+            columns: ['source_message_id']
+            isOneToOne: false
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -103,6 +180,7 @@ export interface Database {
 // Convenience types
 export type Session = Database['public']['Tables']['sessions']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
+export type Issue = Database['public']['Tables']['issues']['Row']
 
 export interface SessionSummaryData {
   temperatureArc: string
