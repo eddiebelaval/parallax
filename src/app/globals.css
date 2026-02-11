@@ -1,50 +1,51 @@
 @import "tailwindcss";
 
-/* ─── Factory Design System Tokens ─── */
+/* ─── Ember Design System Tokens ─── */
 
 :root {
   /* Core palette */
-  --factory-black: #020202;
-  --factory-white: #eeeeee;
+  --ember-black: #0a0806;
+  --ember-white: #f0ebe4;
 
-  /* Warm neutral grays (brownish tones, never cool/blue) */
-  --factory-gray-50: #faf9f7;
-  --factory-gray-100: #f5f3f0;
-  --factory-gray-200: #e8e5e0;
-  --factory-gray-300: #d4d0c8;
-  --factory-gray-400: #b0a99e;
-  --factory-gray-500: #8a8279;
-  --factory-gray-600: #6b6358;
-  --factory-gray-700: #4d4639;
-  --factory-gray-800: #302a20;
-  --factory-gray-900: #1a1610;
-  --factory-gray-950: #0d0b08;
+  /* Warm neutral scale (amber/brown undertones, never cool/blue) */
+  --ember-50: #faf7f2;
+  --ember-100: #f3ede3;
+  --ember-200: #e4d9c8;
+  --ember-300: #cec0a8;
+  --ember-400: #a89480;
+  --ember-500: #887261;
+  --ember-600: #6a574a;
+  --ember-700: #4d3e33;
+  --ember-800: #332820;
+  --ember-900: #1e1712;
+  --ember-950: #110d09;
 
   /* Accent colors */
-  --factory-orange: #ef6f2e;
-  --factory-amber: #f59e0b;
-  --factory-teal: #4ecdc4;
+  --ember-orange: #ef6f2e;
+  --ember-amber: #f59e0b;
+  --ember-teal: #4ecdc4;
 
   /* Temperature scale (conversation heat) */
   --temp-hot: #ef4444;
   --temp-warm: #f59e0b;
   --temp-cool: #4ecdc4;
-  --temp-neutral: #eeeeee;
+  --temp-neutral: var(--ember-white);
 
   /* Semantic mapping — dark mode by default */
-  --background: var(--factory-black);
-  --foreground: var(--factory-white);
-  --muted: var(--factory-gray-500);
-  --border: var(--factory-gray-800);
-  --surface: var(--factory-gray-950);
-  --accent: var(--factory-orange);
-  --accent-secondary: var(--factory-amber);
-  --success: var(--factory-teal);
+  --background: var(--ember-black);
+  --foreground: var(--ember-white);
+  --muted: var(--ember-500);
+  --border: var(--ember-800);
+  --surface: var(--ember-950);
+  --accent: var(--ember-orange);
+  --accent-secondary: var(--ember-amber);
+  --success: var(--ember-teal);
 }
 
 /* ─── Tailwind v4 Theme Integration ─── */
 
 @theme inline {
+  /* Semantic tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -54,30 +55,52 @@
   --color-accent-secondary: var(--accent-secondary);
   --color-success: var(--success);
 
-  --color-factory-black: var(--factory-black);
-  --color-factory-white: var(--factory-white);
-  --color-factory-gray-50: var(--factory-gray-50);
-  --color-factory-gray-100: var(--factory-gray-100);
-  --color-factory-gray-200: var(--factory-gray-200);
-  --color-factory-gray-300: var(--factory-gray-300);
-  --color-factory-gray-400: var(--factory-gray-400);
-  --color-factory-gray-500: var(--factory-gray-500);
-  --color-factory-gray-600: var(--factory-gray-600);
-  --color-factory-gray-700: var(--factory-gray-700);
-  --color-factory-gray-800: var(--factory-gray-800);
-  --color-factory-gray-900: var(--factory-gray-900);
-  --color-factory-gray-950: var(--factory-gray-950);
-  --color-factory-orange: var(--factory-orange);
-  --color-factory-amber: var(--factory-amber);
-  --color-factory-teal: var(--factory-teal);
+  /* Ember palette */
+  --color-ember-black: var(--ember-black);
+  --color-ember-white: var(--ember-white);
+  --color-ember-50: var(--ember-50);
+  --color-ember-100: var(--ember-100);
+  --color-ember-200: var(--ember-200);
+  --color-ember-300: var(--ember-300);
+  --color-ember-400: var(--ember-400);
+  --color-ember-500: var(--ember-500);
+  --color-ember-600: var(--ember-600);
+  --color-ember-700: var(--ember-700);
+  --color-ember-800: var(--ember-800);
+  --color-ember-900: var(--ember-900);
+  --color-ember-950: var(--ember-950);
+  --color-ember-orange: var(--ember-orange);
+  --color-ember-amber: var(--ember-amber);
+  --color-ember-teal: var(--ember-teal);
 
+  /* Backward compat: factory-* aliases → ember-* values */
+  --color-factory-black: var(--ember-black);
+  --color-factory-white: var(--ember-white);
+  --color-factory-gray-50: var(--ember-50);
+  --color-factory-gray-100: var(--ember-100);
+  --color-factory-gray-200: var(--ember-200);
+  --color-factory-gray-300: var(--ember-300);
+  --color-factory-gray-400: var(--ember-400);
+  --color-factory-gray-500: var(--ember-500);
+  --color-factory-gray-600: var(--ember-600);
+  --color-factory-gray-700: var(--ember-700);
+  --color-factory-gray-800: var(--ember-800);
+  --color-factory-gray-900: var(--ember-900);
+  --color-factory-gray-950: var(--ember-950);
+  --color-factory-orange: var(--ember-orange);
+  --color-factory-amber: var(--ember-amber);
+  --color-factory-teal: var(--ember-teal);
+
+  /* Temperature */
   --color-temp-hot: var(--temp-hot);
   --color-temp-warm: var(--temp-warm);
   --color-temp-cool: var(--temp-cool);
   --color-temp-neutral: var(--temp-neutral);
 
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+  /* Fonts */
+  --font-serif: var(--font-source-serif), "Georgia", serif;
+  --font-sans: var(--font-source-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "Cascadia Code", monospace;
 }
 
 /* ─── Base Styles ─── */
@@ -88,8 +111,9 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Factory headings: weight 400 (light), tight tracking */
+/* Ember headings: serif, weight 400, tight tracking */
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
   font-weight: 400;
   letter-spacing: -0.02em;
 }
@@ -113,6 +137,48 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
+}
+
+/* ─── Backlit Glow System ─── */
+
+.backlit {
+  position: relative;
+}
+
+.backlit::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0.12;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.backlit-hot::before {
+  background: radial-gradient(ellipse at 50% 0%, var(--temp-hot) 0%, transparent 70%);
+}
+
+.backlit-warm::before {
+  background: radial-gradient(ellipse at 50% 0%, var(--temp-warm) 0%, transparent 70%);
+}
+
+.backlit-cool::before {
+  background: radial-gradient(ellipse at 50% 0%, var(--temp-cool) 0%, transparent 70%);
+}
+
+.backlit-accent::before {
+  background: radial-gradient(ellipse at 50% 0%, var(--accent) 0%, transparent 70%);
+}
+
+/* ─── Ambient Backgrounds ─── */
+
+.ambient-warm {
+  background: radial-gradient(ellipse at 50% 30%, rgba(245, 158, 11, 0.04) 0%, transparent 60%);
+}
+
+.ambient-cool {
+  background: radial-gradient(ellipse at 50% 30%, rgba(78, 205, 196, 0.04) 0%, transparent 60%);
 }
 
 /* ─── Analysis Reveal Animation ─── */
@@ -219,3 +285,80 @@ h1, h2, h3, h4, h5, h6 {
 .melt-crystallize-active > div:nth-child(2) { animation-delay: 150ms; }
 .melt-crystallize-active > div:nth-child(3) { animation-delay: 300ms; }
 .melt-crystallize-active > div:nth-child(4) { animation-delay: 450ms; }
+
+/* ─── Issue Card Animations ─── */
+
+@keyframes issue-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.issue-card-enter {
+  animation: issue-appear 0.3s ease-out both;
+}
+
+/* Line clamp utility for issue descriptions */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Onboarding Step Transitions ─── */
+
+@keyframes step-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.onboarding-step-enter {
+  animation: step-fade-in 0.3s ease-out both;
+}
+
+/* ─── Landing Page: Hero Entrance ─── */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-stagger > * {
+  opacity: 0;
+  animation: fade-up 0.7s ease-out forwards;
+}
+.hero-stagger > *:nth-child(1) { animation-delay: 100ms; }
+.hero-stagger > *:nth-child(2) { animation-delay: 250ms; }
+.hero-stagger > *:nth-child(3) { animation-delay: 400ms; }
+.hero-stagger > *:nth-child(4) { animation-delay: 550ms; }
+
+/* ─── Landing Page: Scroll Reveal ─── */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
