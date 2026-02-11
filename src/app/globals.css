@@ -456,3 +456,67 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ─── Signal Card Animation ─── */
+
+@keyframes signalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.signal-card-enter {
+  animation: signalFadeIn 0.4s ease-out forwards;
+}
+
+/* ─── Issue Drawer Slide ─── */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.25s ease-out forwards;
+}
+
+/* ─── Hot Mic Glow ─── */
+/* Applied to ActiveSpeakerBar when mic is recording */
+.mic-hot-glow {
+  box-shadow:
+    0 -4px 20px rgba(106, 171, 142, 0.25),
+    0 -2px 40px rgba(106, 171, 142, 0.1);
+  animation: micHotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes micHotPulse {
+  0%, 100% {
+    box-shadow:
+      0 -4px 15px rgba(106, 171, 142, 0.2),
+      0 -2px 30px rgba(106, 171, 142, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 -4px 25px rgba(106, 171, 142, 0.35),
+      0 -2px 50px rgba(106, 171, 142, 0.15);
+  }
+}
+
+/* "MIC LIVE" text pulse */
+.mic-live-pulse {
+  animation: micLivePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes micLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

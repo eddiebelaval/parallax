@@ -2,7 +2,7 @@ export type SessionStatus = 'waiting' | 'active' | 'completed'
 export type SessionMode = 'remote' | 'in_person'
 export type OnboardingStep = 'introductions' | 'set_stage' | 'set_goals' | 'complete'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
-export type IssueStatus = 'unaddressed' | 'well_addressed' | 'poorly_addressed'
+export type IssueStatus = 'unaddressed' | 'well_addressed' | 'poorly_addressed' | 'deferred'
 
 // V3: Context modes — determines which lenses activate
 export type ContextMode =
@@ -161,10 +161,11 @@ export interface ConflictAnalysis extends NvcAnalysis {
 }
 
 export type ConductorPhase =
-  | 'greeting'      // Mediator sends welcome
-  | 'gather_a'      // Waiting for Person A context
-  | 'gather_b'      // Waiting for Person B context
-  | 'synthesize'    // Mediator synthesizes + sets goals
+  | 'onboarding'    // Adaptive in-person onboarding (Claude drives everything)
+  | 'greeting'      // Mediator sends welcome (remote mode)
+  | 'gather_a'      // Waiting for Person A context (remote mode)
+  | 'gather_b'      // Waiting for Person B context (remote mode)
+  | 'synthesize'    // Mediator synthesizes + sets goals (remote mode)
   | 'active'        // Normal conversation with interventions
 
 export interface OnboardingContext {

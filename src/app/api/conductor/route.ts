@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { conductorMessage } from '@/lib/opus'
-import { buildNameMap, toConversationHistory } from '@/lib/conversation'
-import { stripCodeFences } from '@/lib/conversation'
+import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
 import {
   buildGreetingPrompt,
   buildAcknowledgeAPrompt,
   buildSynthesisPrompt,
   buildInterventionPrompt,
+  buildAdaptivePrompt,
 } from '@/lib/prompts/conductor'
 import { checkForIntervention } from '@/lib/conductor/interventions'
 import type { Message, ContextMode, ConductorPhase, ConflictAnalysis, OnboardingContext } from '@/types/database'
 
-type ConductorTrigger = 'session_active' | 'message_sent' | 'check_intervention'
+type ConductorTrigger = 'session_active' | 'message_sent' | 'check_intervention' | 'in_person_message'
 
 /**
  * POST /api/conductor
@@ -339,6 +339,134 @@ export async function POST(request: Request) {
       intervened: true,
       interventionType: check.type,
       message: interventionText,
+    })
+  }
+
+  // --- Trigger: in_person_message ---
+  // Adaptive in-person conductor: send full history, Claude decides what to do
+  if (trigger === 'in_person_message') {
+    // Fetch all messages for context
+    const { data: allMessages } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', session_id)
+      .order('created_at', { ascending: true })
+
+    const nameMap: Record<string, string> = {
+      person_a: session.person_a_name || 'Person A',
+      person_b: session.person_b_name || 'Person B',
+      mediator: 'Parallax',
+    }
+
+    const conversationHistory = (allMessages || []).map((m: Message) => ({
+      sender: nameMap[m.sender] || m.sender,
+      content: m.content,
+    }))
+
+    const { system, user } = buildAdaptivePrompt(conversationHistory, contextMode)
+
+    let responseText: string
+    try {
+      responseText = await conductorMessage(system, user, 1024)
+    } catch {
+      // Graceful degradation: if Claude fails during onboarding, advance to active
+      if (phase === 'onboarding') {
+        await supabase
+          .from('sessions')
+          .update({
+            onboarding_context: { ...onboarding, conductorPhase: 'active' },
+          })
+          .eq('id', session_id)
+      }
+      return NextResponse.json({ error: 'Adaptive conductor failed', phase: 'active' }, { status: 502 })
+    }
+
+    // Parse Claude's JSON response
+    let parsed: {
+      action?: string
+      message?: string
+      directed_to?: string
+      names?: { a?: string | null; b?: string | null }
+      goals?: string[]
+      contextSummary?: string
+    }
+
+    try {
+      parsed = JSON.parse(stripCodeFences(responseText))
+    } catch {
+      // Fallback: try to extract JSON object from within surrounding text
+      const jsonMatch = responseText.match(/\{[\s\S]*"message"[\s\S]*\}/)
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0])
+        } catch {
+          parsed = { action: 'continue', message: responseText, directed_to: 'person_a' }
+        }
+      } else {
+        parsed = { action: 'continue', message: responseText, directed_to: 'person_a' }
+      }
+    }
+
+    const mediatorMessage = parsed.message || responseText
+    const directedTo = parsed.directed_to || 'person_a'
+
+    // Update names if extracted
+    const sessionUpdates: Record<string, unknown> = {}
+    if (parsed.names?.a && !session.person_a_name) {
+      sessionUpdates.person_a_name = parsed.names.a
+    }
+    if (parsed.names?.b && !session.person_b_name) {
+      sessionUpdates.person_b_name = parsed.names.b
+    }
+
+    // Insert mediator message
+    await supabase.from('messages').insert({
+      session_id,
+      sender: 'mediator',
+      content: mediatorMessage,
+    })
+
+    // Handle synthesis transition
+    if (parsed.action === 'synthesize') {
+      const goals = Array.isArray(parsed.goals) ? parsed.goals : []
+      const contextSummary = parsed.contextSummary || ''
+
+      await supabase
+        .from('sessions')
+        .update({
+          ...sessionUpdates,
+          onboarding_context: {
+            ...onboarding,
+            conductorPhase: 'active',
+            sessionGoals: goals,
+            contextSummary,
+          },
+        })
+        .eq('id', session_id)
+
+      return NextResponse.json({
+        phase: 'active',
+        directed_to: directedTo,
+        message: mediatorMessage,
+        goals,
+      })
+    }
+
+    // Continue onboarding — update names and keep phase
+    if (Object.keys(sessionUpdates).length > 0) {
+      await supabase
+        .from('sessions')
+        .update({
+          ...sessionUpdates,
+          onboarding_context: { ...onboarding, conductorPhase: 'onboarding' },
+        })
+        .eq('id', session_id)
+    }
+
+    return NextResponse.json({
+      phase: 'onboarding',
+      directed_to: directedTo,
+      message: mediatorMessage,
     })
   }
 

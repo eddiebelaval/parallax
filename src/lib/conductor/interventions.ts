@@ -6,12 +6,6 @@ export interface InterventionCheck {
   type: InterventionType | null
 }
 
-function isConflictAnalysis(
-  a: NvcAnalysis | ConflictAnalysis,
-): a is ConflictAnalysis {
-  return 'lenses' in a && 'meta' in a
-}
-
 /**
  * Check whether the mediator should intervene based on recent messages
  * and the latest analysis.
@@ -30,7 +24,7 @@ export function checkForIntervention(
   const none: InterventionCheck = { shouldIntervene: false, type: null }
 
   // Cooldown: find last mediator message, count human messages since
-  const lastMediatorIdx = findLastIndex(messages, (m) => m.sender === 'mediator')
+  const lastMediatorIdx = messages.findLastIndex((m) => m.sender === 'mediator')
   if (lastMediatorIdx >= 0) {
     const humanMessagesSince = messages
       .slice(lastMediatorIdx + 1)
@@ -73,6 +67,18 @@ export function checkForIntervention(
     }
   }
 
+  // Check resolution: sustained low temperature + de-escalating + enough messages
+  // Only trigger after 8+ human messages to avoid premature wrap-up
+  if (humanMessages.length >= 8 && currentTemp < 0.35) {
+    const recentTemps = getRecentTemperatures(messages, 4)
+    const allLow = recentTemps.length >= 3 && recentTemps.every((t) => t < 0.4)
+    const isDeescalating = latestAnalysis.meta.resolutionDirection === 'de-escalating'
+      || latestAnalysis.meta.resolutionDirection === 'stable'
+    if (allLow && isDeescalating) {
+      return { shouldIntervene: true, type: 'resolution' }
+    }
+  }
+
   return none
 }
 
@@ -82,24 +88,12 @@ export function checkForIntervention(
  */
 function getRecentTemperatures(messages: Message[], count: number): number[] {
   const temps: number[] = []
-  // Walk backwards, skip messages without analysis
   for (let i = messages.length - 1; i >= 0 && temps.length < count; i--) {
-    const msg = messages[i]
-    if (msg.nvc_analysis) {
-      const analysis = msg.nvc_analysis as NvcAnalysis | ConflictAnalysis
-      if (isConflictAnalysis(analysis)) {
-        temps.push(analysis.emotionalTemperature)
-      } else {
-        temps.push(analysis.emotionalTemperature)
-      }
+    const analysis = messages[i].nvc_analysis as (NvcAnalysis | ConflictAnalysis) | null
+    if (analysis) {
+      temps.push(analysis.emotionalTemperature)
     }
   }
   return temps
 }
 
-function findLastIndex<T>(arr: T[], predicate: (item: T) => boolean): number {
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (predicate(arr[i])) return i
-  }
-  return -1
-}
