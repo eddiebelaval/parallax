@@ -1,4 +1,5 @@
 export type SessionStatus = 'waiting' | 'active' | 'completed'
+export type SessionMode = 'in_person' | 'remote'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
 
 export interface NvcAnalysis {

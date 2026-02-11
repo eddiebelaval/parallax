@@ -117,6 +117,53 @@ export function parseNvcAnalysis(raw: string): NvcAnalysis | null {
 }
 
 /**
+ * Issue Analysis Prompt — used by the X-Ray Scoreboard in in-person mode.
+ * Identifies new issues and grades existing ones as the conversation progresses.
+ */
+export const ISSUE_ANALYSIS_PROMPT = `You are Parallax's issue tracker. Given a conversation between two people in conflict, identify the discrete issues being raised and track how each one evolves.
+
+For each new issue, provide a short label and description. For existing issues, grade whether the latest message made them BETTER, WORSE, or had NO_CHANGE.
+
+Respond with ONLY a JSON object:
+{
+  "newIssues": [{ "label": "string", "description": "string", "raised_by": "person_a|person_b" }],
+  "issueUpdates": [{ "id": "string", "status": "better|worse|no_change", "reason": "string" }]
+}`
+
+/**
+ * Build the user message for issue analysis.
+ */
+export function buildIssueAnalysisPrompt(
+  conversationHistory: Array<{ sender: string; content: string }>,
+  targetMessage: { sender: string; senderName: string; content: string },
+  otherPersonName: string,
+  existingIssues: Array<{ id: string; label: string; description: string; raised_by: string; status: string }>,
+): string {
+  const historyBlock = conversationHistory.length > 0
+    ? conversationHistory
+        .map((msg) => `[${msg.sender}]: ${msg.content}`)
+        .join('\n')
+    : '(This is the first message in the conversation.)'
+
+  const issuesBlock = existingIssues.length > 0
+    ? existingIssues
+        .map((issue) => `- [${issue.id}] "${issue.label}" (raised by ${issue.raised_by}, status: ${issue.status}): ${issue.description}`)
+        .join('\n')
+    : '(No issues tracked yet.)'
+
+  return `CONVERSATION SO FAR:
+${historyBlock}
+
+EXISTING ISSUES:
+${issuesBlock}
+
+ANALYZE THIS MESSAGE:
+[${targetMessage.senderName}]: ${targetMessage.content}
+
+The other person in this conversation is ${otherPersonName}. Identify any new issues raised and grade how existing issues were affected.`
+}
+
+/**
  * Session summary prompt — analyzes the full conversation arc.
  * Used at session end to provide both people with insights.
  */

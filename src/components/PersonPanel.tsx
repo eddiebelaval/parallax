@@ -25,7 +25,6 @@ interface PersonPanelProps {
   personBName: string;
   analyzingMessageId: string | null;
   mediationError: string | null;
-  /** Rendered when the session isn't active yet (name entry, waiting state, etc.) */
   preJoinContent: ReactNode;
   className?: string;
 }
@@ -53,14 +52,14 @@ export function PersonPanel({
       {/* Panel header */}
       <div className="px-3 md:px-4 py-2 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-3">
-          <span className="font-mono text-[10px] text-factory-gray-700">{roomCode}</span>
-          <span className="font-mono text-xs uppercase tracking-wider text-factory-gray-500">
+          <span className="font-mono text-[10px] text-ember-700">{roomCode}</span>
+          <span className="font-mono text-xs uppercase tracking-wider text-ember-500">
             {name}
           </span>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
           {bothJoined && (
-            <span className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider ${isMyTurn ? 'text-accent' : 'text-factory-gray-700'}`}>
+            <span className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider ${isMyTurn ? 'text-accent' : 'text-ember-700'}`}>
               {isMyTurn && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
               {isMyTurn ? 'Your turn' : 'Waiting'}
             </span>
@@ -68,7 +67,7 @@ export function PersonPanel({
           {bothJoined && (
             <button
               onClick={onEndSession}
-              className="font-mono text-xs uppercase tracking-wider text-factory-gray-600 hover:text-foreground transition-colors"
+              className="font-mono text-xs uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
             >
               End
             </button>
@@ -89,7 +88,7 @@ export function PersonPanel({
           />
           {mediationError && (
             <div className="px-4 py-1.5 border-t border-border">
-              <p className="font-mono text-xs text-accent">{mediationError}</p>
+              <p className="font-mono text-xs text-accent-secondary">{mediationError}</p>
             </div>
           )}
           <div className="border-t border-border">
@@ -97,7 +96,7 @@ export function PersonPanel({
               <button
                 onClick={() => onInputModeChange(inputMode === "text" ? "voice" : "text")}
                 disabled={!isMyTurn}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-factory-gray-500 hover:text-foreground transition-colors disabled:opacity-40"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
                 aria-label={inputMode === "text" ? "Switch to voice" : "Switch to text"}
               >
                 {inputMode === "text" ? <MicIcon size={14} /> : <KeyboardIcon size={14} />}
