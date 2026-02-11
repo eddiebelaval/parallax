@@ -96,6 +96,29 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
           </SummarySection>
         )}
 
+        {/* V3: Lens Insights — which frameworks detected patterns */}
+        {data.lensInsights && data.lensInsights.length > 0 && (
+          <SummarySection label="Lens Insights">
+            <ul className="space-y-2">
+              {data.lensInsights.map((insight, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-ember-300">
+                  <span className="mt-1.5 block w-1.5 h-1.5 rounded-full bg-accent-secondary flex-shrink-0" />
+                  {insight}
+                </li>
+              ))}
+            </ul>
+          </SummarySection>
+        )}
+
+        {/* V3: Resolution Trajectory */}
+        {data.resolutionTrajectory && (
+          <SummarySection label="Resolution Trajectory">
+            <p className="text-ember-300 text-sm leading-relaxed">
+              {data.resolutionTrajectory}
+            </p>
+          </SummarySection>
+        )}
+
         {/* Person sections — side by side on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <PersonSummary

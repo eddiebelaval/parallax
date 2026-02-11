@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { isValidRoomCode } from "@/lib/room-code";
-import type { SessionMode } from "@/types/database";
+import { ContextModePicker } from "@/components/ContextModePicker";
+import type { SessionMode, ContextMode } from "@/types/database";
 
 /* ─── Scroll Reveal ─── */
 
@@ -52,15 +53,25 @@ export default function Home() {
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<SessionMode | null>(null);
+  // V3: Two-step creation flow — select mode, then select context
+  const [pendingMode, setPendingMode] = useState<SessionMode | null>(null);
 
-  async function handleCreate(mode: SessionMode) {
-    setCreating(mode);
+  function handleModeSelect(mode: SessionMode) {
+    setPendingMode(mode);
+    setError("");
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleContextSelect(contextMode: ContextMode) {
+    if (!pendingMode) return;
+    setCreating(pendingMode);
     setError("");
     try {
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode: pendingMode, context_mode: contextMode }),
       });
       if (!res.ok) {
         setError("Failed to create session");
@@ -83,6 +94,26 @@ export default function Home() {
     }
     setError("");
     router.push(`/session/${trimmed}`);
+  }
+
+  // V3: Context mode selection step
+  if (pendingMode) {
+    return (
+      <div className="flex flex-1 flex-col pt-20 sm:pt-32 pb-20">
+        <ContextModePicker
+          sessionMode={pendingMode}
+          onSelect={handleContextSelect}
+          onBack={() => {
+            setPendingMode(null);
+            setCreating(null);
+          }}
+          loading={creating !== null}
+        />
+        {error && (
+          <p className="text-accent font-mono text-xs text-center mt-4">{error}</p>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -325,7 +356,7 @@ export default function Home() {
                   "X-Ray Scoreboard tracks issues live",
                   "Turn-based — one person speaks at a time",
                 ]}
-                onClick={() => handleCreate("in_person")}
+                onClick={() => handleModeSelect("in_person")}
                 loading={creating === "in_person"}
                 disabled={creating !== null}
                 accent="orange"
@@ -339,7 +370,7 @@ export default function Home() {
                   "NVC analysis on every message",
                   "Session summary when you're done",
                 ]}
-                onClick={() => handleCreate("remote")}
+                onClick={() => handleModeSelect("remote")}
                 loading={creating === "remote"}
                 disabled={creating !== null}
                 accent="teal"
