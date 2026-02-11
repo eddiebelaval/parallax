@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { NVC_SYSTEM_PROMPT, SESSION_SUMMARY_PROMPT, ISSUE_ANALYSIS_PROMPT, buildMediationPrompt, buildIssueAnalysisPrompt } from '@/lib/prompts'
-import type { MessageSender } from '@/types/database'
+import { buildConflictIntelligencePrompt, getMaxTokensForMode } from '@/lib/prompts/index'
+import { SESSION_SUMMARY_PROMPT, ISSUE_ANALYSIS_PROMPT, buildIssueAnalysisPrompt } from '@/lib/prompts'
+import { buildMediationPrompt } from '@/lib/prompts/index'
+import type { MessageSender, ContextMode } from '@/types/database'
 
 function getClient(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -22,10 +24,11 @@ function extractText(response: Anthropic.Message): string {
 }
 
 /**
- * Call Claude to produce an NVC mediation analysis for a message.
+ * Call Claude to produce a Conflict Intelligence analysis for a message.
  *
+ * V3: Uses context-mode-aware prompt with multi-lens analysis.
  * Returns the raw text from Claude's response. The caller should
- * parse it with parseNvcAnalysis() from prompts.ts.
+ * parse it with parseConflictAnalysis() from prompts/index.ts.
  */
 export async function mediateMessage(
   messageContent: string,
@@ -33,6 +36,7 @@ export async function mediateMessage(
   senderName: string,
   otherPersonName: string,
   conversationHistory: ConversationEntry[],
+  contextMode: ContextMode = 'intimate',
 ): Promise<string> {
   const userPrompt = buildMediationPrompt(
     conversationHistory,
@@ -40,10 +44,13 @@ export async function mediateMessage(
     otherPersonName,
   )
 
+  const systemPrompt = buildConflictIntelligencePrompt(contextMode)
+  const maxTokens = getMaxTokensForMode(contextMode)
+
   const response = await getClient().messages.create({
     model: 'claude-opus-4-6',
-    max_tokens: 1024,
-    system: NVC_SYSTEM_PROMPT,
+    max_tokens: maxTokens,
+    system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })
 
