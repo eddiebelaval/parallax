@@ -26,7 +26,14 @@ export function useSession(roomCode: string) {
           filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
-          if (!cancelled) setSession(payload.new as Session)
+          if (!cancelled) {
+            // Merge with existing state — Realtime payloads may omit columns
+            // when REPLICA IDENTITY FULL is not set on the table
+            setSession(prev => {
+              if (!prev) return payload.new as Session
+              return { ...prev, ...(payload.new as Partial<Session>) }
+            })
+          }
         }
       )
       .subscribe()
@@ -88,6 +95,16 @@ export function useSession(roomCode: string) {
     return data as Session
   }, [roomCode])
 
+  // Re-fetch session from the server — use when Realtime may not deliver
+  // (e.g., after conductor API calls that update onboarding_context)
+  const refreshSession = useCallback(async () => {
+    const res = await fetch(`/api/sessions/${roomCode}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    setSession(data)
+    return data as Session
+  }, [roomCode])
+
   // Advance in-person onboarding to the next step
   const advanceOnboarding = useCallback(async (payload: Record<string, unknown>) => {
     setError(null)
@@ -106,5 +123,5 @@ export function useSession(roomCode: string) {
     return data as Session
   }, [roomCode])
 
-  return { session, loading, error, createSession, joinSession, advanceOnboarding }
+  return { session, loading, error, createSession, joinSession, advanceOnboarding, refreshSession }
 }

@@ -93,6 +93,166 @@ _Entries are added automatically at each gate pass._
 
 ---
 
+## V2: User Intelligence Layer
+
+### The Problem
+
+V1 Parallax is stateless. Every message is analyzed in isolation — Claude doesn't know who is speaking, what their communication patterns are, or what triggers them. It's like a mediator who walks into a room with no case file, no intake, no context. They have to figure everything out from the words on screen.
+
+Human mediators never work this way. Couples therapists use a **three-session intake model**: one joint session, then individual sessions with each person. They build a case file before mediating. They know who pursues and who withdraws. They know what triggers escalation. They know the story each person tells about the conflict.
+
+V2 gives Claude the same advantage.
+
+### What It Is
+
+A persistent, interview-built knowledge base for each person. Before their first mediation session, each user has a conversational interview with Claude — not a quiz, not a form, but a real conversation. Claude learns their communication style, emotional patterns, conflict tendencies, and the story they tell about their situation.
+
+This profile persists across sessions. When two people enter a conflict, Claude already understands both of them. The mediation starts warm, not cold.
+
+### Research Foundation
+
+This feature was designed from validated psychological frameworks, not invented from intuition. Full research documented in [`docs/research/user-intelligence-layer.md`](docs/research/user-intelligence-layer.md), covering:
+
+- **Psychological assessment frameworks** across all 14 analytical lenses
+- **Competitive landscape** analysis of 15+ products (Relish, Maia, Woebot, Replika, BetterHelp, etc.)
+- **Privacy and regulatory analysis** (FTC enforcement actions, state health privacy laws, GDPR Article 9)
+- **Technical architecture patterns** (ChatGPT memory, Claude context engineering, MemGPT, Zep temporal graphs)
+- **Interactive architecture blueprint** at `artifacts/parallax-user-intelligence-layer-blueprint.html`
+
+Key validation: A 2026 clinical study (BDI-FS-GPT) showed AI conversational interviews achieve **higher diagnostic agreement** with clinical experts than paper questionnaires (kappa 0.72 vs 0.55). Audio-based responses produce 3x more data than text. The conversational approach isn't just friendlier — it's more accurate.
+
+### The Interview System
+
+Four phases, 16-22 questions, 10-15 minutes. Audio-first design.
+
+**Phase 1: Context Setting (3-4 questions)**
+Relationship type (auto-selects context mode), conflict description, goals, safety screening. This phase establishes trust and frames the conversation.
+
+**Phase 2: Communication Profiling (8-10 questions)**
+Mapped to validated instruments — no invented questions:
+
+| Dimension | Validated Source | Sample Question |
+|-----------|-----------------|-----------------|
+| Conflict style | Thomas-Kilmann (5 modes) | "When you disagree, what's your instinct — fight for your position, find middle ground, give in, avoid, or collaborate?" |
+| Emotional regulation | DERS-16 (5 subscales) | "When you're upset, can you still think clearly, or does emotion take over?" |
+| Attachment orientation | ECR-RS (anxiety + avoidance) | "When things get tense, do you move toward the other person or need space?" |
+| Fairness sensitivity | SCARF Model (5 domains) | "What feels most unfair about this situation?" |
+
+**Phase 3: Context-Specific Deep Dive (3-5 questions)**
+Different questions activate based on the relationship type selected in Phase 1:
+
+| Context Mode | Instruments Activated | What It Captures |
+|-------------|----------------------|-----------------|
+| Intimate | Gottman Four Horsemen + Attachment | Criticism/contempt/defensiveness/stonewalling patterns, pursue-withdraw dynamic |
+| Family | Attachment + Drama Triangle | Parent/child dynamics, rescuer/victim/persecutor roles |
+| Professional Peer | Jehn's Conflict Typology + Psychological Safety | Is this a task, relationship, or process conflict? Can they speak freely? |
+| Professional Hierarchical | Power Analysis + Organizational Justice | Decision-making power distribution, fairness perception |
+| Transactional | IBR (Interest-Based Relational) | Positions vs. underlying interests |
+| Civil/Structural | Power Analysis + Procedural Justice | Systemic power imbalances, process fairness |
+
+**Phase 4: Narrative Capture (2-3 open-ended)**
+- "Tell me what happened from your perspective."
+- "What has been the hardest part?"
+- "What would making this right look like?"
+
+These open-ended responses are the richest signal. Claude extracts patterns, triggers, blind spots, and the dominant narrative frame — which the Narrative Mediation lens later uses to identify re-authoring opportunities.
+
+### The Profile
+
+Structured data extracted via Claude Structured Outputs (Zod schema, deterministic):
+
+```
+{
+  attachment_style: { primary: "anxious", confidence: 0.72, evidence_count: 14 },
+  communication_patterns: {
+    style: "indirect",
+    emotional_expression: "high",
+    conflict_approach: "avoidant",
+    reassurance_seeking: 0.8
+  },
+  triggers: [
+    { trigger: "feeling dismissed", intensity: 0.9, confidence: 0.85, occurrence_count: 3 }
+  ],
+  strengths: [{ strength: "empathic listening", confidence: 0.7 }],
+  growth_areas: [{ area: "expressing needs directly", confidence: 0.8 }],
+  nvc_fluency: 0.3,
+  default_conflict_mode: "avoiding"
+}
+```
+
+Every trait has a confidence score (0-1) with calibration bands: 0-0.3 speculative, 0.3-0.6 moderate evidence, 0.6-0.8 strong evidence, 0.8-1.0 very clear pattern. Profiles evolve: reinforcing observations boost confidence (+10% per observation), staleness decays it (-5% per month without reinforcement), contradictions are flagged for resolution.
+
+### Privacy Model: The One-Way Mirror
+
+This is a mental health-adjacent tool handling sensitive psychological data. Privacy isn't a feature — it's a foundational architectural constraint.
+
+**Core principle: private by default, consent-gated sharing.**
+
+During mediation, Claude receives:
+- The current speaker's profile (to understand their patterns)
+- The shared conversation transcript (visible to both)
+- NEVER the other person's private profile data
+
+Person A's interview data never flows to Person B's view. Person B's triggers never appear in Person A's analysis. Claude uses each profile to *understand* that person's messages — not to reveal private information to the other party.
+
+**Consent-gated sharing (optional):**
+Users can choose to share specific categories (communication style preferences, conflict approach) while keeping others private (triggers, attachment patterns, narrative). Sharing is revocable at any time.
+
+**Regulatory positioning:** Parallax is positioned as "conflict resolution / communication improvement" — not therapy, not mental health treatment. This avoids the heaviest regulatory burden (California CMIA, FDA SaMD classification) while still requiring:
+- FTC Health Breach Notification Rule compliance
+- Zero third-party tracking (no Meta Pixel, no Google Analytics on user data pages)
+- Anthropic API zero-data-retention mode
+- Right to deletion with cascading cleanup
+- 18+ age gate
+
+### Safety Architecture
+
+Informed by enforcement actions against BetterHelp ($7.8M), Cerebral ($7.1M), Replika (EUR 5M), and Character.AI (wrongful death settlements).
+
+**Non-negotiable safety features:**
+1. **Abuse detection** — Claude's system prompt recognizes coercive control patterns, threats, intimidation, and gaslighting. When detected: route to safety resources, NOT mediation.
+2. **"Are you safe?" check** — Private prompt before sessions, invisible to the other party.
+3. **Crisis resources** — 988 Suicide & Crisis Lifeline, National Domestic Violence Hotline (1-800-799-7233), Crisis Text Line always visible.
+4. **Asymmetric exit** — Either party can leave at any time without the other knowing why.
+5. **Manipulation detection** — Behavioral vs. self-report triangulation: compare what users say about themselves (interview) with how they actually communicate (session behavior). Divergence signals gaming.
+6. **Prominent disclaimers** — "Not therapy. Not a substitute for professional help."
+
+### Context Injection During Mediation
+
+The profile feeds into Claude's mediation analysis via progressive disclosure — more context surfaces as the conversation deepens:
+
+| Conversation Depth | Profile Data Injected | % of Context Window |
+|-------------------|----------------------|---------------------|
+| Messages 1-5 | Core traits (attachment style, conflict mode) | ~2-3% |
+| Messages 6-15 | Communication patterns, conflict approach | ~4-5% |
+| Emotional intensity > 0.7 | Relevant triggers retrieved via semantic search | +5-10% |
+| Messages 15+ at high intensity | Historical patterns, past session insights | +5-10% |
+
+**Confirmation bias mitigation:** "Blind analysis first" — Claude analyzes each message without profile context, then with profile context. Both perspectives inform the final output. This prevents the profile from creating tunnel vision (e.g., interpreting everything through "anxious attachment" even when the person is making a valid point).
+
+### Technical Architecture
+
+- **Storage:** Supabase `user_profiles` table with JSONB columns for flexible schema evolution
+- **Extraction:** Claude Structured Outputs with Zod schema — guaranteed JSON compliance, deterministic
+- **Isolation:** Row-Level Security ensuring users can only access their own profile
+- **Encryption:** Application-level AES-256-GCM for sensitive fields (triggers, raw interview transcripts)
+- **Audit:** Every profile access logged (who, what, when, why)
+- **Search (V3):** pgvector embeddings for semantic retrieval of relevant past insights during mediation
+- **Temporal (V3):** Invalidation timestamps tracking when insights were superseded, inspired by Zep's bi-temporal model
+
+### Competitive Position
+
+Research across 15+ products revealed the "high personalization + conflict-focused" market quadrant is **empty**:
+
+- Every relationship app (Relish, Maia, Paired, CoupleWork) focuses on bonding/maintenance, not conflict
+- Every conflict tool (Dyspute.ai, TheMediator.AI) handles legal disputes, not interpersonal/emotional conflicts
+- Every AI therapy tool (Woebot, Wysa, Replika) is single-user, not dual-perspective
+- Nobody combines persistent interview-built profiles + NVC methodology + dual-perspective mediation
+
+The User Intelligence Layer is what transforms Parallax from "NVC wrapper" to "mediator who knows you." It's the difference between a cold read and a warm session — and it's the foundation that makes V3's 14 analytical lenses dramatically more effective.
+
+---
+
 ## V3: Conflict Intelligence Engine
 
 ### Why 14 Lenses?

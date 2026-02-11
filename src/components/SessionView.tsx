@@ -45,7 +45,7 @@ interface SessionViewProps {
 }
 
 export function SessionView({ roomCode }: SessionViewProps) {
-  const { session, loading: sessionLoading, createSession, joinSession, advanceOnboarding } = useSession(roomCode);
+  const { session, loading: sessionLoading, createSession, joinSession, advanceOnboarding, refreshSession } = useSession(roomCode);
   const { messages, sendMessage, currentTurn } = useMessages(session?.id);
 
   // Track which side the local user has claimed (for same-device split-screen)
@@ -83,7 +83,6 @@ export function SessionView({ roomCode }: SessionViewProps) {
       !conductorPhase // Only fire if no phase set yet (first time)
     ) {
       conductorFired.current = true;
-      // Set greeting phase optimistically before API call
       fetch('/api/conductor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,12 +90,15 @@ export function SessionView({ roomCode }: SessionViewProps) {
           session_id: session?.id,
           trigger: 'session_active',
         }),
+      }).then(() => {
+        // Refresh session to pick up onboarding_context (Realtime may not deliver)
+        refreshSession();
       }).catch(() => {
         // Graceful degradation: if conductor fails, conversation still works
         conductorFired.current = false;
       });
     }
-  }, [bothJoined, session?.id, session?.mode, conductorPhase]);
+  }, [bothJoined, session?.id, session?.mode, conductorPhase, refreshSession]);
 
   // Clear analyzing state when the message receives its nvc_analysis via Realtime UPDATE
   useEffect(() => {
@@ -184,10 +186,12 @@ export function SessionView({ roomCode }: SessionViewProps) {
       if (!res.ok) {
         setMediationError('Conductor unavailable — message saved');
       }
+      // Refresh session to pick up phase transitions
+      refreshSession();
     } catch {
       setMediationError('Connection lost — conductor skipped');
     }
-  }, [session?.id]);
+  }, [session?.id, refreshSession]);
 
   // Check for intervention after mediation during active phase
   const triggerInterventionCheck = useCallback(async () => {

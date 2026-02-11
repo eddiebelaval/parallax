@@ -59,13 +59,34 @@ export async function POST(request: Request) {
   // --- Trigger: session_active ---
   // Both people joined. Send the greeting and advance to gather_a.
   if (trigger === 'session_active') {
+    // Set greeting phase IMMEDIATELY so the client blocks input while Claude thinks
+    await supabase
+      .from('sessions')
+      .update({
+        onboarding_context: {
+          ...onboarding,
+          conductorPhase: 'greeting',
+        },
+      })
+      .eq('id', session_id)
+
     const { system, user } = buildGreetingPrompt(personAName, personBName, contextMode)
 
     let greeting: string
     try {
       greeting = await conductorMessage(system, user)
     } catch {
-      return NextResponse.json({ error: 'Conductor greeting failed' }, { status: 502 })
+      // Graceful degradation: advance to active if greeting fails
+      await supabase
+        .from('sessions')
+        .update({
+          onboarding_context: {
+            ...onboarding,
+            conductorPhase: 'active',
+          },
+        })
+        .eq('id', session_id)
+      return NextResponse.json({ error: 'Conductor greeting failed', phase: 'active' }, { status: 502 })
     }
 
     // Insert mediator message
@@ -75,7 +96,7 @@ export async function POST(request: Request) {
       content: greeting,
     })
 
-    // Advance phase to gather_a
+    // Advance phase to gather_a — Sarah can now type
     await supabase
       .from('sessions')
       .update({
