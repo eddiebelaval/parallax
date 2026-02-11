@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Typography Explorer — Ember Palette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;1,8..60,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0a0a; color:#c9b9a3; font-family:'DM Sans',sans-serif; }
+
+  .nav {
+    position:sticky; top:0; z-index:100;
+    display:flex; gap:4px; padding:12px 32px;
+    background:#0a0a0a; border-bottom:1px solid #222; overflow-x:auto;
+  }
+  .nav button {
+    padding:8px 16px; border:1px solid #333; background:transparent;
+    color:#888; font-family:'DM Sans',sans-serif; font-size:12px;
+    font-weight:500; cursor:pointer; transition:all .2s; white-space:nowrap;
+  }
+  .nav button:hover { border-color:#555; color:#ccc; }
+  .nav button.active { border-color:#d4a040; color:#d4a040; }
+
+  .section { padding:40px 32px; display:none; max-width:1100px; margin:0 auto; }
+  .section.active { display:block; }
+
+  .section-title {
+    font-family:'DM Sans',sans-serif; font-size:22px; font-weight:300;
+    letter-spacing:-0.02em; color:#ebe1d4; margin-bottom:4px;
+  }
+  .section-sub { font-size:13px; color:#7a6c58; font-style:italic; margin-bottom:24px; }
+
+  .label {
+    font-size:10px; font-weight:600; letter-spacing:0.12em;
+    text-transform:uppercase; color:#7a6c58; margin-bottom:10px; margin-top:28px;
+    font-family:'DM Mono',monospace;
+  }
+  .desc { font-size:13px; color:#7a6c58; line-height:1.7; max-width:600px; margin-bottom:20px; }
+
+  /* ─── Mock Card ─── */
+  .mock-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .mock {
+    border:1px solid #3a2e22; background:#0f0b08; padding:24px; min-height:360px;
+  }
+  .mock-light { background:#f5efe6; border-color:#d4c4aa; }
+
+  .mock-brand { font-size:10px; letter-spacing:0.15em; margin-bottom:20px; }
+  .mock-indicator { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; color:#7a6c58; }
+  .mock-indicator span { display:inline-block; width:6px; height:6px; border-radius:50%; background:#d4a040; margin-right:8px; }
+  .mock-heading { font-weight:300; letter-spacing:-0.02em; line-height:1.25; margin-bottom:10px; }
+  .mock-body { line-height:1.7; margin-bottom:18px; }
+
+  .mock-msg { border-left:2px solid #c45c3c; padding-left:10px; margin-bottom:16px; }
+  .mock-msg-hdr { display:flex; gap:6px; align-items:baseline; margin-bottom:4px; }
+  .mock-msg-name { font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#c45c3c; }
+  .mock-msg-time { font-size:9px; color:#4a3e30; }
+  .mock-msg-temp { font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#c45c3c; margin-left:auto; }
+  .mock-msg-text { font-size:14px; line-height:1.6; color:#c9b9a3; margin-bottom:8px; }
+  .mock-analysis-label { font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#4a3e30; margin-bottom:3px; }
+  .mock-needs { display:flex; gap:4px; margin-bottom:8px; }
+  .mock-need { padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em; text-transform:uppercase; }
+  .mock-nvc { border-left:1px solid #6aab8e; padding-left:8px; font-size:13px; font-style:italic; color:#6aab8e; line-height:1.5; }
+
+  /* Light mode overrides */
+  .mock-light .mock-indicator { color:#8a7b68; }
+  .mock-light .mock-indicator span { background:#b8882a; }
+  .mock-light .mock-msg { border-color:#a84428; }
+  .mock-light .mock-msg-name { color:#a84428; }
+  .mock-light .mock-msg-time { color:#b8a890; }
+  .mock-light .mock-msg-temp { color:#a84428; }
+  .mock-light .mock-msg-text { color:#3a2e22; }
+  .mock-light .mock-analysis-label { color:#b8a890; }
+  .mock-light .mock-need { border-color:#d4c4aa; color:#8a7b68; }
+  .mock-light .mock-nvc { border-color:#3d8a6e; color:#3d8a6e; }
+
+  /* Font specimen */
+  .specimen {
+    border:1px solid #3a2e22; background:#0f0b08; padding:24px; margin-bottom:16px;
+  }
+  .specimen-name { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#d4a040; margin-bottom:4px; font-family:'DM Mono',monospace; }
+  .specimen-meta { font-size:11px; color:#4a3e30; margin-bottom:12px; font-family:'DM Mono',monospace; }
+  .specimen-sample { margin-bottom:8px; }
+  .specimen-alpha { font-size:24px; color:#ebe1d4; line-height:1.4; margin-bottom:4px; }
+  .specimen-body { font-size:15px; color:#c9b9a3; line-height:1.7; }
+
+  /* Pros/Cons */
+  .pros-cons { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  .pros h4, .cons h4 {
+    font-size:10px; font-weight:600; letter-spacing:0.12em;
+    text-transform:uppercase; margin-bottom:6px; font-family:'DM Mono',monospace;
+  }
+  .pros h4 { color:#6aab8e; }
+  .cons h4 { color:#c45c3c; }
+  .pros li, .cons li { font-size:12px; color:#7a6c58; line-height:1.6; list-style:none; padding-left:12px; position:relative; }
+  .pros li::before { content:"+"; position:absolute; left:0; color:#6aab8e; font-weight:600; }
+  .cons li::before { content:"-"; position:absolute; left:0; color:#c45c3c; font-weight:600; }
+
+  @media (max-width:768px) {
+    .mock-grid { grid-template-columns:1fr; }
+    .section { padding:24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="active" onclick="showTab('overview')">Overview</button>
+  <button onclick="showTab('option-a')">A: Geist (Current)</button>
+  <button onclick="showTab('option-b')">B: Fraunces + DM Sans</button>
+  <button onclick="showTab('option-c')">C: Instrument Serif + Outfit</button>
+  <button onclick="showTab('option-d')">D: Source Serif + Source Sans</button>
+  <button onclick="showTab('option-e')">E: Newsreader + Plus Jakarta</button>
+  <button onclick="showTab('monospace')">Monospace Options</button>
+</div>
+
+<!-- ═══ OVERVIEW ═══ -->
+<div id="tab-overview" class="section active">
+  <div class="section-title">Typography for Ember</div>
+  <p class="section-sub">Five directions — each applied to the same Ember palette mockups</p>
+  <p class="desc">The current Geist + Geist Mono is clean but generic. For a mediation tool with a warm palette, the typography should reinforce the feeling of safety and insight. The big question: <strong>serif headings or all sans-serif?</strong></p>
+
+  <div class="label">The Options</div>
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr style="border-bottom:1px solid #3a2e22;">
+        <th style="text-align:left; padding:10px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-family:'DM Mono',monospace;"></th>
+        <th style="text-align:left; padding:10px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-family:'DM Mono',monospace;">Headings</th>
+        <th style="text-align:left; padding:10px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-family:'DM Mono',monospace;">Body</th>
+        <th style="text-align:left; padding:10px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-family:'DM Mono',monospace;">Feel</th>
+        <th style="text-align:left; padding:10px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; font-family:'DM Mono',monospace;">Vibe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:10px; color:#d4a040; font-family:'DM Mono',monospace; font-size:11px;">A</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Geist',sans-serif;">Geist Sans</td>
+        <td style="padding:10px; color:#c9b9a3;">Geist Sans</td>
+        <td style="padding:10px; color:#7a6c58;">Clean, developer</td>
+        <td style="padding:10px; color:#7a6c58; font-style:italic;">Vercel meets therapy</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:10px; color:#d4a040; font-family:'DM Mono',monospace; font-size:11px;">B</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Fraunces',serif;">Fraunces</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'DM Sans',sans-serif;">DM Sans</td>
+        <td style="padding:10px; color:#7a6c58;">Organic warmth</td>
+        <td style="padding:10px; color:#7a6c58; font-style:italic;">Fireside storytelling</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:10px; color:#d4a040; font-family:'DM Mono',monospace; font-size:11px;">C</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Instrument Serif',serif;">Instrument Serif</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Outfit',sans-serif;">Outfit</td>
+        <td style="padding:10px; color:#7a6c58;">Editorial elegance</td>
+        <td style="padding:10px; color:#7a6c58; font-style:italic;">New Yorker meets wellness</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:10px; color:#d4a040; font-family:'DM Mono',monospace; font-size:11px;">D</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Source Serif 4',serif;">Source Serif 4</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Source Sans 3',sans-serif;">Source Sans 3</td>
+        <td style="padding:10px; color:#7a6c58;">Professional trust</td>
+        <td style="padding:10px; color:#7a6c58; font-style:italic;">Academic journal, approachable</td>
+      </tr>
+      <tr>
+        <td style="padding:10px; color:#d4a040; font-family:'DM Mono',monospace; font-size:11px;">E</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Newsreader',serif;">Newsreader</td>
+        <td style="padding:10px; color:#c9b9a3; font-family:'Plus Jakarta Sans',sans-serif;">Plus Jakarta Sans</td>
+        <td style="padding:10px; color:#7a6c58;">Modern authority</td>
+        <td style="padding:10px; color:#7a6c58; font-style:italic;">Publication meets product</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="label" style="margin-top:28px;">Key Question</div>
+  <p class="desc">A serif heading font adds <em>literary weight</em> — it says "this is about meaning, not just data." But it can also feel slower, more editorial. An all-sans system says "this is a tool." The Ember palette already provides warmth, so a sans-serif won't feel cold here. The question is: do you want the typography to reinforce the warmth (serif), or provide contrast to it (clean sans)?</p>
+</div>
+
+<!-- ═══ OPTION A: GEIST ═══ -->
+<div id="tab-option-a" class="section">
+  <div class="section-title">A: Geist + Geist Mono</div>
+  <p class="section-sub">Current system — "the developer's meditation app"</p>
+
+  <div class="specimen">
+    <div class="specimen-name">Geist Sans — Headings + Body</div>
+    <div class="specimen-meta">Weight 300-400 | Tracking -0.02em headings | Vercel's system font</div>
+    <div class="specimen-alpha" style="font-family:system-ui,-apple-system,sans-serif; font-weight:300;">See the conversation you're actually having</div>
+    <div class="specimen-body" style="font-family:system-ui,-apple-system,sans-serif;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands.</div>
+  </div>
+
+  <div class="mock-grid">
+    <div class="mock" style="font-family:system-ui,-apple-system,sans-serif;">
+      <div class="mock-brand" style="color:#d4a040; font-family:'Geist Mono',monospace;">PARALLAX</div>
+      <div class="mock-indicator"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:26px; color:#ebe1d4;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#7a6c58;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name">Alex</span>
+          <span class="mock-msg-time" style="font-family:'Geist Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'Geist Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'Geist Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'Geist Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+    <div class="mock mock-light" style="font-family:system-ui,-apple-system,sans-serif;">
+      <div class="mock-brand" style="color:#b8882a; font-family:'Geist Mono',monospace;">PARALLAX</div>
+      <div class="mock-indicator"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:26px; color:#1e1810;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#8a7b68;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name">Alex</span>
+          <span class="mock-msg-time" style="font-family:'Geist Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'Geist Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'Geist Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'Geist Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros"><h4>Strengths</h4><ul>
+      <li>Already implemented — zero migration</li>
+      <li>Extremely legible at all sizes</li>
+      <li>Neutral — lets content and color do the work</li>
+    </ul></div>
+    <div class="cons"><h4>Risks</h4><ul>
+      <li>Generic — looks like every Vercel starter</li>
+      <li>No emotional character of its own</li>
+      <li>Doesn't reinforce "mediation" or "human"</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ═══ OPTION B: FRAUNCES + DM SANS ═══ -->
+<div id="tab-option-b" class="section">
+  <div class="section-title">B: Fraunces + DM Sans</div>
+  <p class="section-sub">"Fireside storytelling" — organic, soft, opinionated</p>
+
+  <div class="specimen">
+    <div class="specimen-name">Fraunces — Headings (variable optical sizing)</div>
+    <div class="specimen-meta">Weight 300 | Soft axis, organic wonk | Google Fonts variable</div>
+    <div class="specimen-alpha" style="font-family:'Fraunces',serif; font-weight:300;">See the conversation you're actually having</div>
+    <div class="specimen-body" style="font-family:'DM Sans',sans-serif; font-weight:400;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands.</div>
+  </div>
+
+  <div class="mock-grid">
+    <div class="mock">
+      <div class="mock-brand" style="color:#d4a040; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'DM Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#ebe1d4; font-family:'Fraunces',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#7a6c58; font-family:'DM Sans',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'DM Sans',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'DM Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'DM Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'DM Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'DM Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'DM Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'DM Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Fraunces',serif; font-style:italic; font-weight:400;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+    <div class="mock mock-light">
+      <div class="mock-brand" style="color:#b8882a; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'DM Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#1e1810; font-family:'Fraunces',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#8a7b68; font-family:'DM Sans',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'DM Sans',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'DM Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'DM Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'DM Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'DM Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'DM Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'DM Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Fraunces',serif; font-style:italic; font-weight:400;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros"><h4>Strengths</h4><ul>
+      <li>Fraunces has "wonky" organic curves — feels alive, not mechanical</li>
+      <li>Variable optical sizing — looks great from 12px to 60px</li>
+      <li>DM Sans + DM Mono are a matched family — everything harmonizes</li>
+      <li>NVC translations in Fraunces italic feel like poetry</li>
+    </ul></div>
+    <div class="cons"><h4>Risks</h4><ul>
+      <li>Fraunces is opinionated — could feel "too quirky" for some</li>
+      <li>The wonk axis needs careful tuning or it gets goofy</li>
+      <li>Heavier font load (variable font = larger file)</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ═══ OPTION C: INSTRUMENT SERIF + OUTFIT ═══ -->
+<div id="tab-option-c" class="section">
+  <div class="section-title">C: Instrument Serif + Outfit</div>
+  <p class="section-sub">"Editorial elegance" — refined, literary, modern</p>
+
+  <div class="specimen">
+    <div class="specimen-name">Instrument Serif — Headings</div>
+    <div class="specimen-meta">Weight 400 | High contrast strokes | Italic is stunning</div>
+    <div class="specimen-alpha" style="font-family:'Instrument Serif',serif; font-weight:400;">See the conversation you're actually having</div>
+    <div class="specimen-body" style="font-family:'Outfit',sans-serif; font-weight:400;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands.</div>
+  </div>
+
+  <div class="mock-grid">
+    <div class="mock">
+      <div class="mock-brand" style="color:#d4a040; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'IBM Plex Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:30px; color:#ebe1d4; font-family:'Instrument Serif',serif; font-weight:400;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#7a6c58; font-family:'Outfit',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Outfit',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'IBM Plex Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'IBM Plex Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'IBM Plex Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'IBM Plex Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Instrument Serif',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+    <div class="mock mock-light">
+      <div class="mock-brand" style="color:#b8882a; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'IBM Plex Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:30px; color:#1e1810; font-family:'Instrument Serif',serif; font-weight:400;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#8a7b68; font-family:'Outfit',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Outfit',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'IBM Plex Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'IBM Plex Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'IBM Plex Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'IBM Plex Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Instrument Serif',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros"><h4>Strengths</h4><ul>
+      <li>High contrast strokes look premium on dark backgrounds</li>
+      <li>Italic is beautiful — perfect for NVC translations</li>
+      <li>Outfit is geometric but friendly — great readability</li>
+      <li>Most visually distinctive of all options</li>
+    </ul></div>
+    <div class="cons"><h4>Risks</h4><ul>
+      <li>Could feel more "magazine" than "app"</li>
+      <li>High contrast serif can feel fragile at small sizes</li>
+      <li>Only one weight available for Instrument Serif</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ═══ OPTION D: SOURCE SERIF + SOURCE SANS ═══ -->
+<div id="tab-option-d" class="section">
+  <div class="section-title">D: Source Serif 4 + Source Sans 3</div>
+  <p class="section-sub">"Professional trust" — the matched Adobe family</p>
+
+  <div class="specimen">
+    <div class="specimen-name">Source Serif 4 — Headings</div>
+    <div class="specimen-meta">Weight 300-400 | Variable optical sizing | Adobe's open-source family</div>
+    <div class="specimen-alpha" style="font-family:'Source Serif 4',serif; font-weight:300;">See the conversation you're actually having</div>
+    <div class="specimen-body" style="font-family:'Source Sans 3',sans-serif; font-weight:400;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands.</div>
+  </div>
+
+  <div class="mock-grid">
+    <div class="mock">
+      <div class="mock-brand" style="color:#d4a040; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'IBM Plex Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#ebe1d4; font-family:'Source Serif 4',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#7a6c58; font-family:'Source Sans 3',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Source Sans 3',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'IBM Plex Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'IBM Plex Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'IBM Plex Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'IBM Plex Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Source Serif 4',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+    <div class="mock mock-light">
+      <div class="mock-brand" style="color:#b8882a; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'IBM Plex Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#1e1810; font-family:'Source Serif 4',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#8a7b68; font-family:'Source Sans 3',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Source Sans 3',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'IBM Plex Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'IBM Plex Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'IBM Plex Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'IBM Plex Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'IBM Plex Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Source Serif 4',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros"><h4>Strengths</h4><ul>
+      <li>Matched serif/sans/mono family — perfect harmony</li>
+      <li>Extremely legible at all sizes — designed for screens</li>
+      <li>Warm and professional without being trendy</li>
+      <li>Full weight range for both serif and sans</li>
+    </ul></div>
+    <div class="cons"><h4>Risks</h4><ul>
+      <li>Safe — not very distinctive or memorable</li>
+      <li>Widely used — may feel familiar/seen-before</li>
+      <li>Less personality than Fraunces or Instrument Serif</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ═══ OPTION E: NEWSREADER + PLUS JAKARTA ═══ -->
+<div id="tab-option-e" class="section">
+  <div class="section-title">E: Newsreader + Plus Jakarta Sans</div>
+  <p class="section-sub">"Modern authority" — clarity meets warmth</p>
+
+  <div class="specimen">
+    <div class="specimen-name">Newsreader — Headings (variable optical sizing)</div>
+    <div class="specimen-meta">Weight 300-400 | Designed for reading | Variable optical size</div>
+    <div class="specimen-alpha" style="font-family:'Newsreader',serif; font-weight:300;">See the conversation you're actually having</div>
+    <div class="specimen-body" style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:400;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands.</div>
+  </div>
+
+  <div class="mock-grid">
+    <div class="mock">
+      <div class="mock-brand" style="color:#d4a040; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'JetBrains Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#ebe1d4; font-family:'Newsreader',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#7a6c58; font-family:'Plus Jakarta Sans',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Plus Jakarta Sans',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'JetBrains Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'JetBrains Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'JetBrains Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'JetBrains Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'JetBrains Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'JetBrains Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Newsreader',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+    <div class="mock mock-light">
+      <div class="mock-brand" style="color:#b8882a; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</div>
+      <div class="mock-indicator" style="font-family:'JetBrains Mono',monospace;"><span></span>REAL-TIME MEDIATION</div>
+      <div class="mock-heading" style="font-size:28px; color:#1e1810; font-family:'Newsreader',serif; font-weight:300;">See the conversation you're actually having</div>
+      <div class="mock-body" style="font-size:14px; color:#8a7b68; font-family:'Plus Jakarta Sans',sans-serif;">NVC-powered conflict resolution in everyone's hands.</div>
+      <div class="mock-msg" style="font-family:'Plus Jakarta Sans',sans-serif;">
+        <div class="mock-msg-hdr">
+          <span class="mock-msg-name" style="font-family:'JetBrains Mono',monospace;">Alex</span>
+          <span class="mock-msg-time" style="font-family:'JetBrains Mono',monospace;">2:14 PM</span>
+          <span class="mock-msg-temp" style="font-family:'JetBrains Mono',monospace;">HEATED</span>
+        </div>
+        <p class="mock-msg-text">You never listen to what I'm actually saying.</p>
+        <div class="mock-analysis-label" style="font-family:'JetBrains Mono',monospace;">UNMET NEEDS</div>
+        <div class="mock-needs"><span class="mock-need" style="font-family:'JetBrains Mono',monospace;">VALIDATION</span><span class="mock-need" style="font-family:'JetBrains Mono',monospace;">PRESENCE</span></div>
+        <div class="mock-nvc" style="font-family:'Newsreader',serif; font-style:italic;">"I need to feel that you're really hearing me."</div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros"><h4>Strengths</h4><ul>
+      <li>Newsreader was designed specifically for digital reading</li>
+      <li>Plus Jakarta Sans is warm and modern — trending in 2025-26</li>
+      <li>Optical sizing means it looks great at every size automatically</li>
+      <li>Both have excellent weight ranges for fine-tuning</li>
+    </ul></div>
+    <div class="cons"><h4>Risks</h4><ul>
+      <li>Newsreader is less distinctive than Fraunces or Instrument</li>
+      <li>Plus Jakarta Sans is becoming very common</li>
+      <li>Slightly "startup SaaS" feel</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ═══ MONOSPACE TAB ═══ -->
+<div id="tab-monospace" class="section">
+  <div class="section-title">Monospace Options</div>
+  <p class="section-sub">The "data readout" layer — labels, temperatures, timestamps, room codes</p>
+  <p class="desc">Regardless of heading/body choice, the monospace font carries the analytical personality. It's used for: brand wordmark, section indicators, temperature labels, timestamps, room codes, need pills, analysis labels. Here are three options at the sizes they'll actually appear.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:24px;">
+    <div class="specimen">
+      <div class="specimen-name">DM Mono</div>
+      <div class="specimen-meta">Matches DM Sans | Slightly humanist</div>
+      <div style="background:#1a1410; padding:16px; margin-top:12px;">
+        <div style="font-family:'DM Mono',monospace; color:#d4a040; font-size:10px; letter-spacing:0.15em; margin-bottom:12px;">PARALLAX</div>
+        <div style="font-family:'DM Mono',monospace; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">REAL-TIME MEDIATION</div>
+        <div style="font-family:'DM Mono',monospace; color:#c45c3c; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">ALEX</div>
+        <div style="font-family:'DM Mono',monospace; color:#4a3e30; font-size:9px; margin-bottom:8px;">2:14 PM</div>
+        <div style="font-family:'DM Mono',monospace; color:#c45c3c; font-size:8px; letter-spacing:0.1em; margin-bottom:8px;">HEATED</div>
+        <div style="display:flex; gap:4px;">
+          <span style="font-family:'DM Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">VALIDATION</span>
+          <span style="font-family:'DM Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">PRESENCE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <div class="specimen-name">JetBrains Mono</div>
+      <div class="specimen-meta">Tall x-height | Very legible small | Developer favorite</div>
+      <div style="background:#1a1410; padding:16px; margin-top:12px;">
+        <div style="font-family:'JetBrains Mono',monospace; color:#d4a040; font-size:10px; letter-spacing:0.15em; margin-bottom:12px;">PARALLAX</div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">REAL-TIME MEDIATION</div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#c45c3c; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">ALEX</div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#4a3e30; font-size:9px; margin-bottom:8px;">2:14 PM</div>
+        <div style="font-family:'JetBrains Mono',monospace; color:#c45c3c; font-size:8px; letter-spacing:0.1em; margin-bottom:8px;">HEATED</div>
+        <div style="display:flex; gap:4px;">
+          <span style="font-family:'JetBrains Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">VALIDATION</span>
+          <span style="font-family:'JetBrains Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">PRESENCE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <div class="specimen-name">IBM Plex Mono</div>
+      <div class="specimen-meta">Warm humanist | Industrial heritage | Full weights</div>
+      <div style="background:#1a1410; padding:16px; margin-top:12px;">
+        <div style="font-family:'IBM Plex Mono',monospace; color:#d4a040; font-size:10px; letter-spacing:0.15em; margin-bottom:12px;">PARALLAX</div>
+        <div style="font-family:'IBM Plex Mono',monospace; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">REAL-TIME MEDIATION</div>
+        <div style="font-family:'IBM Plex Mono',monospace; color:#c45c3c; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">ALEX</div>
+        <div style="font-family:'IBM Plex Mono',monospace; color:#4a3e30; font-size:9px; margin-bottom:8px;">2:14 PM</div>
+        <div style="font-family:'IBM Plex Mono',monospace; color:#c45c3c; font-size:8px; letter-spacing:0.1em; margin-bottom:8px;">HEATED</div>
+        <div style="display:flex; gap:4px;">
+          <span style="font-family:'IBM Plex Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">VALIDATION</span>
+          <span style="font-family:'IBM Plex Mono',monospace; padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em;">PRESENCE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Recommendation</div>
+  <p class="desc"><strong style="color:#c9b9a3;">IBM Plex Mono</strong> has the warmest character of the three — its curves have a subtle humanist quality that matches the Ember palette. JetBrains Mono is more legible at 8-9px but feels more "code editor." DM Mono is the safe match if you go with DM Sans for body.</p>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax V3 — Conflict Intelligence Engine</title>
+<style>
+:root {
+  --base-primary: #020202;
+  --base-secondary: #101010;
+  --base-card: #1f1d1c;
+  --text-primary: #eeeeee;
+  --text-secondary: #a49d9a;
+  --text-muted: #5c5855;
+  --border-subtle: #2e2c2b;
+  --border-visible: #3d3a39;
+  --accent: #ef6f2e;
+  --accent-hover: #ee6018;
+  --accent-active: #d15010;
+  --amber: #f59e0b;
+  --teal: #4ecdc4;
+  --neutral-600: #5c5855;
+  --neutral-800: #3d3a39;
+  --neutral-900: #2e2c2b;
+  --neutral-1000: #1f1d1c;
+  --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  --comm: #6aab8e;
+  --relational: #d4a040;
+  --cognitive: #c45c3c;
+  --systemic: #8b7ec8;
+  --resolution: #6aab8e;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--base-primary); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+h1 { font-family: var(--font-sans); font-size: 48px; font-weight: 400; letter-spacing: -2px; line-height: 1.0; }
+h2 { font-family: var(--font-sans); font-size: 36px; font-weight: 400; letter-spacing: -1.5px; line-height: 1.1; }
+h3 { font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: -0.5px; }
+.label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 36px; }
+.section-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-right: 10px; animation: pulseGlow 3s ease-in-out infinite; }
+@keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,111,46,0.15); } 50% { box-shadow: 0 0 6px 3px rgba(239,111,46,0.15); } }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes flowDash { to { stroke-dashoffset: -40; } }
+.hero { padding: 80px 0 40px; }
+.hero .label { animation: fadeIn 0.6s ease both; }
+.hero h1 { animation: fadeSlideUp 0.7s ease both 0.15s; }
+.hero .subtitle { font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary); margin-top: 16px; animation: fadeSlideUp 0.7s ease both 0.3s; }
+.stats-bar { display: flex; gap: 32px; margin: 40px 0; flex-wrap: wrap; }
+.stat { animation: fadeSlideUp 0.6s ease both; }
+.stat-value { font-family: var(--font-sans); font-size: 36px; font-weight: 400; letter-spacing: -1px; color: var(--accent); }
+.stat-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 2px; }
+.nav { display: flex; gap: 8px; margin: 32px 0; flex-wrap: wrap; position: sticky; top: 0; background: var(--base-primary); z-index: 100; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+.nav-btn { background: transparent; border: 1px solid var(--border-subtle); border-radius: 4px; padding: 8px 16px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.15s ease; }
+.nav-btn:hover { border-color: var(--border-visible); color: var(--text-primary); }
+.nav-btn.active { background: var(--accent); color: #020202; border-color: var(--accent); }
+.view { display: none; padding: 40px 0 80px; }
+.view.active { display: block; }
+.card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 28px; transition: transform 0.2s ease, border-color 0.15s ease; }
+.card:hover { transform: translateY(-2px); border-color: var(--border-visible); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.card-grid-sm { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.lens-card { cursor: pointer; position: relative; overflow: hidden; }
+.lens-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 10px 10px 0 0; }
+.lens-card[data-category="communication"]::before { background: var(--comm); }
+.lens-card[data-category="relational"]::before { background: var(--relational); }
+.lens-card[data-category="cognitive"]::before { background: var(--cognitive); }
+.lens-card[data-category="systemic"]::before { background: var(--systemic); }
+.lens-card[data-category="resolution"]::before { background: var(--resolution); }
+.lens-category-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+.lens-card[data-category="communication"] .lens-category-dot { background: var(--comm); }
+.lens-card[data-category="relational"] .lens-category-dot { background: var(--relational); }
+.lens-card[data-category="cognitive"] .lens-category-dot { background: var(--cognitive); }
+.lens-card[data-category="systemic"] .lens-category-dot { background: var(--systemic); }
+.lens-card[data-category="resolution"] .lens-category-dot { background: var(--resolution); }
+.lens-name { font-family: var(--font-sans); font-size: 18px; font-weight: 400; letter-spacing: -0.3px; margin-bottom: 8px; }
+.lens-short { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+.lens-desc { font-size: 13px; color: var(--text-secondary); margin-top: 12px; line-height: 1.5; }
+.lens-modes { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.lens-mode-tag { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; background: rgba(239,111,46,0.1); color: var(--accent); }
+.mode-name { font-family: var(--font-sans); font-size: 20px; font-weight: 400; letter-spacing: -0.3px; }
+.mode-desc { font-size: 13px; color: var(--text-secondary); margin: 8px 0; }
+.mode-example { font-size: 12px; color: var(--text-muted); font-style: italic; border-left: 2px solid var(--border-subtle); padding-left: 12px; margin-top: 12px; }
+.mode-lenses { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+.mode-lens-chip { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 10px; border-radius: 2px; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.mode-lens-chip.cat-communication { border-color: var(--comm); color: var(--comm); }
+.mode-lens-chip.cat-relational { border-color: var(--relational); color: var(--relational); }
+.mode-lens-chip.cat-cognitive { border-color: var(--cognitive); color: var(--cognitive); }
+.mode-lens-chip.cat-systemic { border-color: var(--systemic); color: var(--systemic); }
+.mode-lens-chip.cat-resolution { border-color: var(--resolution); color: var(--resolution); }
+.mode-group-label { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 12px; }
+.flow-container { margin: 32px 0; }
+.flow-svg { width: 100%; max-width: 900px; margin: 0 auto; display: block; }
+.flow-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 8 12; animation: flowDash 1.5s linear infinite; }
+.flow-base { stroke: var(--border-subtle); stroke-width: 1.5; fill: none; }
+.example-msg { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-left: 3px solid var(--cognitive); border-radius: 4px; padding: 20px; margin: 24px 0; font-size: 16px; color: var(--text-primary); line-height: 1.6; font-style: italic; }
+.analysis-layer { margin: 16px 0; padding: 20px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--base-card); }
+.analysis-layer-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.analysis-layer-name { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; }
+.analysis-layer-finding { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.analysis-layer-finding strong { color: var(--text-primary); }
+.blind-spot-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+.blind-spot-row:last-child { border-bottom: none; }
+.blind-spot-gap { font-size: 13px; color: var(--cognitive); }
+.blind-spot-arrow { color: var(--text-muted); font-size: 20px; }
+.blind-spot-fill { font-size: 13px; color: var(--teal); }
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--border-subtle); }
+.timeline-item { position: relative; margin-bottom: 40px; }
+.timeline-dot { position: absolute; left: -28px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-subtle); background: var(--base-primary); }
+.timeline-item.current .timeline-dot { border-color: var(--accent); background: var(--accent); }
+.timeline-item.future .timeline-dot { border-color: var(--text-muted); }
+.timeline-version { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+.timeline-title { font-family: var(--font-sans); font-size: 20px; font-weight: 400; letter-spacing: -0.3px; margin: 4px 0 8px; }
+.timeline-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.timeline-badge { display: inline-block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 10px; border-radius: 2px; margin-top: 8px; }
+.timeline-badge.shipped { background: rgba(78,205,196,0.15); color: var(--teal); }
+.timeline-badge.building { background: rgba(239,111,46,0.15); color: var(--accent); }
+.timeline-badge.vision { background: rgba(139,126,200,0.15); color: var(--systemic); }
+.assessment-section { margin: 32px 0; }
+.assessment-section h3 { margin-bottom: 20px; }
+.assessment-item { margin-bottom: 20px; background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px; transition: opacity 0.3s ease; }
+.assessment-item.completed { opacity: 0.5; }
+.assessment-item.completed .assess-label { text-decoration: line-through; color: var(--text-muted); }
+.assessment-item.completed .assess-body { opacity: 0.25; pointer-events: none; }
+.assessment-check { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.assess-checkbox { appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--border-visible); border-radius: 3px; background: transparent; cursor: pointer; position: relative; flex-shrink: 0; }
+.assess-checkbox:checked { background: var(--teal); border-color: var(--teal); }
+.assess-checkbox:checked::after { content: ''; position: absolute; top: 2px; left: 5px; width: 4px; height: 8px; border: solid #020202; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.assess-label { font-family: var(--font-sans); font-size: 16px; font-weight: 400; transition: color 0.3s ease; }
+.assess-body { transition: opacity 0.3s ease; margin-top: 12px; }
+.assess-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; }
+.severity-badge { font-size: 9px; letter-spacing: 0.1em; padding: 2px 10px; border-radius: 2px; text-transform: uppercase; font-weight: 600; }
+.severity-badge.high { background: rgba(212,160,64,0.2); color: var(--relational); }
+.severity-badge.medium { background: rgba(239,111,46,0.15); color: var(--accent); }
+.severity-badge.low { background: rgba(139,126,200,0.15); color: var(--systemic); }
+.prompt-block { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent); border-radius: 4px; padding: 16px; font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); white-space: pre-wrap; position: relative; margin-top: 12px; line-height: 1.5; }
+.copy-btn { position: absolute; top: 8px; right: 8px; background: var(--border-subtle); border: none; color: var(--text-secondary); font-family: var(--font-mono); font-size: 10px; padding: 4px 8px; border-radius: 2px; cursor: pointer; }
+.copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+.copy-btn.copied { color: var(--teal); }
+.assess-progress { display: block; margin-bottom: 20px; }
+.win-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--teal); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.win-card .win-title { font-family: var(--font-sans); font-size: 16px; font-weight: 400; color: var(--teal); margin-bottom: 8px; }
+.win-card .win-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+@media (max-width: 768px) {
+  h1 { font-size: 32px; } h2 { font-size: 28px; }
+  .stats-bar { gap: 20px; } .stat-value { font-size: 28px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .blind-spot-row { grid-template-columns: 1fr; gap: 8px; }
+  .container { padding: 0 20px; }
+  .nav { gap: 4px; } .nav-btn { padding: 6px 10px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="hero">
+    <div class="label"><span class="section-dot"></span>PARALLAX V3</div>
+    <h1>Conflict Intelligence Engine</h1>
+    <div class="subtitle">14 analytical lenses. 6 context modes. One API call. Progressive disclosure UI.</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat" style="animation-delay:0.4s"><div class="stat-value" data-count="14">0</div><div class="stat-label">Lenses</div></div>
+    <div class="stat" style="animation-delay:0.52s"><div class="stat-value" data-count="6">0</div><div class="stat-label">Context Modes</div></div>
+    <div class="stat" style="animation-delay:0.64s"><div class="stat-value" data-count="32">0</div><div class="stat-label">Files Changed</div></div>
+    <div class="stat" style="animation-delay:0.76s"><div class="stat-value" data-count="1973">0</div><div class="stat-label">Lines Added</div></div>
+    <div class="stat" style="animation-delay:0.88s"><div class="stat-value" data-count="5">0</div><div class="stat-label">Lens Categories</div></div>
+  </div>
+  <div class="nav" id="nav">
+    <button class="nav-btn active" data-view="architecture">Architecture</button>
+    <button class="nav-btn" data-view="lenses">Lens Registry</button>
+    <button class="nav-btn" data-view="modes">Context Modes</button>
+    <button class="nav-btn" data-view="composite">Composite Analysis</button>
+    <button class="nav-btn" data-view="blindspots">NVC Blind Spots</button>
+    <button class="nav-btn" data-view="evolution">Evolution</button>
+    <button class="nav-btn" data-view="assessment">Assessment</button>
+  </div>
+
+  <!-- Architecture -->
+  <div class="view active" id="view-architecture">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>ENGINE ARCHITECTURE</div>
+    <h2>Message Flow</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 32px; max-width:600px;">Every message passes through the same pipeline: context routing selects the lens stack, Claude analyzes in a single API call, the parser validates each lens independently, and the UI progressively reveals layers of insight.</p>
+    <div class="flow-container">
+      <svg class="flow-svg" viewBox="0 0 880 420" xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="glow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <rect x="20" y="30" width="160" height="52" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="100" y="60" text-anchor="middle" fill="var(--text-primary)" font-family="var(--font-mono)" font-size="11">User Message</text>
+        <path id="c1" d="M180,56 L250,56" class="flow-base"/><path d="M180,56 L250,56" class="flow-path"/>
+        <circle r="3" fill="var(--accent)" filter="url(#glow)"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#c1"/></animateMotion><animate attributeName="opacity" values="0;0.9;0.9;0" dur="1.5s" repeatCount="indefinite"/></circle>
+        <rect x="250" y="20" width="180" height="72" rx="4" fill="var(--base-card)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="340" y="48" text-anchor="middle" fill="var(--amber)" font-family="var(--font-mono)" font-size="10" letter-spacing="1">CONTEXT ROUTER</text>
+        <text x="340" y="68" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--font-mono)" font-size="9">session.context_mode</text>
+        <path id="c2" d="M430,56 L500,56" class="flow-base"/><path d="M430,56 L500,56" class="flow-path"/>
+        <circle r="3" fill="var(--accent)" filter="url(#glow)"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#c2"/></animateMotion><animate attributeName="opacity" values="0;0.9;0.9;0" dur="1.8s" repeatCount="indefinite"/></circle>
+        <rect x="500" y="20" width="180" height="72" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="590" y="44" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="10" letter-spacing="1">PROMPT BUILDER</text>
+        <text x="590" y="60" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--font-mono)" font-size="9">Concatenate lens</text>
+        <text x="590" y="72" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--font-mono)" font-size="9">modules into mega-prompt</text>
+        <path d="M680,56 L750,56" class="flow-base"/><path d="M680,56 L750,56" class="flow-path"/>
+        <rect x="750" y="20" width="120" height="72" rx="4" fill="var(--base-card)" stroke="var(--teal)" stroke-width="1.5"/>
+        <text x="810" y="48" text-anchor="middle" fill="var(--teal)" font-family="var(--font-mono)" font-size="10" letter-spacing="1">CLAUDE OPUS</text>
+        <text x="810" y="66" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--font-mono)" font-size="9">Single API call</text>
+        <path id="c4" d="M810,92 L810,150" class="flow-base"/><path d="M810,92 L810,150" class="flow-path"/>
+        <rect x="720" y="150" width="180" height="60" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="810" y="176" text-anchor="middle" fill="var(--text-primary)" font-family="var(--font-mono)" font-size="10">parseConflictAnalysis()</text>
+        <text x="810" y="192" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9">V1 fallback + per-lens validation</text>
+        <path d="M810,210 L810,270" class="flow-base"/><path d="M810,210 L810,270" class="flow-path"/>
+        <ellipse cx="810" cy="270" rx="70" ry="14" fill="var(--base-card)" stroke="var(--border-subtle)" stroke-width="1"/>
+        <rect x="740" y="270" width="140" height="40" fill="var(--base-card)" stroke="var(--border-subtle)" stroke-width="1"/>
+        <ellipse cx="810" cy="310" rx="70" ry="14" fill="var(--base-card)" stroke="var(--border-subtle)" stroke-width="1"/>
+        <text x="810" y="295" text-anchor="middle" fill="var(--text-secondary)" font-family="var(--font-mono)" font-size="10">nvc_analysis JSONB</text>
+        <path d="M740,290 C640,290 640,360 500,360" class="flow-base"/><path d="M740,290 C640,290 640,360 500,360" class="flow-path" style="stroke:var(--teal)"/>
+        <text x="600" y="310" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9">Realtime broadcast</text>
+        <rect x="60" y="300" width="440" height="110" rx="8" fill="none" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="4 6"/>
+        <text x="72" y="292" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5">PROGRESSIVE DISCLOSURE UI</text>
+        <rect x="80" y="320" width="120" height="36" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="140" y="342" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="9">TIER 1: Insight</text>
+        <rect x="220" y="320" width="120" height="36" rx="4" fill="var(--base-card)" stroke="var(--relational)" stroke-width="1"/>
+        <text x="280" y="342" text-anchor="middle" fill="var(--relational)" font-family="var(--font-mono)" font-size="9">TIER 2: NVC</text>
+        <rect x="360" y="320" width="120" height="36" rx="4" fill="var(--base-card)" stroke="var(--systemic)" stroke-width="1"/>
+        <text x="420" y="342" text-anchor="middle" fill="var(--systemic)" font-family="var(--font-mono)" font-size="9">TIER 3: Lenses</text>
+        <text x="140" y="376" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8">Always visible</text>
+        <text x="280" y="376" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8">Toggle expand</text>
+        <text x="420" y="376" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8">Chip drill-down</text>
+        <rect x="80" y="390" width="400" height="20" rx="2" fill="none" stroke="var(--cognitive)" stroke-width="0.5" stroke-dasharray="3 3"/>
+        <text x="280" y="404" text-anchor="middle" fill="var(--cognitive)" font-family="var(--font-mono)" font-size="8">The Melt: dissolve timing 800ms-1800ms scales with meta.overallSeverity</text>
+        <text x="340" y="118" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8">Selects 5-7 lenses</text>
+        <path d="M280,92 L140,140" stroke="var(--border-subtle)" stroke-width="0.8" fill="none" stroke-dasharray="3 3"/>
+        <path d="M310,92 L220,140" stroke="var(--border-subtle)" stroke-width="0.8" fill="none" stroke-dasharray="3 3"/>
+        <path d="M340,92 L300,140" stroke="var(--border-subtle)" stroke-width="0.8" fill="none" stroke-dasharray="3 3"/>
+        <path d="M370,92 L380,140" stroke="var(--border-subtle)" stroke-width="0.8" fill="none" stroke-dasharray="3 3"/>
+        <path d="M400,92 L460,140" stroke="var(--border-subtle)" stroke-width="0.8" fill="none" stroke-dasharray="3 3"/>
+        <rect x="100" y="140" width="80" height="28" rx="3" fill="var(--base-card)" stroke="var(--comm)" stroke-width="0.8"/>
+        <text x="140" y="158" text-anchor="middle" fill="var(--comm)" font-family="var(--font-mono)" font-size="8">NVC</text>
+        <rect x="190" y="140" width="80" height="28" rx="3" fill="var(--base-card)" stroke="var(--relational)" stroke-width="0.8"/>
+        <text x="230" y="158" text-anchor="middle" fill="var(--relational)" font-family="var(--font-mono)" font-size="8">GOTTMAN</text>
+        <rect x="280" y="140" width="80" height="28" rx="3" fill="var(--base-card)" stroke="var(--cognitive)" stroke-width="0.8"/>
+        <text x="320" y="158" text-anchor="middle" fill="var(--cognitive)" font-family="var(--font-mono)" font-size="8">CBT</text>
+        <rect x="370" y="140" width="80" height="28" rx="3" fill="var(--base-card)" stroke="var(--systemic)" stroke-width="0.8"/>
+        <text x="410" y="158" text-anchor="middle" fill="var(--systemic)" font-family="var(--font-mono)" font-size="8">SCARF</text>
+        <rect x="460" y="140" width="80" height="28" rx="3" fill="var(--base-card)" stroke="var(--resolution)" stroke-width="0.8"/>
+        <text x="500" y="158" text-anchor="middle" fill="var(--resolution)" font-family="var(--font-mono)" font-size="8">TKI</text>
+        <text x="370" y="186" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8">+ 9 more lens modules (14 total)</text>
+      </svg>
+    </div>
+    <div style="margin-top:40px;">
+      <div class="label" style="margin-bottom:16px"><span class="section-dot"></span>KEY DECISIONS</div>
+      <div class="card-grid-sm" id="decisions-grid"></div>
+    </div>
+  </div>
+
+  <!-- Lenses -->
+  <div class="view" id="view-lenses">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>LENS REGISTRY</div>
+    <h2>14 Analytical Frameworks</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 24px;">Each lens is a separate TypeScript module in <code style="color:var(--accent)">src/lib/prompts/lens-*.ts</code>. Click any card for details.</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--comm)"></div>Communication</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--relational)"></div>Relational</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cognitive)"></div>Cognitive</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--systemic)"></div>Systemic</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--resolution)"></div>Resolution</div>
+    </div>
+    <div class="card-grid" id="lens-grid"></div>
+    <div id="lens-detail" style="display:none; margin-top:32px;">
+      <div class="card" style="border-left-width:3px;" id="lens-detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 id="detail-name"></h3>
+          <button id="close-detail-btn" style="background:none; border:1px solid var(--border-subtle); color:var(--text-secondary); padding:4px 12px; border-radius:4px; cursor:pointer; font-family:var(--font-mono); font-size:10px;">CLOSE</button>
+        </div>
+        <p id="detail-desc" style="color:var(--text-secondary); margin:12px 0; font-size:13px;"></p>
+        <div id="detail-signals" style="margin-top:16px;"></div>
+        <div id="detail-modes" style="margin-top:16px;"></div>
+        <div id="detail-schema" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modes -->
+  <div class="view" id="view-modes">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>CONTEXT MODES</div>
+    <h2>6 Conflict Contexts</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 24px;">Context modes activate the right lens stack. Set at session creation, stored in <code style="color:var(--accent)">sessions.context_mode</code>.</p>
+    <div class="card-grid" id="modes-grid"></div>
+  </div>
+
+  <!-- Composite -->
+  <div class="view" id="view-composite">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>COMPOSITE ANALYSIS</div>
+    <h2>One Message, Many Lenses</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 24px;">Professional Peer mode (6 lenses active). See what each lens surfaces from the same message.</p>
+    <div class="example-msg">"I've told you a hundred times, you never listen to what the team actually needs."</div>
+    <div id="analysis-layers"></div>
+    <div class="card" style="margin-top:32px; border-left:3px solid var(--accent);">
+      <div class="label" style="color:var(--accent); margin-bottom:8px">META: PRIMARY INSIGHT</div>
+      <p style="font-size:16px; line-height:1.6;">"This isn't about listening -- it's about mattering. The speaker has concluded their contributions don't count, and that belief has turned a process problem into a personal wound."</p>
+      <div style="margin-top:12px; display:flex; gap:16px;">
+        <span style="font-size:11px; color:var(--cognitive)">SEVERITY: 0.72</span>
+        <span style="font-size:11px; color:var(--cognitive)">DIRECTION: ESCALATING</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blind Spots -->
+  <div class="view" id="view-blindspots">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>NVC BLIND SPOTS</div>
+    <h2>What NVC Can't See</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 32px; max-width:640px;">Rosenberg's NVC is extraordinary for surfacing feelings and needs. But it was never designed to detect these dimensions. Each gap has a lens that fills it.</p>
+    <div style="background:var(--base-card); border:1px solid var(--border-subtle); border-radius:10px; padding:28px;" id="blindspots-container"></div>
+  </div>
+
+  <!-- Evolution -->
+  <div class="view" id="view-evolution">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>EVOLUTION</div>
+    <h2>From NVC Translator to Intelligence Engine</h2>
+    <p style="color:var(--text-secondary); margin:12px 0 32px;">Parallax evolved from a single-lens prototype to a full conflict intelligence platform in one week.</p>
+    <div class="timeline" id="timeline-container"></div>
+  </div>
+
+  <!-- Assessment -->
+  <div class="view" id="view-assessment">
+    <div class="label" style="margin-bottom:24px"><span class="section-dot"></span>ASSESSMENT</div>
+    <h2>Senior Dev Review</h2>
+    <span id="assess-progress" class="label assess-progress">0 of 8 addressed</span>
+    <div id="assessment-content"></div>
+  </div>
+</div>
+
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "v3-conflict-intelligence-engine",
+  "project": "parallax",
+  "generated": "2026-02-11T18:00:00Z",
+  "sections": [
+    { "id": "architecture", "title": "Architecture", "type": "tab" },
+    { "id": "lenses", "title": "Lens Registry", "type": "tab" },
+    { "id": "modes", "title": "Context Modes", "type": "tab" },
+    { "id": "composite", "title": "Composite Analysis", "type": "tab" },
+    { "id": "blindspots", "title": "NVC Blind Spots", "type": "tab" },
+    { "id": "evolution", "title": "Evolution", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ],
+  "lenses": [
+    { "id": "nvc", "name": "Nonviolent Communication", "short": "NVC", "category": "communication", "desc": "Marshall Rosenberg's observation-feeling-need-request framework", "signals": ["Feelings behind words", "Universal human needs", "Observations vs evaluations", "Constructive requests"], "modes": ["intimate","family","professional_peer","professional_hierarchical","transactional","civil_structural"] },
+    { "id": "gottman", "name": "Gottman Four Horsemen", "short": "Gottman", "category": "relational", "desc": "Criticism, contempt, defensiveness, stonewalling -- the four predictors of relationship failure", "signals": ["Four horsemen detection", "Repair attempts", "5:1 positive/negative ratio", "Harsh vs soft startup"], "modes": ["intimate","family"] },
+    { "id": "cbt", "name": "Cognitive Distortions", "short": "CBT", "category": "cognitive", "desc": "Thinking traps like catastrophizing, mind-reading, all-or-nothing, and emotional reasoning", "signals": ["All-or-nothing thinking", "Mind-reading", "Catastrophizing", "Should-statements"], "modes": ["intimate","professional_peer","professional_hierarchical","transactional"] },
+    { "id": "tki", "name": "Thomas-Kilmann Modes", "short": "TKI", "category": "resolution", "desc": "Conflict-handling style: competing, collaborating, compromising, avoiding, or accommodating", "signals": ["Assertiveness level", "Cooperativeness level", "Mode classification", "Mode shifts"], "modes": ["professional_peer","professional_hierarchical","transactional"] },
+    { "id": "dramaTriangle", "name": "Karpman Drama Triangle", "short": "Drama", "category": "relational", "desc": "Persecutor-victim-rescuer role dynamics and their shifts during conflict", "signals": ["Role identification", "Role rotation", "Rescuer trap detection", "Blame patterns"], "modes": ["intimate","family"] },
+    { "id": "narrative", "name": "Narrative Therapy", "short": "Narrative", "category": "cognitive", "desc": "Totalizing narratives, identity claims, and re-authoring opportunities", "signals": ["Always/never patterns", "Fixed character attributions", "Identity claims", "Re-authoring paths"], "modes": ["intimate","family","civil_structural"] },
+    { "id": "attachment", "name": "Attachment Theory", "short": "Attach", "category": "relational", "desc": "Secure, anxious, avoidant, or disorganized attachment styles and pursue-withdraw dynamics", "signals": ["Attachment style markers", "Pursue-withdraw cycles", "Activation signals", "Proximity behavior"], "modes": ["intimate","family"] },
+    { "id": "restorative", "name": "Restorative Justice", "short": "Restore", "category": "resolution", "desc": "Identifying harm, naming needs of both parties, and pathways toward repair", "signals": ["Harm identification", "Accountability signals", "Repair offers", "Impact statements"], "modes": ["family","civil_structural"] },
+    { "id": "scarf", "name": "SCARF Model", "short": "SCARF", "category": "systemic", "desc": "Status, certainty, autonomy, relatedness, fairness -- social threat detection", "signals": ["Status threats", "Certainty threats", "Autonomy threats", "Fairness threats"], "modes": ["professional_peer","professional_hierarchical","transactional"] },
+    { "id": "orgJustice", "name": "Organizational Justice", "short": "Justice", "category": "systemic", "desc": "Distributive, procedural, and interactional fairness perceptions", "signals": ["Outcome fairness", "Process fairness", "Dignity issues", "Fairness framing"], "modes": ["professional_hierarchical","civil_structural"] },
+    { "id": "psychSafety", "name": "Psychological Safety", "short": "Psych Safe", "category": "systemic", "desc": "Team safety level, risk signals, and topics being silenced", "signals": ["Voice suppression", "Fear markers", "Self-censorship", "Silenced topics"], "modes": ["professional_peer","professional_hierarchical"] },
+    { "id": "jehns", "name": "Jehn's Conflict Types", "short": "Jehn's", "category": "systemic", "desc": "Task vs relationship vs process conflict, and spillover risk", "signals": ["Task conflict", "Relationship conflict", "Process conflict", "Spillover detection"], "modes": ["professional_peer"] },
+    { "id": "power", "name": "Power Dynamics", "short": "Power", "category": "systemic", "desc": "Symmetric vs asymmetric power, power moves, and silencing patterns", "signals": ["Directive language", "Information asymmetry", "Exit cost asymmetry", "Silencing"], "modes": ["family","professional_hierarchical","civil_structural"] },
+    { "id": "ibr", "name": "Interest-Based Relational", "short": "IBR", "category": "resolution", "desc": "Separating interests from positions, finding hidden common ground", "signals": ["Position statements", "Underlying interests", "Common ground", "BATNA awareness"], "modes": ["transactional","civil_structural"] }
+  ],
+  "contextModes": [
+    { "id": "intimate", "name": "Intimate Partners", "group": "personal", "lenses": ["nvc","gottman","cbt","dramaTriangle","attachment","narrative"] },
+    { "id": "family", "name": "Family", "group": "personal", "lenses": ["nvc","gottman","narrative","dramaTriangle","attachment","power","restorative"] },
+    { "id": "professional_peer", "name": "Professional Peers", "group": "professional", "lenses": ["nvc","cbt","tki","scarf","jehns","psychSafety"] },
+    { "id": "professional_hierarchical", "name": "Professional Hierarchy", "group": "professional", "lenses": ["nvc","cbt","tki","scarf","orgJustice","psychSafety","power"] },
+    { "id": "transactional", "name": "Transactional", "group": "formal", "lenses": ["nvc","cbt","tki","ibr","scarf"] },
+    { "id": "civil_structural", "name": "Civil / Structural", "group": "formal", "lenses": ["nvc","narrative","power","orgJustice","restorative","ibr"] }
+  ],
+  "assessment": {
+    "wins": ["Modular prompt architecture","Zero-migration schema expansion","Tiered activation prevents noise","LensDetailPanel renderer pattern"],
+    "fixes": [
+      { "id": "fix-1", "title": "No error boundary on lens rendering", "severity": "HIGH" },
+      { "id": "fix-2", "title": "max_tokens may be too low for 7+ lenses", "severity": "MEDIUM" },
+      { "id": "fix-3", "title": "Context mode not editable after session creation", "severity": "LOW" },
+      { "id": "fix-4", "title": "No loading state for lens analysis", "severity": "MEDIUM" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "Add lens confidence scores" },
+      { "id": "next-2", "title": "E2E test with real conflict scenarios" },
+      { "id": "next-3", "title": "Hackathon README and demo prep" },
+      { "id": "next-4", "title": "Cross-message pattern tracking" }
+    ]
+  }
+}
+</script>
+
+<script>
+(function() {
+  var DATA = JSON.parse(document.getElementById('artifact-data').textContent);
+  var LENSES = DATA.lenses;
+  var MODES = DATA.contextModes;
+  var CAT_COLORS = { communication:'var(--comm)', relational:'var(--relational)', cognitive:'var(--cognitive)', systemic:'var(--systemic)', resolution:'var(--resolution)' };
+  var SCHEMAS = {
+    nvc:'{ observation, feeling, need, request, subtext, blindSpots[], unmetNeeds[], nvcTranslation, emotionalTemperature }',
+    gottman:'{ horsemen[{type, evidence}], repairAttempts[], positiveToNegativeRatio, startupType }',
+    cbt:'{ distortions[{type, evidence}], coreBeliefHint }',
+    tki:'{ mode, assertiveness, cooperativeness, modeShift }',
+    dramaTriangle:'{ role, roleShifts[], rescuerTrap }',
+    narrative:'{ totalizingNarratives[], identityClaims[], reauthoringSuggestion }',
+    attachment:'{ style, pursueWithdrawDynamic, activationSignal }',
+    restorative:'{ harmIdentified, needsOfHarmed[], needsOfHarmer[], repairPathway }',
+    scarf:'{ threats[{domain, severity}], primaryThreat }',
+    orgJustice:'{ justiceType, perceivedViolation, fairnessFrame }',
+    psychSafety:'{ safetyLevel, riskSignals[], silencedTopics[] }',
+    jehns:'{ conflictType, escalationRisk, taskToRelationshipSpillover }',
+    power:'{ powerDynamic, powerMoves[], silencingPatterns[] }',
+    ibr:'{ interests[], positions[], interestBehindPosition, commonGround }'
+  };
+  var MODE_EXAMPLES = {
+    intimate:'"We need to talk about the dishes" (but it\'s never about the dishes)',
+    family:'"Mom always sides with you" or "You sound just like Dad"',
+    professional_peer:'"You keep taking credit for my work in meetings"',
+    professional_hierarchical:'"I was passed over for the promotion again"',
+    transactional:'"You promised delivery by Friday and it\'s still not here"',
+    civil_structural:'"The HOA policy affects our family differently than yours"'
+  };
+  var ASSESS_KEY = 'visualize-assess-parallax-v3-conflict-intelligence-engine';
+
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function(k) {
+      if (k === 'textContent') e.textContent = attrs[k];
+      else if (k === 'className') e.className = attrs[k];
+      else if (k.indexOf('data-') === 0) e.setAttribute(k, attrs[k]);
+      else if (k === 'style' && typeof attrs[k] === 'string') e.setAttribute('style', attrs[k]);
+      else e[k] = attrs[k];
+    });
+    if (children) children.forEach(function(c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+
+  // Decisions
+  var decisions = [
+    { n:'01', t:'One Prompt, One Call', d:'All active lenses concatenated into a single mega-prompt. Claude analyzes through all lenses in one pass. Cheaper and faster than sequential calls.' },
+    { n:'02', t:'Tiered Activation', d:'NVC always analyzes. Secondary lenses include "analyze only if signals detected" instruction. Prevents forced empty analysis.' },
+    { n:'03', t:'JSONB Expansion', d:'Existing nvc_analysis column absorbs expanded V3 schema. V1 fields at root, new lenses nest under "lenses". Zero migration risk.' },
+    { n:'04', t:'Progressive Disclosure', d:'Three tiers: primary insight always visible, NVC on toggle, individual lens details on chip drill-down. Never 14 lenses at once.' },
+    { n:'05', t:'Backward Compatible', d:'V1 NvcAnalysis fields stay at JSON root. ConflictAnalysis extends it. Parser wraps V1 responses in V3 envelope automatically.' }
+  ];
+  var dg = document.getElementById('decisions-grid');
+  decisions.forEach(function(dec) {
+    dg.appendChild(el('div', { className:'card' }, [
+      el('div', { className:'label', style:'color:var(--accent)', textContent:dec.n }),
+      el('h3', { style:'font-size:16px; margin:8px 0', textContent:dec.t }),
+      el('p', { style:'font-size:13px; color:var(--text-secondary)', textContent:dec.d })
+    ]));
+  });
+
+  // Lens grid
+  var lg = document.getElementById('lens-grid');
+  LENSES.forEach(function(lens, i) {
+    var modesDiv = el('div', { className:'lens-modes' });
+    lens.modes.forEach(function(m) {
+      var modeObj = MODES.find(function(x) { return x.id === m; });
+      modesDiv.appendChild(el('span', { className:'lens-mode-tag', textContent: modeObj ? modeObj.name.split(' ')[0] : m }));
+    });
+    var card = el('div', { className:'card lens-card', 'data-category':lens.category, 'data-lens':lens.id, style:'animation:fadeSlideUp 0.6s ease both ' + (0.1+i*0.03) + 's' }, [
+      el('div', { style:'display:flex; align-items:center; gap:8px; margin-bottom:4px' }, [
+        el('span', { className:'lens-category-dot' }),
+        el('span', { className:'lens-short', textContent:lens.short })
+      ]),
+      el('div', { className:'lens-name', textContent:lens.name }),
+      el('div', { className:'lens-desc', textContent:lens.desc }),
+      modesDiv
+    ]);
+    card.addEventListener('click', function() { showLensDetail(lens.id); });
+    lg.appendChild(card);
+  });
+
+  function showLensDetail(lensId) {
+    var lens = LENSES.find(function(l) { return l.id === lensId; });
+    if (!lens) return;
+    var det = document.getElementById('lens-detail');
+    det.style.display = 'block';
+    document.getElementById('lens-detail-card').style.borderLeftColor = CAT_COLORS[lens.category] || 'var(--accent)';
+    document.getElementById('detail-name').textContent = lens.name;
+    document.getElementById('detail-desc').textContent = lens.desc;
+    var sigDiv = document.getElementById('detail-signals');
+    sigDiv.textContent = '';
+    sigDiv.appendChild(el('div', { className:'label', style:'margin-bottom:8px', textContent:'TEXT SIGNALS DETECTED' }));
+    var ul = el('ul', { style:'list-style:none; padding:0' });
+    lens.signals.forEach(function(s) {
+      ul.appendChild(el('li', { style:'padding:4px 0; font-size:13px; color:var(--text-secondary)' }, [
+        el('span', { style:'color:var(--accent); margin-right:8px', textContent:'*' }), document.createTextNode(s)
+      ]));
+    });
+    sigDiv.appendChild(ul);
+    var mDiv = document.getElementById('detail-modes');
+    mDiv.textContent = '';
+    mDiv.appendChild(el('div', { className:'label', style:'margin-bottom:8px', textContent:'ACTIVE IN CONTEXT MODES' }));
+    var mWrap = el('div', { style:'display:flex; flex-wrap:wrap; gap:8px' });
+    lens.modes.forEach(function(m) {
+      var mo = MODES.find(function(x) { return x.id === m; });
+      mWrap.appendChild(el('span', { className:'mode-lens-chip', textContent: mo ? mo.name : m }));
+    });
+    mDiv.appendChild(mWrap);
+    var sDiv = document.getElementById('detail-schema');
+    sDiv.textContent = '';
+    if (SCHEMAS[lensId]) {
+      sDiv.appendChild(el('div', { className:'label', style:'margin-bottom:8px', textContent:'RESPONSE SCHEMA' }));
+      var pb = el('div', { className:'prompt-block', style:'border-left-color:' + (CAT_COLORS[lens.category]||'var(--accent)'), textContent:SCHEMAS[lensId] });
+      sDiv.appendChild(pb);
+    }
+    det.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  document.getElementById('close-detail-btn').addEventListener('click', function() {
+    document.getElementById('lens-detail').style.display = 'none';
+  });
+
+  // Modes grid
+  var mg = document.getElementById('modes-grid');
+  var groups = { personal:'Personal', professional:'Professional', formal:'Formal' };
+  var currentGroup = '';
+  MODES.forEach(function(mode, i) {
+    if (mode.group !== currentGroup) {
+      currentGroup = mode.group;
+      mg.appendChild(el('div', { className:'mode-group-label', textContent:groups[currentGroup] }));
+    }
+    var lensesDiv = el('div', { className:'mode-lenses' });
+    mode.lenses.forEach(function(lid) {
+      var lens = LENSES.find(function(l) { return l.id === lid; });
+      if (lens) lensesDiv.appendChild(el('span', { className:'mode-lens-chip cat-' + lens.category, textContent:lens.short }));
+    });
+    mg.appendChild(el('div', { className:'card mode-card', style:'animation:fadeSlideUp 0.6s ease both '+(0.1+i*0.06)+'s' }, [
+      el('div', { className:'mode-name', textContent:mode.name }),
+      el('div', { className:'mode-desc', textContent:mode.lenses.length + ' lenses active' }),
+      el('div', { className:'mode-example', textContent:MODE_EXAMPLES[mode.id] || '' }),
+      lensesDiv
+    ]));
+  });
+
+  // Composite analysis layers
+  var analysisData = [
+    { cat:'comm', name:'NVC (Nonviolent Communication)', findings:'<strong>Feeling:</strong> Frustration, exhaustion, being unheard<br><strong>Need:</strong> To be considered, to matter, to have input valued<br><strong>Observation missing:</strong> "a hundred times" and "never" are evaluations, not observations<br><strong>Translation:</strong> "When I share ideas and see them passed over, I feel invisible. I need to know my perspective matters."' },
+    { cat:'cognitive', name:'CBT (Cognitive Distortions)', findings:'<strong>Overgeneralization:</strong> "a hundred times" erases all instances where they WERE heard<br><strong>All-or-nothing:</strong> "never" eliminates any partial listening<br><strong>Core belief hint:</strong> "I am not worth listening to"' },
+    { cat:'resolution', name:'TKI (Thomas-Kilmann)', findings:'<strong>Mode:</strong> Competing (high assertiveness, low cooperativeness)<br><strong>Assertiveness:</strong> 0.85 / <strong>Cooperativeness:</strong> 0.15<br>The speaker is fighting to be heard, not seeking collaboration' },
+    { cat:'systemic', name:'SCARF Model', findings:'<strong>Status threat (0.8):</strong> Expertise and contributions being dismissed<br><strong>Relatedness threat (0.6):</strong> "the team" vs "you" creates in-group exclusion<br><strong>Autonomy threat (0.4):</strong> Inability to influence outcomes despite effort' },
+    { cat:'systemic', name:'Jehn\'s Conflict Types', findings:'<strong>Type:</strong> Process conflict spilling into relationship conflict<br><strong>Escalation risk:</strong> High -- task-to-relationship spillover is happening<br>The frustration about not being heard (process) has become personal ("you never")' },
+    { cat:'systemic', name:'Psychological Safety', findings:'<strong>Safety level:</strong> Low -- the speaker has reached a breaking point<br><strong>Risk signal:</strong> Accumulated resentment from repeated silencing<br><strong>Silenced topic:</strong> The speaker\'s actual ideas (we hear frustration but not substance)' }
+  ];
+  var colorMap = { comm:'var(--comm)', cognitive:'var(--cognitive)', resolution:'var(--resolution)', systemic:'var(--systemic)', relational:'var(--relational)' };
+  var al = document.getElementById('analysis-layers');
+  analysisData.forEach(function(a) {
+    var layer = el('div', { className:'analysis-layer', style:'border-left:3px solid ' + colorMap[a.cat] });
+    var header = el('div', { className:'analysis-layer-header' }, [
+      el('div', { className:'legend-dot', style:'background:' + colorMap[a.cat] + '; width:8px; height:8px; border-radius:50%; flex-shrink:0' }),
+      el('span', { className:'analysis-layer-name', style:'color:' + colorMap[a.cat], textContent:a.name })
+    ]);
+    var finding = el('div', { className:'analysis-layer-finding' });
+    finding.innerHTML = a.findings; // trusted static data
+    layer.appendChild(header);
+    layer.appendChild(finding);
+    al.appendChild(layer);
+  });
+
+  // Blind spots
+  var blindspots = [
+    { gap:'Pattern-blind', gapDesc:'NVC treats each message in isolation. Can\'t track escalation patterns or predict failure.', fill:'Gottman Four Horsemen', fillDesc:'Tracks criticism, contempt, defensiveness, stonewalling. Detects repair attempts and startup patterns.' },
+    { gap:'Thinking-error-blind', gapDesc:'NVC names feelings but not the distorted thinking generating them.', fill:'CBT Cognitive Distortions', fillDesc:'Identifies catastrophizing, all-or-nothing, mind-reading, emotional reasoning, should-statements.' },
+    { gap:'Power-blind', gapDesc:'NVC assumes equal voice. Power dynamics silence people.', fill:'Power Dynamics + SCARF', fillDesc:'Detects asymmetric power, silencing patterns, status/autonomy/fairness threats.' },
+    { gap:'Role-blind', gapDesc:'NVC can\'t see victim-to-persecutor shifts or controlling "help."', fill:'Karpman Drama Triangle', fillDesc:'Maps persecutor-victim-rescuer dynamics. Detects role shifts and rescuer trap.' },
+    { gap:'Narrative-blind', gapDesc:'NVC can\'t detect totalizing stories that lock conflicts into fixed identities.', fill:'Narrative Therapy', fillDesc:'Identifies "you always/never" patterns, identity claims, re-authoring opportunities.' },
+    { gap:'Strategy-blind', gapDesc:'NVC doesn\'t classify conflict-handling approach.', fill:'Thomas-Kilmann (TKI)', fillDesc:'Classifies on assertiveness/cooperativeness axes: competing, collaborating, compromising, avoiding, accommodating.' },
+    { gap:'Context-blind', gapDesc:'NVC applies same framework to lovers\' quarrel and workplace dispute.', fill:'Context Router + Jehn\'s', fillDesc:'Context modes select frameworks. Jehn\'s distinguishes task vs relationship vs process conflict.' },
+    { gap:'Outcome-blind', gapDesc:'NVC surfaces needs but doesn\'t architect solutions.', fill:'IBR (Interest-Based Relational)', fillDesc:'Separates positions from interests, finds hidden common ground, generates resolution options.' }
+  ];
+  var bsc = document.getElementById('blindspots-container');
+  blindspots.forEach(function(bs, i) {
+    var row = el('div', { className:'blind-spot-row' });
+    var gapDiv = el('div', { className:'blind-spot-gap' }, [
+      el('strong', { textContent:bs.gap }), document.createElement('br'),
+      el('span', { style:'font-size:12px; color:var(--text-muted)', textContent:bs.gapDesc })
+    ]);
+    var arrow = el('div', { className:'blind-spot-arrow', textContent:'-->' });
+    var fillDiv = el('div', { className:'blind-spot-fill' }, [
+      el('strong', { textContent:bs.fill }), document.createElement('br'),
+      el('span', { style:'font-size:12px; color:var(--text-muted)', textContent:bs.fillDesc })
+    ]);
+    row.appendChild(gapDiv); row.appendChild(arrow); row.appendChild(fillDiv);
+    if (i < blindspots.length - 1) row.style.borderBottom = '1px solid var(--border-subtle)';
+    bsc.appendChild(row);
+  });
+
+  // Timeline
+  var tlData = [
+    { ver:'V1 -- Shipped Feb 11', title:'Single-Lens NVC Translator', desc:'Remote Mode with real-time Supabase messaging. One NVC analysis per message: observation, feeling, need, request, subtext, blind spots, unmet needs, NVC translation. Emotional temperature drives SignalRail and The Melt animation.', badge:'shipped', cls:'' },
+    { ver:'V3 -- Building Now', title:'Conflict Intelligence Engine', desc:'14 analytical lenses across 5 categories. 6 context modes selecting 5-7 lenses per conflict type. Modular prompt system. Progressive disclosure UI. Severity-aware Melt animation. 32 files changed, 1973 lines added.', badge:'building', cls:'current' },
+    { ver:'V4 -- Vision', title:'Pattern Intelligence Over Time', desc:'Cross-session pattern tracking. Relationship health scoring. Gottman 5:1 trending. Attachment style consistency. Personalized lens weighting. Export for therapy use.', badge:'vision', cls:'future' }
+  ];
+  var tc = document.getElementById('timeline-container');
+  tlData.forEach(function(t) {
+    var item = el('div', { className:'timeline-item' + (t.cls ? ' ' + t.cls : '') }, [
+      el('div', { className:'timeline-dot' }),
+      el('div', { className:'timeline-version', textContent:t.ver }),
+      el('div', { className:'timeline-title', textContent:t.title }),
+      el('div', { className:'timeline-desc', textContent:t.desc }),
+      el('span', { className:'timeline-badge ' + t.badge, textContent:t.badge === 'shipped' ? 'SHIPPED' : t.badge === 'building' ? 'IN PROGRESS' : 'FUTURE' })
+    ]);
+    tc.appendChild(item);
+  });
+
+  // Assessment
+  var ac = document.getElementById('assessment-content');
+
+  // Wins
+  var winsSection = el('div', { className:'assessment-section' });
+  winsSection.appendChild(el('h3', { style:'color:var(--teal)', textContent:'What We Did Right' }));
+  var wins = [
+    { t:'Modular Prompt Architecture', d:'Each of the 14 lenses is an isolated TypeScript module. Adding lens #15 means creating one file and one record entry. Genuinely extensible.' },
+    { t:'Zero-Migration Schema Expansion', d:'The JSONB column absorbs V3 data without schema changes. V1 fields at root, V3 nests under lenses/meta. Parser wraps V1 in V3 envelopes.' },
+    { t:'Tiered Activation Prevents Noise', d:'Telling Claude "only include if signals detected" means calm messages don\'t return empty horsemen and zero SCARF threats.' },
+    { t:'LensDetailPanel Renderer Pattern', d:'Clean switch-on-lensId with 13 dedicated renderers. TypeScript ensures exhaustive handling. Shared Label/MiniBar sub-components.' }
+  ];
+  wins.forEach(function(w) {
+    var wc = el('div', { className:'win-card' }, [
+      el('div', { className:'win-title', textContent:w.t }),
+      el('div', { className:'win-desc', textContent:w.d })
+    ]);
+    winsSection.appendChild(wc);
+  });
+  ac.appendChild(winsSection);
+
+  // Fixes
+  var fixesSection = el('div', { className:'assessment-section' });
+  fixesSection.appendChild(el('h3', { style:'color:var(--relational)', textContent:'What Needs Fixing' }));
+  var fixes = [
+    { key:'fix-1', label:'No Error Boundary on Lens Rendering', sev:'high', desc:'If Claude returns unexpected data for a lens, LensDetailPanel could crash the entire MessageCard. Each renderer trusts its input without validation.', prompt:'In Parallax at ~/Development/id8/products/parallax/, wrap LensDetailPanel in src/components/lenses/LensDetailPanel.tsx with a React error boundary. Create a LensErrorBoundary that catches rendering errors and shows "Analysis unavailable" for the failed lens. Add try-catch in each renderer to return null on unexpected data. Run npm run build to verify.' },
+    { key:'fix-2', label:'max_tokens May Be Too Low for 7+ Lenses', sev:'medium', desc:'getMaxTokensForMode() returns 3072 for 7+ lenses, but full analysis could hit 3500+ tokens. Truncated JSON = null analysis.', prompt:'In Parallax at ~/Development/id8/products/parallax/src/lib/prompts/index.ts, increase max_tokens: 4096 for 7+ lenses, 2560 for 5-6. Add prompt instruction: "With 7+ active lenses, keep each lens to 2-3 key findings." Run npm run build to verify.' },
+    { key:'fix-3', label:'Context Mode Not Editable After Session Creation', sev:'low', desc:'Once created with a context mode, it can\'t be changed mid-session. Wrong mode = new session + lost history.', prompt:'In Parallax at ~/Development/id8/products/parallax/, make context mode badge clickable in SessionView.tsx. Open dropdown with 6 modes. PATCH via new API at api/sessions/[code]/context-mode/route.ts. Future messages use new mode. Run npm run build to verify.' },
+    { key:'fix-4', label:'No Loading State for Lens Analysis', sev:'medium', desc:'V3 takes longer than V1. No feedback while waiting for Claude response. The Melt only triggers after analysis arrives.', prompt:'In Parallax at ~/Development/id8/products/parallax/src/components/MessageCard.tsx, add a pulsing "analyzing..." indicator when nvc_analysis is null. Use font-mono text-[9px] uppercase text-ember-600. Fade out when analysis arrives. Run npm run build to verify.' }
+  ];
+  fixes.forEach(function(f) {
+    var item = el('div', { className:'assessment-item', id:'assess-' + f.key });
+    var cb = el('input', { type:'checkbox', className:'assess-checkbox', 'data-key':f.key });
+    var lbl = el('span', { className:'assess-label', textContent:f.label });
+    var check = el('label', { className:'assessment-check' }, [cb, lbl]);
+    var badge = el('span', { className:'severity-badge ' + f.sev, textContent:f.sev.toUpperCase() });
+    var desc = el('p', { className:'assess-desc', textContent:f.desc });
+    var promptText = el('div', { className:'prompt-text', textContent:f.prompt });
+    var copyBtn = el('button', { className:'copy-btn', textContent:'COPY' });
+    copyBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText(f.prompt);
+      this.textContent = 'COPIED'; this.classList.add('copied');
+      var btn = this;
+      setTimeout(function() { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+    });
+    var pb = el('div', { className:'prompt-block' }, [copyBtn, promptText]);
+    var body = el('div', { className:'assess-body' }, [badge, desc, pb]);
+    item.appendChild(check); item.appendChild(body);
+    fixesSection.appendChild(item);
+  });
+  ac.appendChild(fixesSection);
+
+  // Next steps
+  var nextSection = el('div', { className:'assessment-section' });
+  nextSection.appendChild(el('h3', { style:'color:var(--accent)', textContent:'High-Impact Next Steps' }));
+  var nexts = [
+    { key:'next-1', label:'Add Lens Confidence Scores', desc:'Have Claude return confidence (0-1) per lens. Sort chips by relevance. Dim low-confidence lenses.', prompt:'In Parallax at ~/Development/id8/products/parallax/, add confidence scoring. (1) Add "confidence" to each lens responseSchema. (2) Update LensResults interfaces in database.ts. (3) Sort LensBar chips by confidence descending, reduce opacity for < 0.3. Run npm run build.' },
+    { key:'next-2', label:'E2E Test With Real Conflict Scenarios', desc:'Validate 14 lenses with real-world text across all 6 context modes. Verify parseable output.', prompt:'In Parallax at ~/Development/id8/products/parallax/, create scripts/test-lenses.ts. Define 2 messages per context mode (12 total). Call buildConflictIntelligencePrompt(), send to Claude, run parseConflictAnalysis(), verify non-null lens results. Log pass/fail and token counts.' },
+    { key:'next-3', label:'Hackathon README and Demo Prep', desc:'Tell the "NVC has blind spots" story in the README. Demo multi-lens progressive disclosure. 20% of judging is Depth.', prompt:'In Parallax at ~/Development/id8/products/parallax/, update README.md: (1) One-liner + screenshot, (2) Why 14 Lenses?, (3) Context modes table, (4) Architecture overview, (5) Tech stack, (6) How to run locally. Under 500 lines. Focus on Depth criterion.' },
+    { key:'next-4', label:'Cross-Message Pattern Tracking', desc:'Track lens signals across conversation arcs. Gottman horsemen trending, TKI mode shifts. V4 foundation.', prompt:'In Parallax at ~/Development/id8/products/parallax/, create src/lib/pattern-tracker.ts. Takes ConflictAnalysis[], computes per-lens trends (horsemen count, TKI modes, SCARF levels). Returns ConversationPatterns with trendlines. Types + skeleton only, no UI wiring.' }
+  ];
+  nexts.forEach(function(n) {
+    var item = el('div', { className:'assessment-item', id:'assess-' + n.key });
+    var cb = el('input', { type:'checkbox', className:'assess-checkbox', 'data-key':n.key });
+    var lbl = el('span', { className:'assess-label', textContent:n.label });
+    var check = el('label', { className:'assessment-check' }, [cb, lbl]);
+    var desc = el('p', { className:'assess-desc', textContent:n.desc });
+    var promptText = el('div', { className:'prompt-text', textContent:n.prompt });
+    var copyBtn = el('button', { className:'copy-btn', textContent:'COPY' });
+    copyBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText(n.prompt);
+      this.textContent = 'COPIED'; this.classList.add('copied');
+      var btn = this;
+      setTimeout(function() { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+    });
+    var pb = el('div', { className:'prompt-block' }, [copyBtn, promptText]);
+    var body = el('div', { className:'assess-body' }, [desc, pb]);
+    item.appendChild(check); item.appendChild(body);
+    nextSection.appendChild(item);
+  });
+  ac.appendChild(nextSection);
+
+  // Summary prompts
+  var sumSection = el('div', { className:'assessment-section' });
+  sumSection.appendChild(el('h3', { style:'color:var(--teal)', textContent:'All Prompts' }));
+  var allItems = fixes.concat(nexts);
+  allItems.forEach(function(item, i) {
+    var si = el('div', { className:'assessment-item', id:'assess-summary-' + item.key });
+    var cb = el('input', { type:'checkbox', className:'assess-checkbox', 'data-key':item.key });
+    var lbl = el('span', { className:'assess-label', textContent:(i+1) + '. ' + item.label });
+    si.appendChild(el('label', { className:'assessment-check' }, [cb, lbl]));
+    sumSection.appendChild(si);
+  });
+  ac.appendChild(sumSection);
+
+  // Tab navigation
+  document.querySelectorAll('.nav-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+      this.classList.add('active');
+      var view = document.getElementById('view-' + this.dataset.view);
+      if (view) {
+        view.classList.add('active');
+        view.querySelectorAll('.card, .analysis-layer, .blind-spot-row, .timeline-item, .assessment-item, .win-card').forEach(function(item, i) {
+          item.style.animation = 'fadeSlideUp 0.5s ease both ' + (i * 60) + 'ms';
+        });
+      }
+    });
+  });
+
+  // Stat counters
+  document.querySelectorAll('.stat-value[data-count]').forEach(function(el, i) {
+    var target = parseInt(el.dataset.count);
+    var dur = 600;
+    setTimeout(function() {
+      var start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }, 400 + i * 120);
+  });
+
+  // Checkbox persistence
+  function setupCheckboxes() {
+    document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+        state[this.dataset.key] = this.checked;
+        localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+        var item = this.closest('.assessment-item');
+        if (this.checked) item.classList.add('completed');
+        else item.classList.remove('completed');
+        var key = this.dataset.key;
+        var self = this;
+        document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sib) {
+          if (sib !== self) {
+            sib.checked = self.checked;
+            var si = sib.closest('.assessment-item');
+            if (self.checked) si.classList.add('completed');
+            else si.classList.remove('completed');
+          }
+        });
+        updateProgress();
+      });
+    });
+  }
+  function restoreState() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    Object.keys(state).forEach(function(key) {
+      document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+        cb.checked = state[key];
+        if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+      });
+    });
+    updateProgress();
+  }
+  function updateProgress() {
+    var fix = document.querySelectorAll('.assessment-item[id^="assess-fix-"]');
+    var next = document.querySelectorAll('.assessment-item[id^="assess-next-"]');
+    var total = fix.length + next.length;
+    var done = 0;
+    fix.forEach(function(e) { if (e.classList.contains('completed')) done++; });
+    next.forEach(function(e) { if (e.classList.contains('completed')) done++; });
+    var counter = document.getElementById('assess-progress');
+    if (counter) {
+      counter.textContent = done + ' of ' + total + ' addressed';
+      counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+    }
+  }
+
+  setupCheckboxes();
+  restoreState();
+})();
+</script>
+</body>
+</html>

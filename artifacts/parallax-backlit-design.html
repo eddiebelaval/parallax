@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Backlit Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    /* Ember foundation */
+    --bg: #0f0b08;
+    --surface: #1a1410;
+    --elevated: #261e16;
+    --border: #3a2e22;
+    --text: #c9b9a3;
+    --heading: #ebe1d4;
+    --muted: #7a6c58;
+    --deep: #060402;
+
+    /* Temperature */
+    --hot: #c45c3c;
+    --warm: #d4a040;
+    --cool: #6aab8e;
+    --neutral: #c9b9a3;
+
+    /* Glow variants (same hue, lower saturation, for the light bleed) */
+    --glow-hot: rgba(196, 92, 60, 0.35);
+    --glow-hot-soft: rgba(196, 92, 60, 0.12);
+    --glow-hot-ambient: rgba(196, 92, 60, 0.06);
+    --glow-warm: rgba(212, 160, 64, 0.35);
+    --glow-warm-soft: rgba(212, 160, 64, 0.12);
+    --glow-warm-ambient: rgba(212, 160, 64, 0.06);
+    --glow-cool: rgba(106, 171, 142, 0.35);
+    --glow-cool-soft: rgba(106, 171, 142, 0.12);
+    --glow-cool-ambient: rgba(106, 171, 142, 0.06);
+    --glow-neutral: rgba(201, 185, 163, 0.15);
+
+    /* Fonts */
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'Source Sans 3', -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', monospace;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--deep);
+    color: var(--text);
+  }
+
+  /* Nav */
+  .nav {
+    position:sticky; top:0; z-index:100;
+    display:flex; gap:4px; padding:12px 32px;
+    background: var(--deep); border-bottom:1px solid #1a1410; overflow-x:auto;
+  }
+  .nav button {
+    padding:8px 16px; border:1px solid #2a2018; background:transparent;
+    color: var(--muted); font-family: var(--sans); font-size:12px;
+    font-weight:500; cursor:pointer; transition:all .2s; white-space:nowrap;
+  }
+  .nav button:hover { border-color:#4a3e30; color:var(--text); }
+  .nav button.active { border-color:var(--warm); color:var(--warm); }
+
+  .section { padding:40px 32px; display:none; max-width:1100px; margin:0 auto; }
+  .section.active { display:block; }
+
+  h2 {
+    font-family: var(--serif); font-size:24px; font-weight:300;
+    letter-spacing:-0.02em; color:var(--heading); margin-bottom:4px;
+  }
+  .tag {
+    display:inline-block; font-size:10px; font-weight:500;
+    letter-spacing:0.1em; text-transform:uppercase;
+    padding:3px 10px; border:1px solid var(--border);
+    color:var(--muted); margin-left:12px; vertical-align:middle;
+    font-family: var(--mono);
+  }
+  .sub { font-size:14px; color:var(--muted); font-style:italic; margin-bottom:24px; font-family:var(--serif); }
+  .desc { font-size:13px; color:var(--muted); line-height:1.7; max-width:640px; margin-bottom:24px; }
+  .label {
+    font-size:10px; font-weight:500; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:10px; margin-top:28px;
+    font-family: var(--mono);
+  }
+
+  /* ─── COMPARISON GRID ─── */
+  .compare { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+
+  /* ─── MOCK PANELS ─── */
+  .panel {
+    position:relative; overflow:hidden;
+    border:1px solid var(--border);
+    min-height:380px;
+  }
+  .panel-flat { background: var(--bg); }
+
+  /* Gradient background — warm vignette */
+  .panel-lit {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(42, 30, 22, 0.8) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 80%, rgba(26, 20, 16, 0.6) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  .panel-hdr {
+    padding:10px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  .panel-body { padding:20px 20px 20px 56px; }
+
+  /* ─── BACKLIT BORDER (the core innovation) ─── */
+  .border-flat {
+    border-left: 2px solid var(--hot);
+    padding-left: 12px;
+  }
+  .border-backlit {
+    border-left: 2px solid var(--hot);
+    padding-left: 12px;
+    position: relative;
+  }
+  .border-backlit::before {
+    content: '';
+    position: absolute;
+    left: -48px;
+    top: -6px;
+    bottom: -6px;
+    width: 52px;
+    background: radial-gradient(ellipse at right center, var(--glow-hot-soft) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50% 0 0 50%;
+    filter: blur(6px);
+  }
+
+  /* Warm variant */
+  .border-backlit-warm {
+    border-left: 2px solid var(--warm);
+    padding-left: 12px;
+    position: relative;
+  }
+  .border-backlit-warm::before {
+    content: '';
+    position: absolute;
+    left: -48px;
+    top: -6px;
+    bottom: -6px;
+    width: 52px;
+    background: radial-gradient(ellipse at right center, var(--glow-warm-soft) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50% 0 0 50%;
+    filter: blur(6px);
+  }
+
+  /* Cool/NVC variant */
+  .border-backlit-cool {
+    border-left: 1px solid var(--cool);
+    padding-left: 10px;
+    position: relative;
+  }
+  .border-backlit-cool::before {
+    content: '';
+    position: absolute;
+    left: -36px;
+    top: -4px;
+    bottom: -4px;
+    width: 40px;
+    background: radial-gradient(ellipse at right center, var(--glow-cool-soft) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50% 0 0 50%;
+    filter: blur(5px);
+  }
+
+  /* ─── GLOW BADGE ─── */
+  .badge-flat {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--hot);
+  }
+  .badge-glow {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--hot);
+    text-shadow: 0 0 8px var(--glow-hot), 0 0 20px var(--glow-hot-soft);
+  }
+  .badge-glow-warm {
+    color: var(--warm);
+    text-shadow: 0 0 8px var(--glow-warm), 0 0 20px var(--glow-warm-soft);
+  }
+  .badge-glow-cool {
+    color: var(--cool);
+    text-shadow: 0 0 8px var(--glow-cool), 0 0 20px var(--glow-cool-soft);
+  }
+
+  /* ─── SIGNAL RAIL ─── */
+  .rail { display:flex; flex-direction:column; gap:2px; flex-shrink:0; margin-right:12px; }
+  .rail-flat { width:4px; }
+  .rail-flat div { min-height:28px; }
+
+  .rail-lit { width:4px; position:relative; }
+  .rail-lit div {
+    min-height:28px;
+    position:relative;
+  }
+  .rail-lit div::after {
+    content:'';
+    position:absolute;
+    left:-10px; right:-10px;
+    top:-4px; bottom:-4px;
+    border-radius:50%;
+    filter:blur(8px);
+    opacity:0.35;
+    z-index:-1;
+  }
+  .rail-lit .seg-hot::after { background: var(--hot); }
+  .rail-lit .seg-warm::after { background: var(--warm); }
+  .rail-lit .seg-cool::after { background: var(--cool); }
+
+  /* ─── NEED PILLS ─── */
+  .pill-flat {
+    padding:2px 6px; font-size:9px; font-family:var(--mono);
+    border:1px solid var(--border); color:var(--muted);
+    letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .pill-glow {
+    padding:2px 6px; font-size:9px; font-family:var(--mono);
+    border:1px solid rgba(196,92,60,0.3); color:var(--hot);
+    letter-spacing:0.06em; text-transform:uppercase;
+    box-shadow: 0 0 8px var(--glow-hot-soft), inset 0 0 6px var(--glow-hot-ambient);
+  }
+
+  /* ─── MESSAGE BITS ─── */
+  .msg-name { font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; font-family:var(--mono); }
+  .msg-time { font-size:9px; font-family:var(--mono); color:#4a3e30; }
+  .msg-text { font-size:14px; line-height:1.65; color:var(--text); margin-bottom:8px; }
+  .msg-hdr { display:flex; gap:6px; align-items:baseline; margin-bottom:4px; }
+  .analysis-label { font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:#4a3e30; margin-bottom:4px; font-family:var(--mono); }
+  .needs { display:flex; gap:4px; margin-bottom:10px; }
+  .nvc-flat {
+    border-left:1px solid var(--cool); padding-left:8px;
+    font-size:13px; font-style:italic; color:var(--cool); line-height:1.5;
+    font-family: var(--serif);
+  }
+  .nvc-lit {
+    border-left:1px solid var(--cool); padding-left:10px;
+    font-size:13px; font-style:italic; color:var(--cool); line-height:1.5;
+    font-family: var(--serif);
+    position:relative;
+  }
+  .nvc-lit::before {
+    content:'';
+    position:absolute;
+    left:-32px; top:-4px; bottom:-4px; width:36px;
+    background: radial-gradient(ellipse at right center, var(--glow-cool-soft) 0%, transparent 70%);
+    border-radius: 50% 0 0 50%;
+    filter: blur(5px);
+    pointer-events:none;
+  }
+
+  /* ─── AMBIENT BG TECHNIQUES ─── */
+  .bg-flat { background: var(--bg); }
+  .bg-vignette {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(42, 30, 22, 0.5) 0%, transparent 50%),
+      var(--bg);
+  }
+  .bg-warm-pool {
+    background:
+      radial-gradient(circle at 20% 60%, var(--glow-hot-ambient) 0%, transparent 40%),
+      radial-gradient(circle at 80% 30%, var(--glow-cool-ambient) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 100%, rgba(26, 20, 16, 0.8) 0%, transparent 60%),
+      var(--bg);
+  }
+  .bg-ember {
+    background:
+      radial-gradient(ellipse at 30% 80%, rgba(196, 92, 60, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 20%, rgba(212, 160, 64, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(42, 30, 22, 0.4) 0%, transparent 70%),
+      var(--bg);
+  }
+
+  /* ─── TEMP BAR ─── */
+  .temp-bar { display:flex; gap:2px; height:6px; margin-top:16px; }
+  .temp-bar div { flex:1; }
+  .temp-bar-lit div {
+    box-shadow: 0 2px 8px var(--glow-hot-soft);
+  }
+  .temp-bar-lit .tb-hot { box-shadow: 0 2px 10px rgba(196,92,60,0.4); }
+  .temp-bar-lit .tb-warm { box-shadow: 0 2px 10px rgba(212,160,64,0.3); }
+  .temp-bar-lit .tb-cool { box-shadow: 0 2px 10px rgba(106,171,142,0.3); }
+  .temp-bar-lit .tb-neutral { box-shadow: 0 2px 6px rgba(201,185,163,0.15); }
+
+  /* ─── SECTION DOT ─── */
+  .dot-flat {
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--warm); margin-right:8px;
+  }
+  .dot-glow {
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--warm); margin-right:8px;
+    box-shadow: 0 0 4px var(--glow-warm), 0 0 12px var(--glow-warm-soft), 0 0 24px var(--glow-warm-ambient);
+  }
+
+  /* ─── FULL LANDING MOCK ─── */
+  .landing-mock {
+    position:relative; overflow:hidden;
+    border:1px solid var(--border);
+    min-height:600px;
+  }
+  .landing-bg {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 25% 20%, rgba(212, 160, 64, 0.04) 0%, transparent 45%),
+      radial-gradient(ellipse at 75% 70%, rgba(106, 171, 142, 0.03) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, rgba(38, 30, 22, 0.6) 0%, transparent 70%),
+      var(--bg);
+    pointer-events:none;
+  }
+  .landing-content { position:relative; z-index:1; padding:40px 36px 40px 64px; }
+
+  /* Light mode landing */
+  .landing-light {
+    position:relative; overflow:hidden;
+    border:1px solid #d4c4aa;
+    min-height:600px;
+  }
+  .landing-light-bg {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 25% 20%, rgba(184, 136, 42, 0.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 75% 70%, rgba(61, 138, 110, 0.04) 0%, transparent 40%),
+      linear-gradient(to bottom, #f5efe6, #ede5d8);
+    pointer-events:none;
+  }
+  .landing-light-content { position:relative; z-index:1; padding:40px 36px 40px 64px; }
+
+  /* ─── ANIMATED PULSE (for latest signal segment) ─── */
+  @keyframes glow-pulse {
+    0%, 100% { opacity:0.4; }
+    50% { opacity:0.7; }
+  }
+  .glow-pulse::after { animation: glow-pulse 2s ease-in-out infinite; }
+
+  @media (max-width:768px) {
+    .compare { grid-template-columns:1fr; }
+    .section { padding:24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="active" onclick="showTab('concept')">Concept</button>
+  <button onclick="showTab('borders')">Backlit Borders</button>
+  <button onclick="showTab('backgrounds')">Backgrounds</button>
+  <button onclick="showTab('elements')">Glowing Elements</button>
+  <button onclick="showTab('full-dark')">Full Mock: Dark</button>
+  <button onclick="showTab('full-light')">Full Mock: Light</button>
+</div>
+
+<!-- ═══ CONCEPT ═══ -->
+<div id="tab-concept" class="section active">
+  <h2>Backlit Design Language<span class="tag">Light = Data</span></h2>
+  <p class="sub">The glow isn't decoration — it's information</p>
+  <p class="desc">Every glowing element in Parallax carries temperature data. A red backlight means "heated" before you read a single word. A teal glow means "this is the calm translation." The intensity and color of ambient light around borders, badges, pills, and the signal rail all encode emotional temperature. Your eye is drawn to the brightest points — and those points are always the most emotionally significant.</p>
+
+  <div class="label">The Three Glow Layers</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:24px;">
+    <div style="border:1px solid var(--border); padding:20px; background:var(--bg); text-align:center;">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--warm); margin-bottom:12px;">Layer 1: Ambient</div>
+      <div style="height:80px; background:radial-gradient(circle at 50% 50%, rgba(212,160,64,0.08) 0%, transparent 70%), var(--bg); border:1px solid var(--border); margin-bottom:8px;"></div>
+      <p style="font-size:11px; color:var(--muted); line-height:1.5;">Subtle radial gradients on the background. Temperature pools of color that warm or cool the canvas.</p>
+    </div>
+    <div style="border:1px solid var(--border); padding:20px; background:var(--bg); text-align:center;">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hot); margin-bottom:12px;">Layer 2: Backlit</div>
+      <div style="height:80px; display:flex; align-items:center; padding:0 20px 0 60px; border:1px solid var(--border); margin-bottom:8px; background:var(--bg);">
+        <div style="border-left:2px solid var(--hot); padding-left:12px; position:relative;">
+          <div style="position:absolute; left:-48px; top:-10px; bottom:-10px; width:52px; background:radial-gradient(ellipse at right center, var(--glow-hot-soft) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(6px);"></div>
+          <span style="font-size:13px; color:var(--text); position:relative;">Glow radiates outward</span>
+        </div>
+      </div>
+      <p style="font-size:11px; color:var(--muted); line-height:1.5;">Temperature-colored light bleeding away from content into the margin. The border is the light source — glow radiates outward, words stay clean.</p>
+    </div>
+    <div style="border:1px solid var(--border); padding:20px; background:var(--bg); text-align:center;">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--cool); margin-bottom:12px;">Layer 3: Halo</div>
+      <div style="height:80px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); margin-bottom:8px; background:var(--bg);">
+        <span style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--cool); text-shadow: 0 0 8px rgba(106,171,142,0.4), 0 0 20px rgba(106,171,142,0.15);">COOLING DOWN</span>
+      </div>
+      <p style="font-size:11px; color:var(--muted); line-height:1.5;">Text glow and box-shadow halos on badges, pills, and dots. Light radiates from focal points.</p>
+    </div>
+  </div>
+
+  <div class="label">Design Rule</div>
+  <p class="desc"><strong style="color:var(--heading);">Glow intensity follows temperature.</strong> Hotter messages get stronger, wider glow. Cool messages get softer, tighter glow. Neutral messages have no glow at all — just flat borders. This way the visual "noise" of the page mirrors the emotional intensity of the conversation. A calm conversation looks dim and peaceful. A heated exchange literally illuminates the page.</p>
+</div>
+
+<!-- ═══ BACKLIT BORDERS ═══ -->
+<div id="tab-borders" class="section">
+  <h2>Backlit Borders<span class="tag">Core Pattern</span></h2>
+  <p class="sub">The left border becomes an underlit edge — light bleeds into the content</p>
+
+  <div class="label">Flat vs. Backlit — Same Message Card</div>
+  <div class="compare">
+    <!-- FLAT -->
+    <div class="panel panel-flat">
+      <div class="panel-hdr">
+        <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em;">FLAT (CURRENT)</span>
+      </div>
+      <div class="panel-body">
+        <div class="border-flat" style="margin-bottom:24px;">
+          <div class="msg-hdr">
+            <span class="msg-name" style="color:var(--hot);">Alex</span>
+            <span class="msg-time">2:14 PM</span>
+            <span class="badge-flat" style="margin-left:auto;">HEATED</span>
+          </div>
+          <p class="msg-text">You never listen to what I'm actually saying.</p>
+          <div class="analysis-label">SUBTEXT</div>
+          <p style="font-size:13px; color:#8f8070; line-height:1.6; margin-bottom:8px;">Feeling invisible in the relationship. Needs acknowledgment that their perspective exists.</p>
+          <div class="analysis-label">UNMET NEEDS</div>
+          <div class="needs">
+            <span class="pill-flat">VALIDATION</span>
+            <span class="pill-flat">PRESENCE</span>
+          </div>
+          <div class="nvc-flat">"When I share something important, I need to feel that you're really hearing me."</div>
+        </div>
+
+        <div style="border-left:2px solid var(--warm); padding-left:12px;">
+          <div class="msg-hdr">
+            <span class="msg-name" style="color:var(--warm);">Jordan</span>
+            <span class="msg-time">2:16 PM</span>
+            <span class="badge-flat" style="margin-left:auto; color:var(--warm);">WARM</span>
+          </div>
+          <p class="msg-text">I do listen. I just don't always agree with you.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKLIT -->
+    <div class="panel panel-lit">
+      <div class="panel-hdr">
+        <span style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em;">BACKLIT</span>
+      </div>
+      <div class="panel-body">
+        <div class="border-backlit" style="margin-bottom:24px;">
+          <div class="msg-hdr">
+            <span class="msg-name" style="color:var(--hot);">Alex</span>
+            <span class="msg-time">2:14 PM</span>
+            <span class="badge-glow" style="margin-left:auto;">HEATED</span>
+          </div>
+          <p class="msg-text">You never listen to what I'm actually saying.</p>
+          <div class="analysis-label">SUBTEXT</div>
+          <p style="font-size:13px; color:#8f8070; line-height:1.6; margin-bottom:8px;">Feeling invisible in the relationship. Needs acknowledgment that their perspective exists.</p>
+          <div class="analysis-label">UNMET NEEDS</div>
+          <div class="needs">
+            <span class="pill-glow">VALIDATION</span>
+            <span class="pill-glow">PRESENCE</span>
+          </div>
+          <div class="nvc-lit">"When I share something important, I need to feel that you're really hearing me."</div>
+        </div>
+
+        <div class="border-backlit-warm">
+          <div class="msg-hdr">
+            <span class="msg-name" style="color:var(--warm);">Jordan</span>
+            <span class="msg-time">2:16 PM</span>
+            <span class="badge-glow badge-glow-warm" style="margin-left:auto;">WARM</span>
+          </div>
+          <p class="msg-text">I do listen. I just don't always agree with you.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label" style="margin-top:32px;">Temperature Intensity Scale</div>
+  <p class="desc" style="margin-bottom:16px;">The glow spread widens and brightens with emotional heat. Neutral = no glow. Cool = tight subtle teal. Heated = wide red bleed.</p>
+  <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
+    <div style="background:var(--bg); border:1px solid var(--border); padding:16px;">
+      <div style="border-left:2px solid var(--neutral); padding-left:10px; padding:8px 0 8px 10px;">
+        <span style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase;">NEUTRAL</span>
+        <p style="font-size:12px; color:var(--text); margin-top:4px;">No glow. Flat border. Calm.</p>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:16px;">
+      <div style="border-left:2px solid var(--cool); padding-left:10px; position:relative; padding:8px 0 8px 10px;">
+        <div style="position:absolute; left:-26px; top:-4px; bottom:-4px; width:30px; background:radial-gradient(ellipse at right center, rgba(106,171,142,0.1) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(5px);"></div>
+        <span style="font-family:var(--mono); font-size:9px; color:var(--cool); letter-spacing:0.1em; text-transform:uppercase; text-shadow:0 0 6px rgba(106,171,142,0.2);">COOL</span>
+        <p style="font-size:12px; color:var(--text); margin-top:4px; position:relative;">Subtle teal whisper.</p>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:16px;">
+      <div class="border-backlit-warm" style="padding:8px 0 8px 12px;">
+        <span class="badge-glow badge-glow-warm" style="font-size:9px;">WARM</span>
+        <p style="font-size:12px; color:var(--text); margin-top:4px; position:relative;">Amber light bleeds.</p>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:16px;">
+      <div style="border-left:2px solid var(--hot); padding-left:12px; position:relative; padding:8px 0 8px 12px;">
+        <div style="position:absolute; left:-56px; top:-6px; bottom:-6px; width:60px; background:radial-gradient(ellipse at right center, rgba(196,92,60,0.2) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(8px);"></div>
+        <span style="font-family:var(--mono); font-size:9px; color:var(--hot); letter-spacing:0.1em; text-transform:uppercase; text-shadow:0 0 10px rgba(196,92,60,0.5), 0 0 24px rgba(196,92,60,0.2);">HEATED</span>
+        <p style="font-size:12px; color:var(--text); margin-top:4px; position:relative;">Wide red backlight.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BACKGROUNDS ═══ -->
+<div id="tab-backgrounds" class="section">
+  <h2>Background Treatments<span class="tag">Gradient + Depth</span></h2>
+  <p class="sub">Breaking the flat — ambient temperature pools on the canvas</p>
+
+  <div class="compare" style="margin-bottom:20px;">
+    <div style="height:200px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; background:var(--bg);">
+      <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em;">FLAT #0f0b08</span>
+    </div>
+    <div style="height:200px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at 50% 0%, rgba(42,30,22,0.6) 0%, transparent 60%), var(--bg);">
+      <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em;">WARM VIGNETTE</span>
+    </div>
+  </div>
+  <div class="compare" style="margin-bottom:20px;">
+    <div style="height:200px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 20% 60%, rgba(196,92,60,0.05) 0%, transparent 40%), radial-gradient(circle at 80% 30%, rgba(106,171,142,0.04) 0%, transparent 40%), var(--bg);">
+      <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em;">TEMPERATURE POOLS</span>
+    </div>
+    <div style="height:200px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at 30% 80%, rgba(196,92,60,0.04) 0%, transparent 50%), radial-gradient(ellipse at 70% 20%, rgba(212,160,64,0.03) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(42,30,22,0.4) 0%, transparent 70%), var(--bg);">
+      <span style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em;">EMBER GLOW</span>
+    </div>
+  </div>
+
+  <div class="label">Recommended: Ember Glow (bottom-right)</div>
+  <p class="desc">Multiple overlapping radial gradients at very low opacity (3-5%). The warm amber pool drifts from the upper area, a subtle red glow sits low-left. Together they create depth without distraction. The gradients can be <strong>dynamic</strong> — shifting position and intensity based on the average temperature of visible messages.</p>
+
+  <div class="label" style="margin-top:24px;">Light Mode Gradient</div>
+  <div class="compare">
+    <div style="height:160px; border:1px solid #d4c4aa; display:flex; align-items:center; justify-content:center; background:#f5efe6;">
+      <span style="font-family:var(--mono); font-size:10px; color:#8a7b68; letter-spacing:0.1em;">FLAT PARCHMENT</span>
+    </div>
+    <div style="height:160px; border:1px solid #d4c4aa; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at 25% 20%, rgba(184,136,42,0.06) 0%, transparent 45%), radial-gradient(ellipse at 75% 70%, rgba(61,138,110,0.04) 0%, transparent 40%), linear-gradient(to bottom, #f5efe6, #ede5d8);">
+      <span style="font-family:var(--mono); font-size:10px; color:#8a7b68; letter-spacing:0.1em;">WARM GRADIENT + POOLS</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GLOWING ELEMENTS ═══ -->
+<div id="tab-elements" class="section">
+  <h2>Glowing Elements<span class="tag">Focal Points</span></h2>
+  <p class="sub">Every glow carries data — color = temperature, intensity = urgency</p>
+
+  <div class="label">Signal Rail: Flat vs. Backlit</div>
+  <div class="compare" style="margin-bottom:24px;">
+    <div style="background:var(--bg); border:1px solid var(--border); padding:24px; display:flex; gap:20px; align-items:stretch; min-height:180px;">
+      <div class="rail rail-flat">
+        <div style="background:var(--hot);"></div>
+        <div style="background:var(--warm);"></div>
+        <div style="background:var(--hot);"></div>
+        <div style="background:var(--cool);"></div>
+        <div style="background:var(--cool);"></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:0.1em; margin-bottom:8px;">FLAT RAIL</div>
+        <p style="font-size:12px; color:var(--muted); line-height:1.6;">Solid color blocks. Readable but no depth. Feels like a progress bar.</p>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:24px; display:flex; gap:20px; align-items:stretch; min-height:180px;">
+      <div class="rail rail-lit">
+        <div class="seg-hot" style="background:var(--hot);"></div>
+        <div class="seg-warm" style="background:var(--warm);"></div>
+        <div class="seg-hot" style="background:var(--hot);"></div>
+        <div class="seg-cool" style="background:var(--cool);"></div>
+        <div class="seg-cool glow-pulse" style="background:var(--cool);"></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; margin-bottom:8px;">BACKLIT RAIL</div>
+        <p style="font-size:12px; color:var(--muted); line-height:1.6;">Each segment bleeds its temperature color outward. The rail glows like a vertical thermometer. Latest segment pulses gently.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Section Indicator Dot</div>
+  <div class="compare" style="margin-bottom:24px;">
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted);">
+        <span class="dot-flat"></span>REAL-TIME MEDIATION
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted);">
+        <span class="dot-glow"></span>REAL-TIME MEDIATION
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Temperature Bar</div>
+  <div class="compare" style="margin-bottom:24px;">
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; margin-bottom:6px;">FLAT</div>
+      <div class="temp-bar">
+        <div style="background:var(--hot);"></div>
+        <div style="background:#cc7e3e;"></div>
+        <div style="background:var(--warm);"></div>
+        <div style="background:#9fa668;"></div>
+        <div style="background:var(--cool);"></div>
+        <div style="background:var(--text);"></div>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="font-family:var(--mono); font-size:9px; color:var(--warm); letter-spacing:0.1em; margin-bottom:6px;">BACKLIT</div>
+      <div class="temp-bar temp-bar-lit">
+        <div class="tb-hot" style="background:var(--hot);"></div>
+        <div class="tb-warm" style="background:#cc7e3e;"></div>
+        <div class="tb-warm" style="background:var(--warm);"></div>
+        <div class="tb-cool" style="background:#9fa668;"></div>
+        <div class="tb-cool" style="background:var(--cool);"></div>
+        <div class="tb-neutral" style="background:var(--text);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Unmet Need Pills</div>
+  <div class="compare">
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <span class="pill-flat">VALIDATION</span>
+        <span class="pill-flat">PRESENCE</span>
+        <span class="pill-flat">SAFETY</span>
+      </div>
+    </div>
+    <div style="background:var(--bg); border:1px solid var(--border); padding:20px;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <span class="pill-glow">VALIDATION</span>
+        <span class="pill-glow">PRESENCE</span>
+        <span class="pill-glow">SAFETY</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FULL MOCK: DARK ═══ -->
+<div id="tab-full-dark" class="section">
+  <h2>Full Mock: Dark Mode<span class="tag">Everything Together</span></h2>
+  <p class="sub">Ember palette + Source Serif 4 + Backlit design — the complete picture</p>
+
+  <div class="landing-mock">
+    <div class="landing-bg"></div>
+    <div class="landing-content">
+      <!-- Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:16px; border-bottom:1px solid var(--border); margin-bottom:40px;">
+        <span style="font-family:var(--mono); font-size:10px; letter-spacing:0.15em; color:var(--warm); text-shadow:0 0 10px var(--glow-warm-soft);">PARALLAX</span>
+      </div>
+
+      <!-- Hero -->
+      <div style="margin-bottom:48px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:16px;">
+          <span class="dot-glow"></span>REAL-TIME MEDIATION
+        </div>
+        <h1 style="font-family:var(--serif); font-size:38px; font-weight:300; letter-spacing:-0.02em; color:var(--heading); line-height:1.2; margin-bottom:14px; max-width:480px;">See the conversation you're actually having</h1>
+        <p style="font-size:15px; color:var(--muted); line-height:1.7; max-width:420px; margin-bottom:28px;">Professional mediation costs $300-500/hr. Parallax puts NVC-powered conflict resolution in everyone's hands — powered by Claude.</p>
+        <div style="display:flex; gap:8px;">
+          <div style="padding:10px 16px; border:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+            <span style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; text-shadow:0 0 6px var(--glow-warm-soft);">01</span>
+            <span style="font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Start a session</span>
+          </div>
+          <div style="padding:10px 16px; border:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+            <span style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; text-shadow:0 0 6px var(--glow-warm-soft);">02</span>
+            <span style="font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Take turns</span>
+          </div>
+          <div style="padding:10px 16px; border:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+            <span style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; text-shadow:0 0 6px var(--glow-warm-soft);">03</span>
+            <span style="font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">See beneath</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div style="height:1px; background:linear-gradient(to right, transparent, var(--border), transparent); margin-bottom:40px;"></div>
+
+      <!-- Session mock -->
+      <div style="display:flex; gap:16px;">
+        <!-- Signal rail -->
+        <div class="rail rail-lit" style="min-height:200px;">
+          <div class="seg-hot" style="background:var(--hot);"></div>
+          <div class="seg-warm" style="background:var(--warm);"></div>
+          <div class="seg-cool glow-pulse" style="background:var(--cool);"></div>
+        </div>
+
+        <!-- Messages -->
+        <div style="flex:1;">
+          <div class="border-backlit" style="margin-bottom:24px;">
+            <div class="msg-hdr">
+              <span class="msg-name" style="color:var(--hot);">Alex</span>
+              <span class="msg-time">2:14 PM</span>
+              <span class="badge-glow" style="margin-left:auto;">HEATED</span>
+            </div>
+            <p class="msg-text">You never listen to what I'm actually saying.</p>
+            <div class="analysis-label">UNMET NEEDS</div>
+            <div class="needs">
+              <span class="pill-glow">VALIDATION</span>
+              <span class="pill-glow">PRESENCE</span>
+            </div>
+            <div class="nvc-lit">"When I share something important, I need to feel that you're really hearing me."</div>
+          </div>
+
+          <div class="border-backlit-warm" style="margin-bottom:24px;">
+            <div class="msg-hdr">
+              <span class="msg-name" style="color:var(--warm);">Jordan</span>
+              <span class="msg-time">2:16 PM</span>
+              <span class="badge-glow badge-glow-warm" style="margin-left:auto;">WARM</span>
+            </div>
+            <p class="msg-text">I do listen. I just don't always agree with you.</p>
+            <div class="analysis-label">UNMET NEEDS</div>
+            <div class="needs">
+              <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(212,160,64,0.3); color:var(--warm); letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 8px var(--glow-warm-soft), inset 0 0 6px var(--glow-warm-ambient);">AUTONOMY</span>
+              <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(212,160,64,0.3); color:var(--warm); letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 8px var(--glow-warm-soft), inset 0 0 6px var(--glow-warm-ambient);">RESPECT</span>
+            </div>
+            <div class="border-backlit-cool" style="margin-left:0;">
+              <p style="font-family:var(--serif); font-size:13px; font-style:italic; color:var(--cool); line-height:1.5; position:relative;">"I want you to know that hearing you matters to me, even when we see things differently."</p>
+            </div>
+          </div>
+
+          <!-- Temperature bar -->
+          <div class="temp-bar temp-bar-lit" style="margin-top:24px;">
+            <div class="tb-hot" style="background:var(--hot);"></div>
+            <div class="tb-warm" style="background:#cc7e3e;"></div>
+            <div class="tb-warm" style="background:var(--warm);"></div>
+            <div class="tb-cool" style="background:#9fa668;"></div>
+            <div class="tb-cool" style="background:var(--cool);"></div>
+            <div class="tb-neutral" style="background:var(--text);"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:8px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-top:4px;">
+            <span>HOT</span><span>WARM</span><span>COOL</span><span>NEUTRAL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FULL MOCK: LIGHT ═══ -->
+<div id="tab-full-light" class="section">
+  <h2>Full Mock: Light Mode<span class="tag">Parchment + Glow</span></h2>
+  <p class="sub">Softer glows — light on light requires subtlety</p>
+
+  <div class="landing-light">
+    <div class="landing-light-bg"></div>
+    <div class="landing-light-content">
+      <!-- Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:16px; border-bottom:1px solid #d4c4aa; margin-bottom:40px;">
+        <span style="font-family:var(--mono); font-size:10px; letter-spacing:0.15em; color:#b8882a;">PARALLAX</span>
+      </div>
+
+      <!-- Hero -->
+      <div style="margin-bottom:48px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#8a7b68; margin-bottom:16px;">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#b8882a; margin-right:8px; box-shadow:0 0 4px rgba(184,136,42,0.4);"></span>REAL-TIME MEDIATION
+        </div>
+        <h1 style="font-family:var(--serif); font-size:38px; font-weight:300; letter-spacing:-0.02em; color:#1e1810; line-height:1.2; margin-bottom:14px; max-width:480px;">See the conversation you're actually having</h1>
+        <p style="font-size:15px; color:#8a7b68; line-height:1.7; max-width:420px; margin-bottom:28px;">Professional mediation costs $300-500/hr. Parallax puts NVC-powered conflict resolution in everyone's hands — powered by Claude.</p>
+      </div>
+
+      <div style="height:1px; background:linear-gradient(to right, transparent, #d4c4aa, transparent); margin-bottom:40px;"></div>
+
+      <!-- Message mock -->
+      <div style="border-left:2px solid #a84428; padding-left:12px; margin-bottom:24px; position:relative;">
+        <div style="position:absolute; left:-36px; top:-4px; bottom:-4px; width:40px; background:radial-gradient(ellipse at right center, rgba(168,68,40,0.1) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(5px);"></div>
+        <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+          <span style="font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#a84428;">Alex</span>
+          <span style="font-family:var(--mono); font-size:9px; color:#b8a890;">2:14 PM</span>
+          <span style="font-family:var(--mono); font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#a84428; margin-left:auto; text-shadow:0 0 6px rgba(168,68,40,0.2);">HEATED</span>
+        </div>
+        <p style="font-size:14px; line-height:1.65; color:#3a2e22; margin-bottom:8px; position:relative;">You never listen to what I'm actually saying.</p>
+        <div style="display:flex; gap:4px; margin-bottom:10px;">
+          <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(168,68,40,0.25); color:#a84428; letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 6px rgba(168,68,40,0.06);">VALIDATION</span>
+          <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(168,68,40,0.25); color:#a84428; letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 6px rgba(168,68,40,0.06);">PRESENCE</span>
+        </div>
+        <div style="border-left:1px solid #3d8a6e; padding-left:10px; position:relative;">
+          <div style="position:absolute; left:-26px; top:-4px; bottom:-4px; width:30px; background:radial-gradient(ellipse at right center, rgba(61,138,110,0.1) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(4px);"></div>
+          <p style="font-family:var(--serif); font-size:13px; font-style:italic; color:#3d8a6e; line-height:1.5; position:relative;">"When I share something important, I need to feel that you're really hearing me."</p>
+        </div>
+      </div>
+
+      <div style="border-left:2px solid #b8882a; padding-left:12px; position:relative;">
+        <div style="position:absolute; left:-30px; top:-4px; bottom:-4px; width:34px; background:radial-gradient(ellipse at right center, rgba(184,136,42,0.1) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(4px);"></div>
+        <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+          <span style="font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#b8882a;">Jordan</span>
+          <span style="font-family:var(--mono); font-size:9px; color:#b8a890;">2:16 PM</span>
+          <span style="font-family:var(--mono); font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#b8882a; margin-left:auto;">WARM</span>
+        </div>
+        <p style="font-size:14px; line-height:1.65; color:#3a2e22; position:relative;">I do listen. I just don't always agree with you.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
