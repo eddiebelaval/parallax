@@ -6,8 +6,7 @@ import { OrbStrip } from "./OrbStrip";
 import { NameEntry } from "./NameEntry";
 import { WaitingState } from "./WaitingState";
 import { SessionSummary } from "./SessionSummary";
-import { OnboardingFlow } from "./inperson/OnboardingFlow";
-import { XRayView } from "./inperson/XRayView";
+import { XRayGlanceView } from "./inperson/XRayGlanceView";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
@@ -159,16 +158,17 @@ export function SessionView({ roomCode }: SessionViewProps) {
     }
   }, [session?.id]);
 
-  // End the session — status change flows through Realtime to both sides
+  // End the session — refresh to pick up status change (Realtime may not deliver)
   const endSession = useCallback(async () => {
     if (endingSession) return;
     setEndingSession(true);
     try {
       await fetch(`/api/sessions/${roomCode}/end`, { method: "POST" });
+      refreshSession();
     } catch {
       setEndingSession(false);
     }
-  }, [roomCode, endingSession]);
+  }, [roomCode, endingSession, refreshSession]);
 
   // Call conductor for onboarding messages (no NVC analysis during gather phases)
   const triggerConductor = useCallback(async (messageId: string) => {
@@ -264,22 +264,10 @@ export function SessionView({ roomCode }: SessionViewProps) {
       );
     }
 
-    if (session.onboarding_step !== 'complete') {
-      return <OnboardingFlow session={session} roomCode={roomCode} advanceOnboarding={advanceOnboarding} />;
-    }
-
     return (
-      <XRayView
+      <XRayGlanceView
         session={session}
         roomCode={roomCode}
-        messages={messages}
-        sendMessage={sendMessage}
-        currentTurn={currentTurn}
-        triggerMediation={triggerMediation}
-        endSession={endSession}
-        analyzingMessageId={analyzingMessageId}
-        mediationError={mediationError}
-        setMediationError={setMediationError}
       />
     );
   }

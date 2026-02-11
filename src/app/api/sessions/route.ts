@@ -18,10 +18,14 @@ export async function POST(request: Request) {
     person_a_name: person_a_name || null,
   }
 
-  // In-person mode starts with onboarding; remote mode is the default
+  // In-person mode: skip form onboarding, conductor drives everything
   if (mode === 'in_person') {
     insertData.mode = 'in_person'
-    insertData.onboarding_step = 'introductions'
+    insertData.status = 'active'
+    insertData.onboarding_step = 'complete'
+    insertData.onboarding_context = {
+      conductorPhase: 'onboarding',
+    }
   }
 
   // V3: Context mode — validated, defaults to 'intimate'

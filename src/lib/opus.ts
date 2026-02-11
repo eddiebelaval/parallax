@@ -65,10 +65,11 @@ export async function mediateMessage(
 export async function conductorMessage(
   systemPrompt: string,
   userPrompt: string,
+  maxTokens = 512,
 ): Promise<string> {
   const response = await getClient().messages.create({
     model: 'claude-opus-4-6',
-    max_tokens: 512,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })

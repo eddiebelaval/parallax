@@ -126,6 +126,7 @@ Respond with a JSON object:
 export interface ExtractedIssue {
   label: string
   description: string
+  raised_by?: string
 }
 
 export interface GradedIssue {
@@ -150,9 +151,10 @@ export function parseIssueAnalysis(raw: string): IssueAnalysisResult | null {
       newIssues: Array.isArray(parsed.newIssues)
         ? parsed.newIssues
             .filter((i: { label?: string; description?: string }) => i.label && i.description)
-            .map((i: { label: string; description: string }) => ({
+            .map((i: { label: string; description: string; raised_by?: string }) => ({
               label: String(i.label),
               description: String(i.description),
+              raised_by: i.raised_by || undefined,
             }))
         : [],
       gradedIssues: Array.isArray(parsed.gradedIssues)

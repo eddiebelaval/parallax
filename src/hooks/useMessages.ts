@@ -104,7 +104,22 @@ export function useMessages(sessionId: string | undefined) {
       : 'person_a'
   }
 
+  // Re-fetch messages from the server — use when Realtime may not deliver
+  // INSERT events (e.g., after conductor API calls insert mediator messages)
+  const refreshMessages = useCallback(async () => {
+    if (!sessionId) return
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
+
+    if (!error && data) {
+      setMessages(data as Message[])
+    }
+  }, [sessionId])
+
   const currentTurn = getCurrentTurn(messages)
 
-  return { messages, loading, sendMessage, currentTurn }
+  return { messages, loading, sendMessage, currentTurn, refreshMessages }
 }

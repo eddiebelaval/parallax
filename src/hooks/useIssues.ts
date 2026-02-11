@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Issue } from '@/types/database'
+import type { Issue, IssueStatus } from '@/types/database'
 
 export function useIssues(sessionId: string | undefined) {
   const [issues, setIssues] = useState<Issue[]>([])
@@ -80,9 +80,38 @@ export function useIssues(sessionId: string | undefined) {
     }
   }, [sessionId])
 
+  // Re-fetch issues from the server (Realtime backup)
+  const refreshIssues = useCallback(async () => {
+    if (!sessionId) return
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('position', { ascending: true })
+
+    if (!error && data) {
+      setIssues(data as Issue[])
+    }
+  }, [sessionId])
+
+  // Update an issue's status (defer, resolve, etc.)
+  const updateIssueStatus = useCallback(async (issueId: string, status: IssueStatus) => {
+    const { error } = await supabase
+      .from('issues')
+      .update({ status })
+      .eq('id', issueId)
+
+    if (!error) {
+      // Optimistic update
+      setIssues((prev) =>
+        prev.map((i) => (i.id === issueId ? { ...i, status } : i))
+      )
+    }
+  }, [])
+
   // Derived: split issues by person
   const personAIssues = issues.filter((i) => i.raised_by === 'person_a')
   const personBIssues = issues.filter((i) => i.raised_by === 'person_b')
 
-  return { issues, personAIssues, personBIssues, loading }
+  return { issues, personAIssues, personBIssues, loading, refreshIssues, updateIssueStatus }
 }
