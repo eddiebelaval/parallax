@@ -138,3 +138,106 @@ Not every lens is relevant to every conflict. A workplace dispute needs SCARF an
 4. **JSONB schema expansion.** The existing `nvc_analysis` JSONB column absorbs the V3 schema. V1 fields remain at root level. New lens data nests under `lenses`. Zero migration risk.
 
 5. **Backward compatibility.** V1 analysis still works. The parser wraps V1 responses in a V3 envelope. Old UI code reading root-level fields continues working.
+
+---
+
+## V4: Strategy Arena -- Backtesting for Conflict Resolution
+
+### The Insight
+
+Algorithmic traders don't deploy a strategy on live money without backtesting it against historical data first. They replay past market conditions through their strategy, score the outcomes, and iterate before risking real capital.
+
+Parallax V4 applies this exact methodology to conflict resolution. Instead of market data, we have pre-authored arguments. Instead of trading strategies, we have lens stacks. Instead of P&L, we have de-escalation scores, pattern detection accuracy, and translation quality.
+
+The result: **empirical validation of which lens combinations work best for which conflict types.** Anyone can wrap NVC in an API call. Nobody has hundreds of empirically-validated strategy outcomes mapped to conflict categories.
+
+### How It Works: Self-Play Backtesting
+
+```
+                     Pre-authored scenarios
+                      (the "market data")
+                             |
+                             v
+   +--------------------------------------------------+
+   |  ARENA RUNNER                                     |
+   |                                                   |
+   |  For each conversation turn:                      |
+   |    1. Build conversation history                  |
+   |    2. Call mediateMessage() (real pipeline)        |
+   |    3. Parse with parseConflictAnalysis()          |
+   |    4. Score against planted patterns              |
+   |    5. Accumulate results                          |
+   |                                                   |
+   +--------------------------------------------------+
+                             |
+                             v
+                    SimulationRun + scores
+                   (strategy performance)
+```
+
+The runner calls the **exact same pipeline** that live users hit. No mocks, no shortcuts. The "market data" (conversations) is fixed; the strategy (lens analysis) is what we're evaluating.
+
+### 6 Category Stubs
+
+Each category gets 15 scenarios across 5 sub-types (3 scenarios per sub-type):
+
+| Category | Sub-types | Key Lenses | Status |
+|----------|-----------|------------|--------|
+| **Family** | Parent-adult child, siblings, in-laws, blended family, generational | NVC, Gottman, Narrative, Drama Triangle, Attachment, Power, Restorative | **15 scenarios authored** |
+| Intimate | Jealousy/trust, household labor, intimacy mismatch, long-distance, co-parenting | Gottman, Attachment, Drama Triangle, CBT | Stubbed |
+| Professional Peer | Co-founder disputes, credit/blame, workload, communication, remote friction | SCARF, Jehn's, TKI, Psych Safety | Stubbed |
+| Professional Hierarchy | Performance reviews, promotions, micromanagement, whistleblowing, mentorship | Power, Org Justice, Psych Safety, SCARF | Stubbed |
+| Transactional | Service failures, scope creep, payment disputes, contracts, neighbors | IBR, TKI, CBT, SCARF | Stubbed |
+| Civil/Structural | HOA, landlord-tenant, school board, resource allocation, discrimination | Power, Narrative, Org Justice, Restorative, IBR | Stubbed |
+
+### Evaluation Dimensions
+
+Each conversation turn is scored across 5 dimensions:
+
+| Dimension | Weight | What It Measures |
+|-----------|--------|-----------------|
+| De-escalation effectiveness | 25% | Did emotional temperature drop vs. the previous turn? |
+| Blind spot detection accuracy | 25% | Did the lenses catch the patterns we deliberately planted? |
+| NVC translation quality | 20% | Does the translation sound human, warm, and jargon-free? |
+| Lens activation relevance | 15% | Did the right lenses fire (not too many, not too few)? |
+| Insight depth | 15% | Was the primary insight specific and actionable, not a platitude? |
+
+Scores aggregate into a `SimulationRun` with an overall composite, de-escalation rate, pattern coverage, and a resolution arc classification (`resolved | improved | stable | worsened`).
+
+### Family Pilot: What We Built
+
+15 scenarios across 5 family sub-types, each with:
+
+- **Two detailed personas** with backstories, emotional states, and communication patterns
+- **A trigger event** that initiates the conflict
+- **4-6 pre-authored conversation turns** -- intentionally messy, realistic, and human
+- **2-3 planted patterns** -- specific blind spots the lens stack should detect (e.g., "Drama Triangle victim-rescuer flip", "Gottman harsh startup")
+- **Tags** for retrieval and categorization
+
+Example planted patterns from the Family pilot:
+- Parent-adult child: Drama Triangle (parent as victim), attachment (anxious-anxious), power (sacrifice-based authority)
+- Siblings: Narrative (totalizing "you always"), Gottman (criticism/defensiveness cycle), restorative justice (both sides harmed)
+- In-laws: Power (family authority structure), Drama Triangle (rescuer trap), narrative (identity erasure)
+- Blended family: Gottman (stonewalling + contempt), attachment disruption, narrative identity protection
+- Generational: Power (generational authority), NVC (evaluation vs observation), CBT (catastrophizing)
+
+### Architecture Decisions
+
+1. **Static scenarios, not dynamic generation.** V4 uses pre-authored conversations as fixed "market data." Dynamic generation (Claude plays both sides) is V5 -- separating data from strategy keeps the backtest controlled.
+
+2. **Reuse the live pipeline exactly.** `runSimulation()` calls `mediateMessage()` and `parseConflictAnalysis()` -- the same functions the API route uses. If the Arena scores well, we know live performance will match.
+
+3. **Fuzzy keyword matching for pattern detection.** Planted patterns describe what the analysis *should* find. The scorer extracts keywords and checks if 40%+ appear in the analysis corpus. This accommodates Claude using different phrasing than the pattern description.
+
+4. **Aggregate scoring with resolution arc.** Individual turn scores matter, but the trajectory matters more. A simulation that starts hot (0.8) and ends cool (0.3) is "resolved" -- the strategy worked even if individual turns scored differently.
+
+5. **No database storage yet.** Simulation results live in memory during hackathon scope. Post-hackathon: store in Supabase for trend analysis and retrieval during live conversations.
+
+### What's Next (Post-Hackathon)
+
+- Dynamic conversation generation (Claude plays both sides)
+- Supabase storage for simulation results
+- Similarity search: retrieve relevant past Arena results during live conversations
+- Remaining 5 category scenario sets (75 more scenarios)
+- Automated batch runs across all scenarios
+- UI for browsing Arena results and strategy performance
