@@ -10,6 +10,8 @@ import { OnboardingFlow } from "./inperson/OnboardingFlow";
 import { XRayView } from "./inperson/XRayView";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
+import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
+import type { ContextMode } from "@/types/database";
 
 type InputMode = "text" | "voice";
 
@@ -196,15 +198,25 @@ export function SessionView({ roomCode }: SessionViewProps) {
     <WaitingState roomCode={roomCode} />
   );
 
+  const contextMode = (session?.context_mode as ContextMode) || 'intimate';
+  const contextModeLabel = CONTEXT_MODE_INFO[contextMode]?.name || 'Intimate Partners';
+
   return (
     <div className="flex-1 flex flex-col">
       {bothJoined && (
-        <OrbStrip
-          personAName={personAName}
-          personBName={personBName}
-          currentTurn={currentTurn}
-          isAnalyzing={analyzingMessageId != null}
-        />
+        <>
+          <OrbStrip
+            personAName={personAName}
+            personBName={personBName}
+            currentTurn={currentTurn}
+            isAnalyzing={analyzingMessageId != null}
+          />
+          <div className="flex justify-center py-1">
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ember-600 px-2 py-0.5 border border-border rounded-sm">
+              {contextModeLabel}
+            </span>
+          </div>
+        </>
       )}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
       <PersonPanel
