@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Feature Blocks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&display=swap');
+  :root {
+    --base-primary:#020202;--base-secondary:#101010;--base-card:#1f1d1c;
+    --text-primary:#eeeeee;--text-secondary:#a49d9a;--text-muted:#5c5855;
+    --border-subtle:#2e2c2b;--border-visible:#3d3a39;
+    --accent:#ef6f2e;--accent-hover:#ee6018;--accent-active:#d15010;
+    --amber:#f59e0b;--teal:#4ecdc4;
+    --neutral-700:#4d4947;--neutral-800:#3d3a39;--neutral-900:#2e2c2b;--neutral-1000:#1f1d1c;
+    --font-sans:'Geist',-apple-system,'Segoe UI',system-ui,sans-serif;
+    --font-mono:'Geist Mono','SF Mono','Fira Code','JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:var(--base-primary);line-height:1.6;}
+  h1{font-family:var(--font-sans);font-size:48px;font-weight:400;letter-spacing:-2px;line-height:1.0;color:var(--text-primary);}
+  h2{font-family:var(--font-sans);font-size:36px;font-weight:400;letter-spacing:-1.5px;line-height:1.1;color:var(--text-primary);}
+  h3{font-family:var(--font-sans);font-size:24px;font-weight:400;letter-spacing:-0.5px;color:var(--text-primary);}
+  h4{font-family:var(--font-sans);font-size:18px;font-weight:400;letter-spacing:-0.3px;color:var(--text-primary);}
+  .label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-secondary);}
+  .container{max-width:1100px;margin:0 auto;padding:0 36px;}
+  .section-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:10px;animation:pulseGlow 3s ease-in-out infinite;}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,111,46,0.15);}50%{box-shadow:0 0 6px 3px rgba(239,111,46,0.15);}}
+  @keyframes fadeSlideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes drawLine{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+  .anim-enter{opacity:0;animation:fadeSlideUp 0.7s ease forwards;}
+
+  /* Header */
+  .header{padding:60px 0 40px;border-bottom:1px solid var(--border-subtle);}
+  .header .label{margin-bottom:16px;display:flex;align-items:center;}
+  .header h1{margin-bottom:12px;animation:fadeSlideUp 0.7s ease 0.15s forwards;opacity:0;}
+  .header .subtitle{font-family:var(--font-mono);font-size:14px;color:var(--text-secondary);animation:fadeSlideUp 0.7s ease 0.3s forwards;opacity:0;}
+
+  /* Stats bar */
+  .stats{display:flex;gap:32px;padding:28px 0;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;}
+  .stat{display:flex;flex-direction:column;gap:4px;}
+  .stat-value{font-family:var(--font-sans);font-size:32px;font-weight:400;letter-spacing:-1px;color:var(--text-primary);}
+  .stat-value.accent{color:var(--accent);}
+  .stat-value.teal{color:var(--teal);}
+  .stat-value.amber{color:var(--amber);}
+  .stat-label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-secondary);}
+
+  /* Tabs */
+  .tabs{display:flex;gap:8px;padding:24px 0;border-bottom:1px solid var(--border-subtle);position:sticky;top:0;background:var(--base-primary);z-index:10;flex-wrap:wrap;}
+  .tab{padding:8px 16px;border:1px solid var(--border-subtle);border-radius:4px;background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font-mono);font-size:12px;transition:all 0.15s;}
+  .tab:hover{border-color:var(--border-visible);color:var(--text-primary);}
+  .tab.active{background:var(--accent);color:#020202;border-color:var(--accent);}
+  .tab-content{display:none;padding:40px 0;}
+  .tab-content.active{display:block;}
+
+  /* Feature block cards */
+  .block-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+  .block-card{background:var(--base-card);border:1px solid var(--border-subtle);border-radius:10px;padding:28px;cursor:pointer;transition:transform 0.2s ease,border-color 0.15s;}
+  .block-card:hover{transform:translateY(-2px);border-color:var(--border-visible);}
+  .block-card.expanded{grid-column:1/-1;}
+  .block-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+  .block-title{font-family:var(--font-sans);font-size:20px;font-weight:400;letter-spacing:-0.5px;}
+  .block-desc{font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;}
+
+  /* Status badges */
+  .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;}
+  .badge-complete{background:rgba(78,205,196,0.15);color:var(--teal);}
+  .badge-partial{background:rgba(245,158,11,0.15);color:var(--amber);}
+  .badge-stubbed{background:rgba(92,88,85,0.15);color:var(--text-muted);}
+  .badge-new{background:rgba(239,111,46,0.15);color:var(--accent);}
+
+  /* File list (expandable) */
+  .file-list{display:none;margin-top:16px;border-top:1px solid var(--border-subtle);padding-top:16px;}
+  .block-card.expanded .file-list{display:block;}
+  .file-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(46,44,43,0.5);font-size:12px;}
+  .file-path{color:var(--text-secondary);font-family:var(--font-mono);}
+  .file-lines{color:var(--text-muted);font-family:var(--font-mono);font-size:11px;}
+  .expand-hint{font-size:11px;color:var(--text-muted);margin-top:8px;}
+  .block-card.expanded .expand-hint{display:none;}
+
+  /* Line meter */
+  .line-meter{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .meter-bar{height:4px;border-radius:2px;background:var(--border-subtle);flex:1;overflow:hidden;}
+  .meter-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+  .meter-label{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);white-space:nowrap;}
+
+  /* Dependency diagram */
+  .dep-diagram{background:var(--base-card);border:1px solid var(--border-subtle);border-radius:10px;padding:28px;margin-top:20px;overflow-x:auto;}
+  .dep-diagram svg{width:100%;min-width:800px;}
+
+  /* Gap list */
+  .gap-list{display:flex;flex-direction:column;gap:12px;margin-top:20px;}
+  .gap-item{background:var(--base-card);border:1px solid var(--border-subtle);border-left:3px solid var(--amber);border-radius:0 10px 10px 0;padding:20px 24px;}
+  .gap-item.done{border-left-color:var(--teal);opacity:0.5;}
+  .gap-title{font-family:var(--font-sans);font-size:16px;font-weight:400;margin-bottom:4px;}
+  .gap-desc{font-size:12px;color:var(--text-secondary);line-height:1.5;}
+  .gap-files{font-size:11px;color:var(--text-muted);margin-top:8px;font-family:var(--font-mono);}
+
+  /* Assessment styles */
+  .assessment-section{margin-bottom:40px;}
+  .assessment-section h3{margin-bottom:20px;}
+  .assessment-item{background:var(--base-card);border:1px solid var(--border-subtle);border-radius:10px;padding:20px 24px;margin-bottom:12px;transition:opacity 0.3s ease;}
+  .assessment-item.completed .assess-label{text-decoration:line-through;color:var(--text-muted);}
+  .assessment-item.completed .assess-body{opacity:0.25;pointer-events:none;}
+  .assessment-item.completed .badge{opacity:0.3;}
+  .assess-body{transition:opacity 0.3s ease;}
+  .assess-label{transition:color 0.3s ease;}
+  .assessment-check{display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px;}
+  .assess-checkbox{appearance:none;width:16px;height:16px;border:1.5px solid var(--border-visible);border-radius:3px;background:transparent;cursor:pointer;position:relative;flex-shrink:0;}
+  .assess-checkbox:checked{background:var(--teal);border-color:var(--teal);}
+  .assess-checkbox:checked::after{content:'';position:absolute;top:2px;left:5px;width:4px;height:8px;border:solid #020202;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .assess-desc{font-size:12px;color:var(--text-secondary);margin:8px 0;line-height:1.5;}
+  .severity-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:9px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .severity-badge.critical{background:rgba(220,38,38,0.2);color:#ef4444;}
+  .severity-badge.high{background:rgba(239,111,46,0.2);color:var(--accent);}
+  .severity-badge.medium{background:rgba(245,158,11,0.2);color:var(--amber);}
+  .severity-badge.low{background:rgba(78,205,196,0.2);color:var(--teal);}
+  .prompt-block{background:var(--base-secondary);border:1px solid var(--border-subtle);border-left:3px solid var(--accent);border-radius:4px;padding:16px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);white-space:pre-wrap;position:relative;margin-top:12px;}
+  .copy-btn{position:absolute;top:8px;right:8px;background:var(--border-subtle);border:none;color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;padding:4px 8px;border-radius:2px;cursor:pointer;}
+  .copy-btn:hover{background:var(--border-visible);color:var(--text-primary);}
+  .copy-btn.copied{color:var(--teal);}
+  #assess-progress{display:inline-block;margin-left:12px;}
+  .wins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+  .win-card{background:var(--base-card);border:1px solid rgba(78,205,196,0.2);border-radius:10px;padding:20px;}
+  .win-card h4{color:var(--teal);margin-bottom:8px;}
+  .win-card p{font-size:12px;color:var(--text-secondary);line-height:1.5;}
+
+  @media(max-width:768px){
+    h1{font-size:32px;}
+    .stats{gap:20px;}
+    .stat-value{font-size:24px;}
+    .block-grid{grid-template-columns:1fr;}
+    .tabs{gap:4px;}
+    .tab{font-size:11px;padding:6px 12px;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="label"><span class="section-dot"></span>PARALLAX FEATURE BLOCKS</div>
+    <h1>Stage 5 Inventory</h1>
+    <div class="subtitle">What's built, what's wired, what's left -- interactive map of every feature block</div>
+  </div>
+
+  <div class="stats" id="stats-bar">
+    <div class="stat"><span class="stat-value accent" data-target="74">0</span><span class="stat-label">Source Files</span></div>
+    <div class="stat"><span class="stat-value" data-target="8510">0</span><span class="stat-label">Lines of Code</span></div>
+    <div class="stat"><span class="stat-value teal" data-target="58">0</span><span class="stat-label">Tests Passing</span></div>
+    <div class="stat"><span class="stat-value amber" data-target="12">0</span><span class="stat-label">Feature Blocks</span></div>
+    <div class="stat"><span class="stat-value" data-target="66">0</span><span class="stat-label">Commits</span></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="blocks">Feature Map</button>
+    <button class="tab" data-tab="deps">Dependencies</button>
+    <button class="tab" data-tab="gaps">What's Left</button>
+    <button class="tab" data-tab="assessment">Assessment</button>
+  </div>
+
+  <!-- TAB: FEATURE MAP -->
+  <div class="tab-content active" id="tab-blocks">
+    <div style="margin-bottom:24px;">
+      <div class="label" style="margin-bottom:12px;"><span class="section-dot"></span>FEATURE BLOCKS</div>
+      <p style="font-size:13px;color:var(--text-secondary);">Click any block to expand file details. Blocks are grouped by system layer.</p>
+    </div>
+
+    <h3 style="margin:28px 0 16px;color:var(--text-secondary);font-size:14px;text-transform:uppercase;letter-spacing:1.5px;">Analysis Engine</h3>
+    <div class="block-grid" id="engine-blocks"></div>
+
+    <h3 style="margin:28px 0 16px;color:var(--text-secondary);font-size:14px;text-transform:uppercase;letter-spacing:1.5px;">UI / Components</h3>
+    <div class="block-grid" id="ui-blocks"></div>
+
+    <h3 style="margin:28px 0 16px;color:var(--text-secondary);font-size:14px;text-transform:uppercase;letter-spacing:1.5px;">Data / Infrastructure</h3>
+    <div class="block-grid" id="infra-blocks"></div>
+  </div>
+
+  <!-- TAB: DEPENDENCIES -->
+  <div class="tab-content" id="tab-deps">
+    <div style="margin-bottom:24px;">
+      <div class="label" style="margin-bottom:12px;"><span class="section-dot"></span>DEPENDENCY MAP</div>
+      <p style="font-size:13px;color:var(--text-secondary);">How feature blocks connect. Orange = primary data flow. Amber = secondary. Teal = test coverage.</p>
+    </div>
+    <div class="dep-diagram">
+      <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef6f2e" opacity="0.6"/></marker>
+          <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" opacity="0.5"/></marker>
+          <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4ecdc4" opacity="0.5"/></marker>
+        </defs>
+
+        <!-- Layer labels -->
+        <text x="20" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10" text-transform="uppercase" letter-spacing="1.5">PAGES</text>
+        <text x="20" y="150" fill="#5c5855" font-family="var(--font-mono)" font-size="10" text-transform="uppercase" letter-spacing="1.5">COMPONENTS</text>
+        <text x="20" y="300" fill="#5c5855" font-family="var(--font-mono)" font-size="10" text-transform="uppercase" letter-spacing="1.5">ENGINE</text>
+        <text x="20" y="420" fill="#5c5855" font-family="var(--font-mono)" font-size="10" text-transform="uppercase" letter-spacing="1.5">DATA</text>
+
+        <!-- Horizontal dividers -->
+        <line x1="20" y1="40" x2="880" y2="40" stroke="#2e2c2b" stroke-width="1"/>
+        <line x1="20" y1="160" x2="880" y2="160" stroke="#2e2c2b" stroke-width="1"/>
+        <line x1="20" y1="310" x2="880" y2="310" stroke="#2e2c2b" stroke-width="1"/>
+        <line x1="20" y1="430" x2="880" y2="430" stroke="#2e2c2b" stroke-width="1"/>
+
+        <!-- PAGES LAYER -->
+        <rect x="100" y="60" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="180" y="90" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">Landing Page</text>
+        <rect x="360" y="60" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="440" y="90" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">Session View</text>
+
+        <!-- COMPONENTS LAYER -->
+        <rect x="40" y="180" width="130" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="105" y="206" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">ContextPicker</text>
+        <rect x="190" y="180" width="110" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="245" y="206" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">PersonPanel</text>
+        <rect x="320" y="180" width="130" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="385" y="206" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">MessageCard</text>
+        <rect x="470" y="180" width="100" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="520" y="206" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">TheMelt</text>
+        <rect x="590" y="180" width="130" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="655" y="206" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">LensBar+Detail</text>
+
+        <rect x="320" y="240" width="130" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="385" y="266" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">In-Person Mode</text>
+        <rect x="470" y="240" width="120" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="530" y="266" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">VoiceInput</text>
+        <rect x="750" y="180" width="120" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="810" y="206" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">SignalRail</text>
+
+        <!-- ENGINE LAYER -->
+        <rect x="80" y="330" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="160" y="352" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">V3 Lens Engine</text>
+        <text x="160" y="368" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="9">14 lenses, 595 LOC</text>
+        <rect x="280" y="330" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="360" y="352" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">mediateMessage()</text>
+        <text x="360" y="368" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="9">opus.ts, 120 LOC</text>
+        <rect x="480" y="330" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="560" y="352" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">V4 Arena</text>
+        <text x="560" y="368" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="9">backtest, 1462 LOC</text>
+        <rect x="680" y="330" width="160" height="52" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1.5"/>
+        <text x="760" y="352" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="11">Tests</text>
+        <text x="760" y="368" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="9">58 passing, 641 LOC</text>
+
+        <!-- DATA LAYER -->
+        <ellipse cx="200" cy="450" rx="70" ry="14" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <rect x="130" y="450" width="140" height="36" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <ellipse cx="200" cy="486" rx="70" ry="14" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="200" y="474" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">Supabase</text>
+        <rect x="360" y="450" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="440" y="476" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">API Routes (10)</text>
+        <rect x="560" y="450" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#3d3a39" stroke-width="1"/>
+        <text x="640" y="476" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="10">Realtime Hooks (4)</text>
+
+        <!-- CONNECTIONS - Primary flow (orange) -->
+        <path d="M180,112 L180,180" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <path d="M440,112 L385,180" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <path d="M385,224 L360,330" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <path d="M655,224 L160,330" stroke="#f59e0b" stroke-width="1" fill="none" stroke-dasharray="4 8" marker-end="url(#arrow-amber)" opacity="0.3">
+          <animate attributeName="stroke-dashoffset" values="0;-24" dur="3s" repeatCount="indefinite"/>
+        </path>
+        <!-- Arena depends on mediateMessage -->
+        <path d="M480,356 L440,356" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <!-- mediateMessage depends on lens engine -->
+        <path d="M280,356 L240,356" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <!-- Tests cover engine + arena -->
+        <path d="M680,356 L640,356" stroke="#4ecdc4" stroke-width="1" fill="none" stroke-dasharray="4 6" marker-end="url(#arrow-teal)" opacity="0.4">
+          <animate attributeName="stroke-dashoffset" values="0;-20" dur="2.5s" repeatCount="indefinite"/>
+        </path>
+        <!-- API routes to supabase -->
+        <path d="M440,494 L270,480" stroke="#f59e0b" stroke-width="1" fill="none" stroke-dasharray="4 8" marker-end="url(#arrow-amber)" opacity="0.3">
+          <animate attributeName="stroke-dashoffset" values="0;-24" dur="3s" repeatCount="indefinite"/>
+        </path>
+        <!-- API routes to engine -->
+        <path d="M440,450 L360,382" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" marker-end="url(#arrow)" opacity="0.5">
+          <animate attributeName="stroke-dashoffset" values="0;-28" dur="2s" repeatCount="indefinite"/>
+        </path>
+        <!-- Hooks to supabase -->
+        <path d="M560,472 L270,472" stroke="#f59e0b" stroke-width="1" fill="none" stroke-dasharray="4 8" marker-end="url(#arrow-amber)" opacity="0.3">
+          <animate attributeName="stroke-dashoffset" values="0;-24" dur="3s" repeatCount="indefinite"/>
+        </path>
+        <!-- MessageCard uses TheMelt -->
+        <path d="M450,202 L470,202" stroke="#3d3a39" stroke-width="1" fill="none"/>
+
+        <!-- Traveling dot on primary path -->
+        <circle r="3" fill="#ef6f2e" filter="url(#glow)">
+          <animateMotion dur="4s" repeatCount="indefinite" path="M440,112 L385,200 L385,224 L360,356 L440,356 L440,450"/>
+          <animate attributeName="opacity" values="0;0.9;0.9;0" dur="4s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- TAB: WHAT'S LEFT -->
+  <div class="tab-content" id="tab-gaps">
+    <div style="margin-bottom:24px;">
+      <div class="label" style="margin-bottom:12px;"><span class="section-dot"></span>REMAINING WORK</div>
+      <p style="font-size:13px;color:var(--text-secondary);">Gaps, stubs, and incomplete wiring. These are Stage 5/6 items to address before testing (Stage 7).</p>
+    </div>
+    <div class="gap-list" id="gap-list"></div>
+  </div>
+
+  <!-- TAB: ASSESSMENT -->
+  <div class="tab-content" id="tab-assessment">
+    <div style="margin-bottom:24px;">
+      <div class="label" style="margin-bottom:12px;"><span class="section-dot"></span>SENIOR DEV ASSESSMENT <span id="assess-progress" class="label" style="margin-left:12px;">0 of 8 addressed</span></div>
+      <p style="font-size:13px;color:var(--text-secondary);">Code review of the feature blocks. What's solid, what needs fixing, and the highest-leverage next steps.</p>
+    </div>
+
+    <div class="assessment-section">
+      <h3 style="color:var(--teal);margin-bottom:16px;">What We Did Right</h3>
+      <div class="wins-grid" id="wins-grid"></div>
+    </div>
+
+    <div class="assessment-section">
+      <h3 style="color:var(--accent);margin-bottom:16px;">What Needs Fixing</h3>
+      <div id="fixes-list"></div>
+    </div>
+
+    <div class="assessment-section">
+      <h3 style="color:var(--amber);margin-bottom:16px;">High-Impact Next Steps</h3>
+      <div id="nexts-list"></div>
+    </div>
+
+    <div class="assessment-section">
+      <h3 style="color:var(--teal);margin-bottom:16px;">Prompts Summary</h3>
+      <div id="prompts-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "parallax-feature-blocks",
+  "project": "parallax",
+  "generated": "2026-02-11T18:00:00Z",
+  "sections": [
+    { "id": "blocks", "title": "Feature Map", "type": "tab" },
+    { "id": "deps", "title": "Dependencies", "type": "tab" },
+    { "id": "gaps", "title": "What's Left", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ],
+  "stats": { "files": 74, "loc": 8510, "tests": 58, "blocks": 12, "commits": 66 },
+  "blocks": [
+    { "id": "v1-nvc", "title": "V1 NVC Analysis", "layer": "engine", "status": "complete", "loc": 169 },
+    { "id": "v3-lens", "title": "V3 Multi-Lens Engine", "layer": "engine", "status": "complete", "loc": 595 },
+    { "id": "v4-arena", "title": "V4 Strategy Arena", "layer": "engine", "status": "complete", "loc": 1462 },
+    { "id": "remote", "title": "Remote Mode", "layer": "ui", "status": "complete", "loc": 850 },
+    { "id": "inperson", "title": "In-Person Mode", "layer": "ui", "status": "complete", "loc": 684 },
+    { "id": "lens-ui", "title": "Lens Display UI", "layer": "ui", "status": "complete", "loc": 663 },
+    { "id": "animation", "title": "Melt + Signal Animations", "layer": "ui", "status": "complete", "loc": 172 },
+    { "id": "voice", "title": "Voice Input", "layer": "ui", "status": "partial", "loc": 179 },
+    { "id": "api", "title": "API Routes", "layer": "infra", "status": "complete", "loc": 637 },
+    { "id": "hooks", "title": "Realtime Hooks", "layer": "infra", "status": "complete", "loc": 505 },
+    { "id": "types", "title": "Type System", "layer": "infra", "status": "complete", "loc": 344 },
+    { "id": "tests", "title": "Test Suite", "layer": "infra", "status": "partial", "loc": 641 }
+  ],
+  "assessment": {
+    "wins": [
+      "Type-first architecture: ConflictAnalysis composes cleanly across V1/V3/V4",
+      "Real pipeline reuse: Arena backtest calls the exact same mediateMessage() path",
+      "Modular lens system: each lens is a separate file with prompt + schema",
+      "Progressive disclosure: LensBar + LensDetailPanel keeps 14 lenses navigable",
+      "Fire-and-forget mediation: Realtime UPDATE handles the re-render, no polling"
+    ],
+    "fixes": [
+      { "id": "fix-1", "title": "Arena scenarios missing for 5 context modes", "severity": "LOW" },
+      { "id": "fix-2", "title": "No error boundary around lens display", "severity": "MEDIUM" },
+      { "id": "fix-3", "title": "VoiceInput browser-gated with no feature detection warning", "severity": "MEDIUM" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "UI flow polish (buttons, transitions, edge cases)", "impact": "Stage 5 gate" },
+      { "id": "next-2", "title": "Integration pass (Stage 6)", "impact": "Pre-test stability" },
+      { "id": "next-3", "title": "Pure logic 100% coverage", "impact": "Stage 7 gate" },
+      { "id": "next-4", "title": "API route tests with mocked deps", "impact": "Stage 7 gate" },
+      { "id": "next-5", "title": "README + demo for hackathon submission", "impact": "Stage 9-10" }
+    ]
+  }
+}
+</script>
+
+<script>
+(function() {
+  // --- DATA ---
+  var BLOCKS = [
+    {
+      id:'v1-nvc', title:'V1 NVC Analysis', layer:'engine', status:'complete',
+      desc:'Original Rosenberg NVC framework -- observation, feeling, need, request plus Parallax\'s "Beneath the Surface" lens (subtext, blind spots, unmet needs, temperature).',
+      loc:169,
+      files:[
+        {path:'src/lib/prompts.ts', lines:169},
+        {path:'src/lib/prompts/legacy-nvc-prompt.ts', lines:44},
+        {path:'src/lib/prompts/lens-nvc.ts', lines:36}
+      ]
+    },
+    {
+      id:'v3-lens', title:'V3 Multi-Lens Engine', layer:'engine', status:'complete',
+      desc:'14 analytical lenses composed into context-mode-aware prompts. Single API call per message. Tiered activation -- secondary lenses only fire when signals detected.',
+      loc:595,
+      files:[
+        {path:'src/lib/prompts/index.ts', lines:209},
+        {path:'src/lib/context-modes.ts', lines:164},
+        {path:'src/lib/prompts/lens-gottman.ts', lines:26},
+        {path:'src/lib/prompts/lens-cbt.ts', lines:27},
+        {path:'src/lib/prompts/lens-tki.ts', lines:27},
+        {path:'src/lib/prompts/lens-drama-triangle.ts', lines:26},
+        {path:'src/lib/prompts/lens-narrative.ts', lines:21},
+        {path:'src/lib/prompts/lens-attachment.ts', lines:25},
+        {path:'src/lib/prompts/lens-restorative.ts', lines:23},
+        {path:'src/lib/prompts/lens-scarf.ts', lines:22},
+        {path:'src/lib/prompts/lens-org-justice.ts', lines:21},
+        {path:'src/lib/prompts/lens-psych-safety.ts', lines:21},
+        {path:'src/lib/prompts/lens-jehns.ts', lines:23},
+        {path:'src/lib/prompts/lens-power.ts', lines:21},
+        {path:'src/lib/prompts/lens-ibr.ts', lines:23}
+      ]
+    },
+    {
+      id:'v4-arena', title:'V4 Strategy Arena', layer:'engine', status:'complete',
+      desc:'Backtesting framework: 15 authored Family scenarios, 5-dimension weighted scoring, simulation runner reusing live pipeline. 5 category stubs for post-hackathon.',
+      loc:1462,
+      files:[
+        {path:'src/lib/arena/types.ts', lines:68},
+        {path:'src/lib/arena/evaluate.ts', lines:307},
+        {path:'src/lib/arena/runner.ts', lines:101},
+        {path:'src/lib/arena/scenarios/family.ts', lines:919},
+        {path:'src/lib/arena/scenarios/index.ts', lines:67}
+      ]
+    },
+    {
+      id:'opus', title:'Claude Opus Pipeline', layer:'engine', status:'complete',
+      desc:'API wrapper for Claude Opus. mediateMessage(), analyzeIssues(), summarizeSession(). Fire-and-forget pattern -- Realtime handles re-render.',
+      loc:120,
+      files:[
+        {path:'src/lib/opus.ts', lines:120}
+      ]
+    },
+    {
+      id:'remote', title:'Remote Mode', layer:'ui', status:'complete',
+      desc:'Split-screen two-person view. Name entry, turn-based messaging, NVC analysis reveal, temperature glow, session summary. Production-deployed.',
+      loc:850,
+      files:[
+        {path:'src/components/SessionView.tsx', lines:262},
+        {path:'src/components/PersonPanel.tsx', lines:124},
+        {path:'src/components/MessageArea.tsx', lines:75},
+        {path:'src/components/MessageInput.tsx', lines:47},
+        {path:'src/components/MessageCard.tsx', lines:303},
+        {path:'src/components/NameEntry.tsx', lines:43},
+        {path:'src/components/WaitingState.tsx', lines:16}
+      ]
+    },
+    {
+      id:'inperson', title:'In-Person Mode', layer:'ui', status:'complete',
+      desc:'Single-device shared screen. 3-step onboarding, X-Ray scoreboard (issue tracking), active speaker bar, turn-based with voice.',
+      loc:684,
+      files:[
+        {path:'src/components/inperson/OnboardingFlow.tsx', lines:339},
+        {path:'src/components/inperson/XRayView.tsx', lines:121},
+        {path:'src/components/inperson/XRayScoreboard.tsx', lines:108},
+        {path:'src/components/inperson/IssueCard.tsx', lines:59},
+        {path:'src/components/inperson/ActiveSpeakerBar.tsx', lines:57}
+      ]
+    },
+    {
+      id:'lens-ui', title:'Lens Display UI', layer:'ui', status:'complete',
+      desc:'Progressive disclosure for 14 lenses. LensBar shows activated lens chips. LensDetailPanel renders per-lens results (Gottman horsemen, CBT distortions, etc.). Context mode picker.',
+      loc:781,
+      files:[
+        {path:'src/components/lenses/LensBar.tsx', lines:80},
+        {path:'src/components/lenses/LensDetailPanel.tsx', lines:583},
+        {path:'src/components/ContextModePicker.tsx', lines:118}
+      ]
+    },
+    {
+      id:'animation', title:'Melt + Signal Animations', layer:'ui', status:'complete',
+      desc:'TheMelt: 3-phase dissolve animation with severity-aware timing and Knuth hash particles. SignalRail: temperature timeline. OrbStrip: audio waveform orbs.',
+      loc:369,
+      files:[
+        {path:'src/components/TheMelt.tsx', lines:125},
+        {path:'src/components/SignalRail.tsx', lines:47},
+        {path:'src/components/OrbStrip.tsx', lines:72},
+        {path:'src/components/AudioWaveformOrb.tsx', lines:181}
+      ]
+    },
+    {
+      id:'voice', title:'Voice Input', layer:'ui', status:'partial',
+      desc:'Web Speech API integration for speech-to-text. Chrome has best support. Graceful fallback to text input. Browser-dependent -- no feature detection warning shown.',
+      loc:242,
+      files:[
+        {path:'src/components/VoiceInput.tsx', lines:179},
+        {path:'src/hooks/useSyntheticWaveform.ts', lines:63}
+      ]
+    },
+    {
+      id:'api', title:'API Routes', layer:'infra', status:'complete',
+      desc:'10 Next.js API routes: session CRUD, messaging, mediation, issue analysis, summary generation, health check. All wired to Supabase.',
+      loc:637,
+      files:[
+        {path:'src/app/api/sessions/route.ts', lines:53},
+        {path:'src/app/api/sessions/[code]/route.ts', lines:26},
+        {path:'src/app/api/sessions/[code]/join/route.ts', lines:57},
+        {path:'src/app/api/sessions/[code]/end/route.ts', lines:32},
+        {path:'src/app/api/sessions/[code]/onboarding/route.ts', lines:78},
+        {path:'src/app/api/sessions/[code]/summary/route.ts', lines:106},
+        {path:'src/app/api/messages/route.ts', lines:35},
+        {path:'src/app/api/mediate/route.ts', lines:137},
+        {path:'src/app/api/issues/analyze/route.ts', lines:102},
+        {path:'src/app/api/health/route.ts', lines:11}
+      ]
+    },
+    {
+      id:'hooks', title:'Realtime Hooks', layer:'infra', status:'complete',
+      desc:'Supabase Realtime subscriptions for sessions, messages, and issues. Race-condition fix: subscribe before fetch. Deduplication on message inserts.',
+      loc:505,
+      files:[
+        {path:'src/hooks/useSession.ts', lines:110},
+        {path:'src/hooks/useMessages.ts', lines:110},
+        {path:'src/hooks/useIssues.ts', lines:88},
+        {path:'src/hooks/useAudioAnalyser.ts', lines:134}
+      ]
+    },
+    {
+      id:'tests', title:'Test Suite', layer:'infra', status:'partial',
+      desc:'58 tests across 5 modules (Vitest). Covers: arena evaluation (22), prompts parsing (9), conversation helpers (9), temperature mapping (11), room codes (7). No component or API route tests yet.',
+      loc:641,
+      files:[
+        {path:'src/lib/__tests__/arena-evaluate.test.ts', lines:358},
+        {path:'src/lib/__tests__/prompts.test.ts', lines:86},
+        {path:'src/lib/__tests__/conversation.test.ts', lines:82},
+        {path:'src/lib/__tests__/temperature.test.ts', lines:72},
+        {path:'src/lib/__tests__/room-code.test.ts', lines:43}
+      ]
+    }
+  ];
+
+  var GAPS = [
+    {title:'V3 backend wiring verification', desc:'The /api/mediate route calls mediateMessage() with contextMode, but need to confirm the full V3 ConflictAnalysis with populated lenses is reaching the database and UI in production. buildConflictIntelligencePrompt() builds the mega-prompt -- verify Claude returns populated lens objects, not just NVC root.', files:'src/app/api/mediate/route.ts, src/lib/opus.ts', done:false},
+    {title:'5 arena scenario categories stubbed', desc:'Family has 15 scenarios. Intimate, professional_peer, professional_hierarchical, transactional, and civil_structural are empty arrays with TODO comments. Post-hackathon scope (75 more scenarios).', files:'src/lib/arena/scenarios/index.ts', done:true},
+    {title:'No component tests', desc:'All 58 tests cover pure logic functions. No React component tests (MessageCard, SessionView, PersonPanel, etc.). Requires vitest + @testing-library/react setup. Stage 7 work.', files:'src/lib/__tests__/', done:false},
+    {title:'No API route tests', desc:'10 API routes have zero test coverage. Requires mocking Supabase client and Anthropic SDK. Stage 7 work.', files:'src/app/api/', done:false},
+    {title:'VoiceInput browser feature detection', desc:'Web Speech API is Chrome-only. VoiceInput falls back to text but doesn\'t warn the user that voice won\'t work in their browser. Should show a tooltip or graceful message.', files:'src/components/VoiceInput.tsx', done:false},
+    {title:'parseConflictAnalysis coverage', desc:'The V3 parser in prompts/index.ts handles V1 compat wrapping and V3 parsing, but current tests only cover the legacy parseNvcAnalysis. Need tests for the V3 path specifically.', files:'src/lib/__tests__/prompts.test.ts, src/lib/prompts/index.ts', done:false},
+    {title:'Session summary for V3', desc:'SessionSummary.tsx and the summary API route were built for V1 NVC analysis. They don\'t incorporate multi-lens insights or resolution arc from V3 ConflictAnalysis.', files:'src/components/SessionSummary.tsx, src/app/api/sessions/[code]/summary/route.ts', done:false},
+    {title:'Context mode in session creation flow', desc:'ContextModePicker selects the mode at session creation. Verify the context_mode is persisted and used correctly through the full mediation pipeline for both remote and in-person modes.', files:'src/components/ContextModePicker.tsx, src/app/api/mediate/route.ts', done:false}
+  ];
+
+  var WINS = [
+    {title:'Type-first architecture', desc:'ConflictAnalysis extends NvcAnalysis cleanly. The isConflictAnalysis() type guard lets V1 and V3 coexist. Arena types compose with existing types -- TurnResult.analysis IS a ConflictAnalysis.'},
+    {title:'Real pipeline reuse', desc:'Arena\'s runSimulation() calls the exact same mediateMessage() and parseConflictAnalysis() that live users hit. No mocks, no shortcuts. If Arena scores well, live performance matches.'},
+    {title:'Modular lens system', desc:'Each of the 14 lenses is a separate file (lens-gottman.ts, lens-cbt.ts, etc.) with its own prompt section and response schema. Adding lens #15 is a single file + one line in the registry.'},
+    {title:'Progressive disclosure UI', desc:'14 lenses could be overwhelming. LensBar shows clickable chips, LensDetailPanel drills into one lens at a time. Primary insight is always visible. Three-tier reveal pattern.'},
+    {title:'Fire-and-forget mediation', desc:'Send message -> POST /api/mediate -> Claude analyzes -> patch Supabase row -> Realtime UPDATE -> UI re-renders. No polling, no streaming complexity. Supabase Realtime handles reactivity.'},
+    {title:'Planted patterns as ground truth', desc:'Each Arena scenario declares what a perfect analysis should find. The scorer checks detection rate. This turns qualitative AI evaluation into quantitative scoring -- the backtesting metaphor made concrete.'}
+  ];
+
+  var FIXES = [
+    {id:'fix-1', title:'parseConflictAnalysis untested for V3 path', severity:'HIGH',
+     desc:'The V3 parser handles lens extraction, meta field fallbacks, and V1 compat wrapping. Only the legacy V1 parseNvcAnalysis is tested. A regression here breaks the entire lens display.',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, add V3 coverage to src/lib/__tests__/prompts.test.ts. Test parseConflictAnalysis() from src/lib/prompts/index.ts with:\n1. Valid V3 payload (all lenses populated)\n2. V3 with missing optional lenses (should pass)\n3. V1 payload (no lenses/meta) -- verify it wraps in V3 envelope\n4. Invalid JSON -- returns null\n5. Missing required NVC root fields -- returns null\nRun npm test to verify.'},
+    {id:'fix-2', title:'Session summary ignores V3 multi-lens data', severity:'MEDIUM',
+     desc:'SessionSummary.tsx and the summary API route were built for V1 NVC. They don\'t surface lens-specific insights, resolution arc, or pattern detection from V3 ConflictAnalysis. Judges who create a family-mode session will get a V1-style summary even though V3 data exists.',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, update src/app/api/sessions/[code]/summary/route.ts and src/components/SessionSummary.tsx to incorporate V3 data. The summary prompt should include: resolution direction trends across messages, activated lenses and their key findings, and the overall conflict trajectory. Use isConflictAnalysis() to detect V3 data. Keep backward compat with V1 sessions.'},
+    {id:'fix-3', title:'VoiceInput shows no warning for unsupported browsers', severity:'MEDIUM',
+     desc:'Web Speech API is Chrome-only. VoiceInput falls back to text silently. Users on Firefox/Safari who tap the mic icon get no feedback about why voice doesn\'t work.',
+     prompt:'In src/components/VoiceInput.tsx at ~/Development/id8/products/parallax, add browser feature detection on mount. If webkitSpeechRecognition or SpeechRecognition is unavailable, show a small muted label beneath the mic icon: "Voice input requires Chrome". Keep the text input fallback as-is.'}
+  ];
+
+  var NEXTS = [
+    {id:'next-1', title:'Verify V3 lens data reaches UI end-to-end', impact:'Core feature validation',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, verify the V3 pipeline end-to-end: 1) Check that /api/mediate passes context_mode from the session to mediateMessage(). 2) Confirm parseConflictAnalysis() is called with the correct contextMode. 3) Test that MessageCard receives and renders lens data via isConflictAnalysis(). Read the API route, the mediate call, and the MessageCard component. Report any gaps in the wiring.'},
+    {id:'next-2', title:'Polish UI flow: buttons, transitions, edge cases', impact:'Stage 5 gate pass',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, do a systematic UI audit of the session flow. Start from src/app/page.tsx (landing), through ContextModePicker, into SessionView, and through a full conversation. Check: (1) all buttons have proper disabled states during loading, (2) error states are visible and helpful, (3) mobile responsive behavior on every component, (4) edge cases like empty messages, rapid clicking, or leaving mid-session. Report findings.'},
+    {id:'next-3', title:'Add parseConflictAnalysis V3 tests', impact:'Prevents regression in core parser',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, add comprehensive tests for parseConflictAnalysis() in src/lib/__tests__/prompts.test.ts. Cover: valid V3, missing lenses, V1 compat, invalid JSON, edge cases. Run npm test after.'},
+    {id:'next-4', title:'context-modes.ts test coverage', impact:'Validates lens activation correctness',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, create src/lib/__tests__/context-modes.test.ts. Test: (1) every ContextMode has a non-empty lens array in CONTEXT_MODE_LENSES, (2) NVC is always first in every mode, (3) LENS_METADATA has an entry for every LensId, (4) CONTEXT_MODE_INFO has an entry for every ContextMode. Run npm test after.'},
+    {id:'next-5', title:'README + demo prep for hackathon submission', impact:'Stage 9-10 ship',
+     prompt:'In the Parallax project at ~/Development/id8/products/parallax, expand README.md for hackathon submission. Include: (1) one-liner and tagline, (2) how it works with screenshot placeholders, (3) tech stack, (4) the V3 multi-lens innovation, (5) the V4 Arena backtesting concept, (6) how to run locally, (7) architecture overview pointing to BUILDING.md.'}
+  ];
+
+  // --- RENDER BLOCKS ---
+  function renderBlock(b) {
+    var statusClass = b.status === 'complete' ? 'badge-complete' : b.status === 'partial' ? 'badge-partial' : 'badge-stubbed';
+    var statusLabel = b.status === 'complete' ? 'COMPLETE' : b.status === 'partial' ? 'PARTIAL' : 'STUBBED';
+    var totalLines = b.files.reduce(function(s,f){return s+f.lines;},0);
+    var maxLines = 920;
+    var pct = Math.min(100, Math.round((totalLines/maxLines)*100));
+    var color = b.status === 'complete' ? 'var(--teal)' : b.status === 'partial' ? 'var(--amber)' : 'var(--text-muted)';
+
+    var fileHtml = b.files.map(function(f){
+      return '<div class="file-item"><span class="file-path">'+f.path+'</span><span class="file-lines">'+f.lines+' lines</span></div>';
+    }).join('');
+
+    return '<div class="block-card anim-enter" data-block="'+b.id+'" onclick="toggleBlock(this)">' +
+      '<div class="block-header"><span class="block-title">'+b.title+'</span><span class="badge '+statusClass+'">'+statusLabel+'</span></div>' +
+      '<div class="block-desc">'+b.desc+'</div>' +
+      '<div class="line-meter"><div class="meter-bar"><div class="meter-fill" style="width:'+pct+'%;background:'+color+';"></div></div><span class="meter-label">'+totalLines+' LOC</span></div>' +
+      '<div class="expand-hint">Click to expand files</div>' +
+      '<div class="file-list">'+fileHtml+'</div>' +
+      '</div>';
+  }
+
+  var engineEl = document.getElementById('engine-blocks');
+  var uiEl = document.getElementById('ui-blocks');
+  var infraEl = document.getElementById('infra-blocks');
+  BLOCKS.forEach(function(b,i){
+    b._stagger = i;
+    var html = renderBlock(b);
+    if (b.layer === 'engine') engineEl.innerHTML += html;
+    else if (b.layer === 'ui') uiEl.innerHTML += html;
+    else infraEl.innerHTML += html;
+  });
+
+  window.toggleBlock = function(el) {
+    el.classList.toggle('expanded');
+  };
+
+  // --- RENDER GAPS ---
+  var gapEl = document.getElementById('gap-list');
+  GAPS.forEach(function(g){
+    gapEl.innerHTML += '<div class="gap-item'+(g.done?' done':'')+'"><div class="gap-title">'+g.title+(g.done?' (post-hackathon)':'')+'</div><div class="gap-desc">'+g.desc+'</div><div class="gap-files">Files: '+g.files+'</div></div>';
+  });
+
+  // --- RENDER ASSESSMENT ---
+  var winsEl = document.getElementById('wins-grid');
+  WINS.forEach(function(w){
+    winsEl.innerHTML += '<div class="win-card"><h4>'+w.title+'</h4><p>'+w.desc+'</p></div>';
+  });
+
+  function renderAssessItem(item, prefix) {
+    return '<div class="assessment-item" id="assess-'+prefix+'-'+item.id+'">' +
+      '<label class="assessment-check"><input type="checkbox" class="assess-checkbox" data-key="'+item.id+'"><span class="assess-label">'+item.title+'</span></label>' +
+      '<div class="assess-body">' +
+      '<span class="severity-badge '+(item.severity||'medium').toLowerCase()+'">'+(item.severity||item.impact)+'</span>' +
+      '<p class="assess-desc">'+item.desc+'</p>' +
+      '<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">COPY</button><div class="prompt-text">'+item.prompt+'</div></div>' +
+      '</div></div>';
+  }
+
+  var fixesEl = document.getElementById('fixes-list');
+  FIXES.forEach(function(f){ fixesEl.innerHTML += renderAssessItem(f, 'fix'); });
+
+  var nextsEl = document.getElementById('nexts-list');
+  NEXTS.forEach(function(n){ nextsEl.innerHTML += renderAssessItem(n, 'next'); });
+
+  // Prompts summary
+  var promptsEl = document.getElementById('prompts-list');
+  var allPrompts = FIXES.concat(NEXTS);
+  allPrompts.forEach(function(p, i){
+    promptsEl.innerHTML += '<div class="assessment-item" id="assess-summary-'+p.id+'">' +
+      '<label class="assessment-check"><input type="checkbox" class="assess-checkbox" data-key="'+p.id+'"><span class="assess-label">'+(i+1)+'. '+p.title+'</span></label>' +
+      '<div class="assess-body"><div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">COPY</button><div class="prompt-text">'+p.prompt+'</div></div></div></div>';
+  });
+
+  // --- TABS ---
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+      document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+      this.classList.add('active');
+      var target = document.getElementById('tab-'+this.dataset.tab);
+      target.classList.add('active');
+      staggerReveal(target, '.anim-enter', 'anim-enter', 50, 30);
+    });
+  });
+
+  function staggerReveal(container, selector, className, baseDelay, stagger) {
+    container.querySelectorAll(selector).forEach(function(item, i) {
+      item.style.animationDelay = (baseDelay + i * stagger) + 'ms';
+      void item.offsetWidth;
+    });
+  }
+
+  // --- STAT COUNTER ---
+  function animateCounters() {
+    document.querySelectorAll('.stat-value[data-target]').forEach(function(el, i) {
+      var target = parseInt(el.dataset.target);
+      var start = performance.now();
+      var duration = 600;
+      var delay = i * 120;
+      setTimeout(function() {
+        function step(now) {
+          var progress = Math.min((now - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(eased * target);
+          if (progress < 1) requestAnimationFrame(step);
+        }
+        start = performance.now();
+        requestAnimationFrame(step);
+      }, delay);
+    });
+  }
+  setTimeout(animateCounters, 500);
+
+  // --- COPY ---
+  window.copyPrompt = function(btn) {
+    var text = btn.parentElement.querySelector('.prompt-text').textContent;
+    navigator.clipboard.writeText(text);
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+  };
+
+  // --- ASSESSMENT CHECKBOXES ---
+  var ASSESS_KEY = 'visualize-assess-parallax-feature-blocks';
+
+  function updateAssessProgress() {
+    var total = document.querySelectorAll('.assessment-item[id^="assess-fix-"], .assessment-item[id^="assess-next-"]').length;
+    var done = document.querySelectorAll('.assessment-item[id^="assess-fix-"].completed, .assessment-item[id^="assess-next-"].completed').length;
+    var counter = document.getElementById('assess-progress');
+    if (counter) {
+      counter.textContent = done + ' of ' + total + ' addressed';
+      counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+    }
+  }
+
+  document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+      state[this.dataset.key] = this.checked;
+      localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+      var item = this.closest('.assessment-item');
+      if (this.checked) item.classList.add('completed');
+      else item.classList.remove('completed');
+      var self = this;
+      document.querySelectorAll('.assess-checkbox[data-key="' + this.dataset.key + '"]').forEach(function(sibling) {
+        if (sibling !== self) {
+          sibling.checked = self.checked;
+          var sibItem = sibling.closest('.assessment-item');
+          if (self.checked) sibItem.classList.add('completed');
+          else sibItem.classList.remove('completed');
+        }
+      });
+      updateAssessProgress();
+    });
+  });
+
+  window.addEventListener('load', function() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    Object.keys(state).forEach(function(key) {
+      document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+        cb.checked = state[key];
+        if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+      });
+    });
+    updateAssessProgress();
+  });
+})();
+</script>
+</body>
+</html>

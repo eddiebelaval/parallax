@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Orb Waveform System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #0f0b08;
+    --surface: #1a1410;
+    --border: #3a2e22;
+    --text: #c9b9a3;
+    --heading: #ebe1d4;
+    --muted: #7a6c58;
+    --hot: #c45c3c;
+    --warm: #d4a040;
+    --cool: #6aab8e;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'Source Sans 3', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  body { font-family:var(--sans); background:#060402; color:var(--text); }
+
+  .nav {
+    position:sticky; top:0; z-index:100;
+    display:flex; gap:4px; padding:12px 32px;
+    background:#060402; border-bottom:1px solid #1a1410; overflow-x:auto;
+  }
+  .nav button {
+    padding:8px 16px; border:1px solid #2a2018; background:transparent;
+    color:var(--muted); font-family:var(--sans); font-size:12px;
+    font-weight:500; cursor:pointer; transition:all .2s; white-space:nowrap;
+  }
+  .nav button:hover { border-color:#4a3e30; color:var(--text); }
+  .nav button.active { border-color:var(--warm); color:var(--warm); }
+
+  .section { padding:40px 32px; display:none; max-width:1100px; margin:0 auto; }
+  .section.active { display:block; }
+  h2 { font-family:var(--serif); font-size:24px; font-weight:300; letter-spacing:-0.02em; color:var(--heading); margin-bottom:4px; }
+  .tag { display:inline-block; font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; padding:3px 10px; border:1px solid var(--border); color:var(--muted); margin-left:12px; vertical-align:middle; font-family:var(--mono); }
+  .sub { font-size:14px; color:var(--muted); font-style:italic; margin-bottom:24px; font-family:var(--serif); }
+  .desc { font-size:13px; color:var(--muted); line-height:1.7; max-width:640px; margin-bottom:24px; }
+  .label { font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; margin-top:28px; font-family:var(--mono); }
+
+  /* ─── ORB SYSTEM ─── */
+  .orb-stage {
+    display:flex;
+    gap:48px;
+    justify-content:center;
+    align-items:center;
+    padding:48px 0;
+  }
+
+  .orb-container {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+
+  .orb {
+    position:relative;
+    width:80px;
+    height:80px;
+  }
+
+  .orb-core {
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    opacity:0.15;
+  }
+
+  .orb-ring {
+    position:absolute;
+    inset:4px;
+    border-radius:50%;
+    border:1px solid;
+    opacity:0.3;
+  }
+
+  .orb-glow {
+    position:absolute;
+    inset:-12px;
+    border-radius:50%;
+    filter:blur(16px);
+    opacity:0.15;
+  }
+
+  .orb-waveform {
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .orb-label {
+    font-family:var(--mono);
+    font-size:9px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+  }
+  .orb-state {
+    font-family:var(--mono);
+    font-size:8px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  /* ─── WAVEFORM SVG ANIMATIONS ─── */
+  @keyframes wave-idle {
+    0%, 100% { d: path("M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40"); }
+    50% { d: path("M 10,40 Q 20,42 30,40 Q 40,38 50,40 Q 60,42 70,40"); }
+  }
+
+  @keyframes wave-speaking {
+    0% { d: path("M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40"); }
+    25% { d: path("M 10,40 Q 18,48 26,40 Q 34,24 42,40 Q 50,56 58,40 Q 66,28 70,40"); }
+    50% { d: path("M 10,40 Q 18,30 26,40 Q 34,50 42,40 Q 50,26 58,40 Q 66,50 70,40"); }
+    75% { d: path("M 10,40 Q 18,52 26,40 Q 34,30 42,40 Q 50,48 58,40 Q 66,30 70,40"); }
+    100% { d: path("M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40"); }
+  }
+
+  @keyframes wave-thinking {
+    0% { d: path("M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40"); }
+    33% { d: path("M 10,40 Q 17,46 24,40 Q 31,32 38,40 Q 45,48 52,40 Q 59,32 66,40 Q 70,42 70,40"); }
+    66% { d: path("M 10,40 Q 17,36 24,40 Q 31,44 38,40 Q 45,30 52,40 Q 59,50 66,40 Q 70,36 70,40"); }
+    100% { d: path("M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40"); }
+  }
+
+  @keyframes wave-heated {
+    0% { d: path("M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40"); }
+    25% { d: path("M 10,40 Q 16,56 22,40 Q 28,24 34,40 Q 40,58 46,40 Q 52,22 58,40 Q 64,56 70,40"); }
+    50% { d: path("M 10,40 Q 16,24 22,40 Q 28,56 34,40 Q 40,22 46,40 Q 52,58 58,40 Q 64,24 70,40"); }
+    75% { d: path("M 10,40 Q 16,54 22,40 Q 28,26 34,40 Q 40,56 46,40 Q 52,24 58,40 Q 64,54 70,40"); }
+    100% { d: path("M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40"); }
+  }
+
+  .wave-path-idle { animation: wave-idle 3s ease-in-out infinite; }
+  .wave-path-speaking { animation: wave-speaking 0.8s ease-in-out infinite; }
+  .wave-path-thinking { animation: wave-thinking 2s ease-in-out infinite; }
+  .wave-path-heated { animation: wave-heated 0.5s ease-in-out infinite; }
+  .wave-path-listening { animation: wave-idle 2s ease-in-out infinite; }
+
+  /* Secondary wave (offset, lower opacity) */
+  .wave-secondary { opacity:0.3; }
+  .wave-secondary.wave-path-speaking { animation-delay: 0.15s; }
+  .wave-secondary.wave-path-thinking { animation-delay: 0.4s; }
+  .wave-secondary.wave-path-heated { animation-delay: 0.1s; }
+
+  /* ─── ORB BREATHING ─── */
+  @keyframes orb-breathe {
+    0%, 100% { transform:scale(1); opacity:0.15; }
+    50% { transform:scale(1.06); opacity:0.22; }
+  }
+  @keyframes orb-breathe-active {
+    0%, 100% { transform:scale(1); opacity:0.2; }
+    50% { transform:scale(1.1); opacity:0.3; }
+  }
+  @keyframes orb-breathe-heated {
+    0%, 100% { transform:scale(1); opacity:0.25; }
+    50% { transform:scale(1.15); opacity:0.4; }
+  }
+  .orb-breathe .orb-glow { animation: orb-breathe 4s ease-in-out infinite; }
+  .orb-breathe-active .orb-glow { animation: orb-breathe-active 2s ease-in-out infinite; }
+  .orb-breathe-heated .orb-glow { animation: orb-breathe-heated 1.2s ease-in-out infinite; }
+
+  @keyframes ring-pulse {
+    0%, 100% { opacity:0.3; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(1.02); }
+  }
+  .orb-breathe-active .orb-ring { animation: ring-pulse 2s ease-in-out infinite; }
+
+  /* ─── SESSION MOCK ─── */
+  .session-mock {
+    border:1px solid var(--border);
+    background: radial-gradient(ellipse at 30% 80%, rgba(196,92,60,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(212,160,64,0.03) 0%, transparent 50%),
+                var(--bg);
+    min-height:500px;
+    overflow:hidden;
+  }
+  .session-header {
+    padding:12px 20px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .session-body { padding:24px; display:flex; gap:20px; }
+  .session-messages { flex:1; }
+  .session-sidebar {
+    width:120px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:20px;
+    padding-top:8px;
+  }
+
+  .orb-sm { width:48px; height:48px; }
+  .orb-sm .orb-glow { inset:-8px; filter:blur(10px); }
+  .orb-sm .orb-ring { inset:3px; }
+
+  /* Message with backlit border */
+  .msg {
+    padding-left:14px;
+    position:relative;
+    margin-bottom:20px;
+  }
+  .msg::before {
+    content:'';
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:2px;
+  }
+  .msg::after {
+    content:'';
+    position:absolute;
+    left:-48px; top:-6px; bottom:-6px;
+    width:52px;
+    border-radius:50% 0 0 50%;
+    filter:blur(6px);
+    pointer-events:none;
+  }
+  .msg-hot::before { background:var(--hot); }
+  .msg-hot::after { background:radial-gradient(ellipse at right center, rgba(196,92,60,0.12) 0%, transparent 70%); }
+  .msg-warm::before { background:var(--warm); }
+  .msg-warm::after { background:radial-gradient(ellipse at right center, rgba(212,160,64,0.12) 0%, transparent 70%); }
+  .msg-cool::before { background:var(--cool); }
+  .msg-cool::after { background:radial-gradient(ellipse at right center, rgba(106,171,142,0.1) 0%, transparent 70%); }
+
+  /* ─── SCALABILITY DEMO ─── */
+  .scale-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:20px;
+  }
+  .scale-card {
+    border:1px solid var(--border);
+    background:var(--bg);
+    padding:24px;
+    text-align:center;
+  }
+  .scale-orbs {
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    margin:20px 0;
+  }
+
+  .orb-xs { width:36px; height:36px; }
+  .orb-xs .orb-glow { inset:-6px; filter:blur(8px); }
+  .orb-xs .orb-ring { inset:2px; }
+
+  @media (max-width:768px) {
+    .orb-stage { flex-direction:column; gap:32px; }
+    .scale-grid { grid-template-columns:1fr; }
+    .section { padding:24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="active" onclick="showTab('concept')">Concept</button>
+  <button onclick="showTab('states')">Orb States</button>
+  <button onclick="showTab('waveforms')">Waveform Detail</button>
+  <button onclick="showTab('in-session')">In Session</button>
+  <button onclick="showTab('scalability')">Scalability</button>
+</div>
+
+<!-- ═══ CONCEPT ═══ -->
+<div id="tab-concept" class="section active">
+  <h2>Orb + Waveform System<span class="tag">Participant Presence</span></h2>
+  <p class="sub">Every voice in the room gets a living, breathing identity</p>
+  <p class="desc">Each participant — Person A, Person B, Claude — has their own orb. The orb's waveform reflects their current state: idle, speaking, listening, thinking (Claude), or emotionally heated. The orb color matches their temperature-coded identity. Adding a third person just means adding another orb.</p>
+
+  <div class="orb-stage">
+    <!-- Person A -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-active">
+        <div class="orb-glow" style="background:var(--hot);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--hot);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-speaking wave-secondary" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--hot);">Alex</span>
+      <span class="orb-state">Speaking</span>
+    </div>
+
+    <!-- Claude -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-active">
+        <div class="orb-glow" style="background:var(--cool);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--cool);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-thinking wave-secondary" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--cool);">Claude</span>
+      <span class="orb-state">Analyzing</span>
+    </div>
+
+    <!-- Person B -->
+    <div class="orb-container">
+      <div class="orb orb-breathe">
+        <div class="orb-glow" style="background:var(--warm);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--warm) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--warm);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-listening" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--warm)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--warm);">Jordan</span>
+      <span class="orb-state">Listening</span>
+    </div>
+  </div>
+
+  <div class="label">Design Rules</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+    <div style="border:1px solid var(--border); padding:16px; background:var(--bg);">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--hot); letter-spacing:0.1em; margin-bottom:8px;">COLOR = IDENTITY</div>
+      <p style="font-size:12px; color:var(--muted); line-height:1.6;">Person A = hot/coral. Person B = warm/amber. Claude = cool/teal. Always. The orb color matches their message border color.</p>
+    </div>
+    <div style="border:1px solid var(--border); padding:16px; background:var(--bg);">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; margin-bottom:8px;">WAVEFORM = STATE</div>
+      <p style="font-size:12px; color:var(--muted); line-height:1.6;">Idle: gentle drift. Speaking: energetic oscillation. Listening: soft response. Thinking (Claude): complex layered rhythm. Heated: high amplitude, fast.</p>
+    </div>
+    <div style="border:1px solid var(--border); padding:16px; background:var(--bg);">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--cool); letter-spacing:0.1em; margin-bottom:8px;">GLOW = INTENSITY</div>
+      <p style="font-size:12px; color:var(--muted); line-height:1.6;">Glow radius and breathing speed scale with emotional state. Calm = dim slow pulse. Heated = bright fast pulse. The orb radiates the emotion.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STATES ═══ -->
+<div id="tab-states" class="section">
+  <h2>Orb States<span class="tag">Lifecycle</span></h2>
+  <p class="sub">Five states for people, four for Claude</p>
+
+  <div class="label">Person Orb States</div>
+  <div class="orb-stage" style="gap:36px;">
+    <!-- Idle -->
+    <div class="orb-container">
+      <div class="orb orb-breathe">
+        <div class="orb-glow" style="background:var(--hot);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--hot);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--hot);">Idle</span>
+      <span class="orb-state">Connected, quiet</span>
+    </div>
+
+    <!-- Speaking -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-active">
+        <div class="orb-glow" style="background:var(--hot);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--hot);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-speaking wave-secondary" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--hot);">Speaking</span>
+      <span class="orb-state">Active turn</span>
+    </div>
+
+    <!-- Listening -->
+    <div class="orb-container">
+      <div class="orb orb-breathe">
+        <div class="orb-glow" style="background:var(--hot);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%); opacity:0.1;"></div>
+        <div class="orb-ring" style="border-color:var(--hot); opacity:0.2;"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-listening" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--hot);">Listening</span>
+      <span class="orb-state">Other's turn</span>
+    </div>
+
+    <!-- Heated -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-heated">
+        <div class="orb-glow" style="background:var(--hot);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%); opacity:0.25;"></div>
+        <div class="orb-ring" style="border-color:var(--hot); opacity:0.5;"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-heated" d="M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40" stroke="var(--hot)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-heated wave-secondary" d="M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--hot);">Heated</span>
+      <span class="orb-state">High emotion</span>
+    </div>
+  </div>
+
+  <div class="label" style="margin-top:40px;">Claude Orb States</div>
+  <div class="orb-stage" style="gap:36px;">
+    <!-- Claude idle -->
+    <div class="orb-container">
+      <div class="orb orb-breathe">
+        <div class="orb-glow" style="background:var(--cool);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--cool);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--cool);">Idle</span>
+      <span class="orb-state">Observing</span>
+    </div>
+
+    <!-- Claude analyzing -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-active">
+        <div class="orb-glow" style="background:var(--cool);"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+        <div class="orb-ring" style="border-color:var(--cool);"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-thinking wave-secondary" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--cool);">Analyzing</span>
+      <span class="orb-state">Processing NVC</span>
+    </div>
+
+    <!-- Claude insight -->
+    <div class="orb-container">
+      <div class="orb orb-breathe-active">
+        <div class="orb-glow" style="background:var(--cool); animation:orb-breathe-active 1.5s ease-in-out infinite;"></div>
+        <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%); opacity:0.25;"></div>
+        <div class="orb-ring" style="border-color:var(--cool); opacity:0.5;"></div>
+        <div class="orb-waveform">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path class="wave-path-speaking wave-secondary" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--cool)" stroke-width="1" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+      <span class="orb-label" style="color:var(--cool);">Insight</span>
+      <span class="orb-state">Revealing analysis</span>
+    </div>
+  </div>
+
+  <div style="margin-top:32px; border-top:1px solid var(--border); padding-top:20px;">
+    <div class="label">State Transitions</div>
+    <p class="desc">States flow naturally: A person's orb goes <strong>idle -> speaking -> idle</strong> on their turn. Claude's goes <strong>idle -> analyzing -> insight -> idle</strong> after each message. When emotional temperature rises, the person's orb shifts to <strong>heated</strong> (faster pulse, wider glow, higher amplitude waveform). All transitions are smooth CSS — no hard cuts.</p>
+  </div>
+</div>
+
+<!-- ═══ WAVEFORMS ═══ -->
+<div id="tab-waveforms" class="section">
+  <h2>Waveform Detail<span class="tag">Animation Anatomy</span></h2>
+  <p class="sub">Each state has a distinct waveform rhythm and amplitude</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <!-- Idle wave -->
+    <div style="border:1px solid var(--border); background:var(--bg); padding:24px;">
+      <div class="label" style="margin-top:0; color:var(--text);">Idle — Gentle Drift</div>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:16px;">Low amplitude, slow period (3s). Like breathing at rest. Almost a flat line with a slight shimmer.</p>
+      <div style="height:60px; display:flex; align-items:center;">
+        <svg viewBox="0 0 200 60" width="100%" height="60" fill="none">
+          <path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--text)" stroke-width="1.5" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--mono); font-size:9px; color:#4a3e30; margin-top:8px;">amplitude: 2px | period: 3s | easing: ease-in-out</div>
+    </div>
+
+    <!-- Speaking wave -->
+    <div style="border:1px solid var(--border); background:var(--bg); padding:24px;">
+      <div class="label" style="margin-top:0; color:var(--hot);">Speaking — Energetic Oscillation</div>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:16px;">High amplitude, fast period (0.8s). Active, alive. Two overlapping paths (primary + secondary ghost) for depth.</p>
+      <div style="height:60px; display:flex; align-items:center;">
+        <svg viewBox="0 0 200 60" width="100%" height="60" fill="none">
+          <path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+          <path class="wave-path-speaking wave-secondary" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--mono); font-size:9px; color:#4a3e30; margin-top:8px;">amplitude: 12px | period: 0.8s | dual-path with 0.15s offset</div>
+    </div>
+
+    <!-- Thinking wave -->
+    <div style="border:1px solid var(--border); background:var(--bg); padding:24px;">
+      <div class="label" style="margin-top:0; color:var(--cool);">Thinking (Claude) — Complex Rhythm</div>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:16px;">Medium amplitude, medium period (2s). More frequency nodes than speaking — feels like processing, not emoting. Unique to Claude.</p>
+      <div style="height:60px; display:flex; align-items:center;">
+        <svg viewBox="0 0 200 60" width="100%" height="60" fill="none">
+          <path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+          <path class="wave-path-thinking wave-secondary" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--mono); font-size:9px; color:#4a3e30; margin-top:8px;">amplitude: 6px | period: 2s | 5 nodes (vs 3 for speaking) | 0.4s offset</div>
+    </div>
+
+    <!-- Heated wave -->
+    <div style="border:1px solid var(--border); background:var(--bg); padding:24px;">
+      <div class="label" style="margin-top:0; color:var(--hot);">Heated — High Intensity</div>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:16px;">Maximum amplitude, fastest period (0.5s). Erratic, urgent. The orb glow is at its brightest and widest here. Only triggers at emotionalTemperature > 0.7.</p>
+      <div style="height:60px; display:flex; align-items:center;">
+        <svg viewBox="0 0 200 60" width="100%" height="60" fill="none">
+          <path class="wave-path-heated" d="M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40" stroke="var(--hot)" stroke-width="2" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+          <path class="wave-path-heated wave-secondary" d="M 10,40 Q 16,22 22,40 Q 28,58 34,40 Q 40,20 46,40 Q 52,60 58,40 Q 64,22 70,40" stroke="var(--hot)" stroke-width="1" stroke-linecap="round" fill="none" transform="scale(2.5, 1) translate(0, -10)"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--mono); font-size:9px; color:#4a3e30; margin-top:8px;">amplitude: 18px | period: 0.5s | stroke-width: 2 | glow: breathe-heated</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ IN SESSION ═══ -->
+<div id="tab-in-session" class="section">
+  <h2>In Session<span class="tag">Contextual Placement</span></h2>
+  <p class="sub">Orbs live in the session sidebar — always visible, always alive</p>
+
+  <div class="session-mock">
+    <div class="session-header">
+      <span style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.15em; text-shadow:0 0 10px rgba(212,160,64,0.15);">PARALLAX</span>
+      <span style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.1em;">SESSION XKRM42</span>
+    </div>
+    <div class="session-body">
+      <!-- Messages -->
+      <div class="session-messages" style="padding-left:50px;">
+        <div class="msg msg-hot">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--hot);">Alex</span>
+            <span style="font-family:var(--mono); font-size:9px; color:#4a3e30;">2:14 PM</span>
+            <span style="font-family:var(--mono); font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hot); margin-left:auto; text-shadow:0 0 8px rgba(196,92,60,0.3);">HEATED</span>
+          </div>
+          <p style="font-size:14px; line-height:1.65; color:var(--text); margin-bottom:8px;">You never listen to what I'm actually saying.</p>
+          <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(196,92,60,0.3); color:var(--hot); letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 8px rgba(196,92,60,0.06);">VALIDATION</span>
+            <span style="padding:2px 6px; font-size:9px; font-family:var(--mono); border:1px solid rgba(196,92,60,0.3); color:var(--hot); letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 0 8px rgba(196,92,60,0.06);">PRESENCE</span>
+          </div>
+          <div style="border-left:1px solid var(--cool); padding-left:10px; position:relative;">
+            <div style="position:absolute; left:-28px; top:-4px; bottom:-4px; width:30px; background:radial-gradient(ellipse at right center, rgba(106,171,142,0.1) 0%, transparent 70%); pointer-events:none; border-radius:50% 0 0 50%; filter:blur(4px);"></div>
+            <p style="font-family:var(--serif); font-size:13px; font-style:italic; color:var(--cool); line-height:1.5; position:relative;">"When I share something important, I need to feel that you're really hearing me."</p>
+          </div>
+        </div>
+
+        <div class="msg msg-warm">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--warm);">Jordan</span>
+            <span style="font-family:var(--mono); font-size:9px; color:#4a3e30;">2:16 PM</span>
+            <span style="font-family:var(--mono); font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--warm); margin-left:auto;">WARM</span>
+          </div>
+          <p style="font-size:14px; line-height:1.65; color:var(--text); margin-bottom:4px;">I do listen. I just don't always agree with you.</p>
+        </div>
+
+        <!-- Claude analyzing indicator -->
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 0; margin-left:-4px;">
+          <div class="orb orb-xs orb-breathe-active" style="flex-shrink:0;">
+            <div class="orb-glow" style="background:var(--cool);"></div>
+            <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+            <div class="orb-ring" style="border-color:var(--cool);"></div>
+            <div class="orb-waveform">
+              <svg viewBox="0 0 80 80" fill="none">
+                <path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <span style="font-family:var(--mono); font-size:9px; color:var(--cool); letter-spacing:0.1em; text-shadow:0 0 6px rgba(106,171,142,0.2);">SEEING BENEATH...</span>
+        </div>
+      </div>
+
+      <!-- Sidebar orbs -->
+      <div class="session-sidebar">
+        <div class="orb-container">
+          <div class="orb orb-sm orb-breathe">
+            <div class="orb-glow" style="background:var(--hot);"></div>
+            <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+            <div class="orb-ring" style="border-color:var(--hot);"></div>
+            <div class="orb-waveform">
+              <svg viewBox="0 0 80 80" fill="none">
+                <path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <span class="orb-label" style="color:var(--hot); font-size:8px;">Alex</span>
+        </div>
+
+        <div class="orb-container">
+          <div class="orb orb-sm orb-breathe-active">
+            <div class="orb-glow" style="background:var(--cool);"></div>
+            <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+            <div class="orb-ring" style="border-color:var(--cool);"></div>
+            <div class="orb-waveform">
+              <svg viewBox="0 0 80 80" fill="none">
+                <path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <span class="orb-label" style="color:var(--cool); font-size:8px;">Claude</span>
+        </div>
+
+        <div class="orb-container">
+          <div class="orb orb-sm orb-breathe">
+            <div class="orb-glow" style="background:var(--warm);"></div>
+            <div class="orb-core" style="background:radial-gradient(circle, var(--warm) 0%, transparent 70%);"></div>
+            <div class="orb-ring" style="border-color:var(--warm);"></div>
+            <div class="orb-waveform">
+              <svg viewBox="0 0 80 80" fill="none">
+                <path class="wave-path-listening" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--warm)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <span class="orb-label" style="color:var(--warm); font-size:8px;">Jordan</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCALABILITY ═══ -->
+<div id="tab-scalability" class="section">
+  <h2>Scalability<span class="tag">N Participants</span></h2>
+  <p class="sub">Adding a person = adding an orb. The system scales.</p>
+
+  <div class="scale-grid">
+    <div class="scale-card">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; margin-bottom:4px;">2 PEOPLE</div>
+      <p style="font-size:11px; color:var(--muted);">Current Remote Mode</p>
+      <div class="scale-orbs">
+        <div class="orb orb-xs orb-breathe-active">
+          <div class="orb-glow" style="background:var(--hot);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--hot);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+        <div class="orb orb-xs orb-breathe-active">
+          <div class="orb-glow" style="background:var(--cool);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--cool);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+        <div class="orb orb-xs orb-breathe">
+          <div class="orb-glow" style="background:var(--warm);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--warm) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--warm);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--warm)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scale-card">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; margin-bottom:4px;">3 PEOPLE</div>
+      <p style="font-size:11px; color:var(--muted);">Family / Team mediation</p>
+      <div class="scale-orbs">
+        <div class="orb orb-xs orb-breathe-active">
+          <div class="orb-glow" style="background:var(--hot);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--hot);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+        <div class="orb orb-xs orb-breathe-active">
+          <div class="orb-glow" style="background:var(--cool);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--cool);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+        <div class="orb orb-xs orb-breathe">
+          <div class="orb-glow" style="background:var(--warm);"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, var(--warm) 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:var(--warm);"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--warm)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+        <div class="orb orb-xs orb-breathe">
+          <div class="orb-glow" style="background:#a088c4;"></div>
+          <div class="orb-core" style="background:radial-gradient(circle, #a088c4 0%, transparent 70%);"></div>
+          <div class="orb-ring" style="border-color:#a088c4;"></div>
+          <div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-listening" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="#a088c4" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+      </div>
+      <p style="font-size:10px; color:var(--muted); margin-top:4px;">Person C gets lavender <span style="color:#a088c4;">#a088c4</span></p>
+    </div>
+
+    <div class="scale-card">
+      <div style="font-family:var(--mono); font-size:10px; color:var(--warm); letter-spacing:0.1em; margin-bottom:4px;">4+ PEOPLE</div>
+      <p style="font-size:11px; color:var(--muted);">Group facilitation</p>
+      <div class="scale-orbs">
+        <div class="orb orb-xs orb-breathe"><div class="orb-glow" style="background:var(--hot);"></div><div class="orb-core" style="background:radial-gradient(circle, var(--hot) 0%, transparent 70%);"></div><div class="orb-ring" style="border-color:var(--hot);"></div><div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="var(--hot)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div></div>
+        <div class="orb orb-xs orb-breathe-active"><div class="orb-glow" style="background:var(--cool);"></div><div class="orb-core" style="background:radial-gradient(circle, var(--cool) 0%, transparent 70%);"></div><div class="orb-ring" style="border-color:var(--cool);"></div><div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-thinking" d="M 10,40 Q 17,34 24,40 Q 31,46 38,40 Q 45,34 52,40 Q 59,46 66,40 Q 70,38 70,40" stroke="var(--cool)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div></div>
+        <div class="orb orb-xs orb-breathe-active"><div class="orb-glow" style="background:var(--warm);"></div><div class="orb-core" style="background:radial-gradient(circle, var(--warm) 0%, transparent 70%);"></div><div class="orb-ring" style="border-color:var(--warm);"></div><div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-speaking" d="M 10,40 Q 18,28 26,40 Q 34,52 42,40 Q 50,28 58,40 Q 66,52 70,40" stroke="var(--warm)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div></div>
+        <div class="orb orb-xs orb-breathe"><div class="orb-glow" style="background:#a088c4;"></div><div class="orb-core" style="background:radial-gradient(circle, #a088c4 0%, transparent 70%);"></div><div class="orb-ring" style="border-color:#a088c4;"></div><div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-idle" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="#a088c4" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div></div>
+        <div class="orb orb-xs orb-breathe"><div class="orb-glow" style="background:#c4a882;"></div><div class="orb-core" style="background:radial-gradient(circle, #c4a882 0%, transparent 70%);"></div><div class="orb-ring" style="border-color:#c4a882;"></div><div class="orb-waveform"><svg viewBox="0 0 80 80" fill="none"><path class="wave-path-listening" d="M 10,40 Q 20,38 30,40 Q 40,42 50,40 Q 60,38 70,40" stroke="#c4a882" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div></div>
+      </div>
+      <p style="font-size:10px; color:var(--muted); margin-top:4px;">Orbs shrink as count grows. Color auto-assigned from palette ring.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:28px; border-top:1px solid var(--border); padding-top:20px;">
+    <div class="label">Color Palette Ring (for N participants)</div>
+    <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+      <div style="width:24px; height:24px; border-radius:50%; background:var(--hot); box-shadow:0 0 8px rgba(196,92,60,0.3);"></div>
+      <div style="width:24px; height:24px; border-radius:50%; background:var(--warm); box-shadow:0 0 8px rgba(212,160,64,0.3);"></div>
+      <div style="width:24px; height:24px; border-radius:50%; background:#a088c4; box-shadow:0 0 8px rgba(160,136,196,0.3);"></div>
+      <div style="width:24px; height:24px; border-radius:50%; background:#c4a882; box-shadow:0 0 8px rgba(196,168,130,0.3);"></div>
+      <div style="width:24px; height:24px; border-radius:50%; background:#88a4c4; box-shadow:0 0 8px rgba(136,164,196,0.3);"></div>
+      <span style="font-family:var(--mono); font-size:9px; color:var(--muted); margin-left:8px;">People rotate through these. Claude is always teal.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

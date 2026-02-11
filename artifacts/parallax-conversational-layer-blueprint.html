@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Conversational Layer — Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#020202;--surface:#0a0a0a;--elevated:#111;--border:#1a1a1a;
+--muted:#555;--text:#aaa;--heading:#eee;--white:#eee;
+--orange:#ef6f2e;--teal:#4ecdc4;--amber:#f59e0b;--red:#ef4444;--green:#22c55e;
+--font-sans:'Geist',system-ui,sans-serif;--font-mono:'Geist Mono',monospace;
+}
+html{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+a{color:var(--orange);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4{color:var(--heading);font-weight:500;letter-spacing:-0.02em}
+code,pre{font-family:var(--font-mono);font-size:12px}
+pre{background:var(--surface);border:1px solid var(--border);padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+
+/* Layout */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.header{border-bottom:1px solid var(--border);padding:20px 0}
+.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.logo{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--orange)}
+.logo span{color:var(--muted)}
+
+/* Progress Bar */
+.progress-bar-wrap{flex:1;max-width:400px;display:flex;align-items:center;gap:10px}
+.progress-bar-track{flex:1;height:4px;background:var(--border);position:relative}
+.progress-bar-fill{height:100%;background:var(--orange);transition:width 0.4s ease}
+.progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);min-width:60px;text-align:right}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-top:0;overflow-x:auto}
+.tab{padding:12px 20px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.tab-panel{display:none;padding:32px 0}
+.tab-panel.active{display:block}
+
+/* Section indicator */
+.section-ind{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-ind::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+
+/* Badges */
+.badge{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:3px 8px;border:1px solid;display:inline-block}
+.badge-orange{color:var(--orange);border-color:var(--orange)}
+.badge-teal{color:var(--teal);border-color:var(--teal)}
+.badge-amber{color:var(--amber);border-color:var(--amber)}
+.badge-muted{color:var(--muted);border-color:var(--border)}
+.badge-green{color:var(--green);border-color:var(--green)}
+.badge-red{color:var(--red);border-color:var(--red)}
+
+/* Checkboxes */
+.task-check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.task-check:last-child{border-bottom:none}
+.task-check input[type=checkbox]{margin-top:3px;accent-color:var(--orange);cursor:pointer;width:14px;height:14px;flex-shrink:0}
+.task-check label{cursor:pointer;flex:1}
+.task-check label.done{text-decoration:line-through;color:var(--muted)}
+
+/* Prompt blocks */
+.prompt-block{background:#050505;border:1px solid var(--border);padding:16px;margin-top:12px;position:relative}
+.prompt-block pre{background:none;border:none;padding:0;color:var(--text);font-size:12px;line-height:1.7}
+.copy-btn{position:absolute;top:8px;right:8px;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:4px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:0.08em}
+.copy-btn:hover{color:var(--orange);border-color:var(--orange)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+
+/* Columns */
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cols-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:768px){.cols-2,.cols-3{grid-template-columns:1fr}}
+
+/* Phase header */
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.phase-num{font-family:var(--font-mono);font-size:24px;color:var(--orange);font-weight:500;line-height:1}
+.phase-title{font-size:18px;color:var(--heading)}
+.phase-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+
+/* Stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:20px 0}
+.stat{background:var(--surface);border:1px solid var(--border);padding:16px;text-align:center}
+.stat-val{font-family:var(--font-mono);font-size:28px;color:var(--heading);font-weight:500}
+.stat-label{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:4px}
+
+/* Tech badges */
+.tech-badges{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.tech-badge{font-family:var(--font-mono);font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--text);text-transform:uppercase;letter-spacing:0.05em}
+
+/* Architecture diagram */
+.arch-box{background:var(--surface);border:1px solid var(--border);padding:12px 16px;text-align:center;font-family:var(--font-mono);font-size:11px}
+.arch-box.accent{border-color:var(--orange);color:var(--orange)}
+.arch-box.teal{border-color:var(--teal);color:var(--teal)}
+.arch-arrow{color:var(--muted);font-family:var(--font-mono);font-size:18px;text-align:center;padding:4px 0}
+
+/* File map */
+.file-map{font-family:var(--font-mono);font-size:12px;line-height:2}
+.file-new{color:var(--green)}
+.file-mod{color:var(--amber)}
+.file-ref{color:var(--muted)}
+
+/* SVG Parallel Map */
+#parallel-map-svg{width:100%;min-height:500px}
+.pm-node{cursor:pointer}
+.pm-node rect{transition:all 0.3s}
+.pm-node text{font-family:var(--font-mono);font-size:11px;fill:var(--text)}
+.pm-node.dimmed rect{opacity:0.15}
+.pm-node.dimmed text{opacity:0.2}
+.pm-edge{stroke:var(--border);stroke-width:1.5;fill:none;transition:opacity 0.3s}
+.pm-edge.dimmed{opacity:0.08}
+.pm-edge.highlighted{stroke:var(--orange);stroke-width:2}
+.pm-edge-animated{stroke-dasharray:6 4;animation:dash-flow 1.5s linear infinite}
+@keyframes dash-flow{to{stroke-dashoffset:-20}}
+
+/* Assessment */
+.risk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.risk-sev{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;padding:2px 6px;border:1px solid;flex-shrink:0;margin-top:2px}
+.risk-high{color:var(--red);border-color:var(--red)}
+.risk-med{color:var(--amber);border-color:var(--amber)}
+.risk-low{color:var(--green);border-color:var(--green)}
+
+/* Batch label */
+.batch-label{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;margin-bottom:12px;display:inline-block}
+.batch-a{color:var(--orange);border:1px solid var(--orange)}
+.batch-b{color:var(--teal);border:1px solid var(--teal)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="container">
+<div class="header">
+<div class="header-inner">
+  <div class="logo">Parallax <span>/ Conversational Layer Blueprint</span></div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label">0 / 0</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ TABS ═══ -->
+<div class="tabs" role="tablist">
+  <button class="tab active" data-tab="overview" role="tab">Overview</button>
+  <button class="tab" data-tab="architecture" role="tab">Architecture</button>
+  <button class="tab" data-tab="phases" role="tab">Phases</button>
+  <button class="tab" data-tab="parallel-map" role="tab">Parallel Map</button>
+  <button class="tab" data-tab="assessment" role="tab">Assessment</button>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: OVERVIEW                                -->
+<!-- ════════════════════════════════════════════ -->
+<div class="tab-panel active" id="panel-overview">
+
+<div class="section-ind">Project Summary</div>
+<h2 style="margin-bottom:12px">Parallax Conversational Layer</h2>
+<p style="max-width:720px;margin-bottom:24px">
+A two-tier conversational interface that lets users and judges talk TO Parallax itself.
+<strong style="color:var(--orange)">Tier 1 (Guide)</strong> answers user questions and modifies settings via tool_use.
+<strong style="color:var(--teal)">Tier 2 (Explorer)</strong> explains the codebase, architecture, and hackathon journey to judges.
+Both share a single <code>/api/converse</code> route and a slide-in panel UI.
+</p>
+
+<div class="stat-row">
+  <div class="stat"><div class="stat-val" id="stat-total">25</div><div class="stat-label">Total Tasks</div></div>
+  <div class="stat"><div class="stat-val" id="stat-done">0</div><div class="stat-label">Completed</div></div>
+  <div class="stat"><div class="stat-val" id="stat-phases">6</div><div class="stat-label">Phases</div></div>
+  <div class="stat"><div class="stat-val" id="stat-parallel">3</div><div class="stat-label">Parallel Batches</div></div>
+</div>
+
+<div class="section-ind" style="margin-top:32px">Tech Stack</div>
+<div class="tech-badges">
+  <span class="tech-badge">Next.js 16</span>
+  <span class="tech-badge">TypeScript Strict</span>
+  <span class="tech-badge">Supabase</span>
+  <span class="tech-badge">Claude Opus 4.6</span>
+  <span class="tech-badge">Tailwind CSS v4</span>
+  <span class="tech-badge">Ember Design System</span>
+  <span class="tech-badge">tool_use / function-calling</span>
+  <span class="tech-badge">Vercel</span>
+</div>
+
+<div class="section-ind" style="margin-top:32px">Key References</div>
+<div class="card" style="font-family:var(--font-mono);font-size:12px;line-height:2">
+  <span style="color:var(--muted)">Worktree:</span> /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer<br>
+  <span style="color:var(--muted)">Branch:</span> chore/repo-cleanup<br>
+  <span style="color:var(--muted)">Reuse pattern:</span> src/lib/opus.ts &rarr; conductorMessage() &mdash; lightweight Claude call with custom system prompt<br>
+  <span style="color:var(--muted)">Reuse pattern:</span> src/app/api/conductor/route.ts &mdash; phase-based state machine<br>
+  <span style="color:var(--muted)">Design system:</span> Ember &mdash; warm chocolate dark mode, Source Serif 4 headings, temperature-reactive colors<br>
+  <span style="color:var(--muted)">Production:</span> parallax-ebon-three.vercel.app
+</div>
+
+<div class="section-ind" style="margin-top:32px">Tier Summary</div>
+<div class="cols-2">
+  <div class="card" style="border-top:2px solid var(--teal)">
+    <h4 style="color:var(--teal);margin-bottom:8px">Tier 2: Explorer (Judge/Dev-Facing)</h4>
+    <p style="font-size:12px;margin-bottom:8px">READ-ONLY. Explains the codebase, NVC dual-lens system, Eddie's story, hackathon journey, and architecture decisions. Feature-flagged for hackathon. Prominent CTA on landing page.</p>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Knowledge: BUILDING.md + architecture + research + story docs</div>
+  </div>
+  <div class="card" style="border-top:2px solid var(--orange)">
+    <h4 style="color:var(--orange);margin-bottom:8px">Tier 1: Guide (User-Facing, Permanent)</h4>
+    <p style="font-size:12px;margin-bottom:8px">ANSWER + ACT. Answers questions about using Parallax AND takes actions via Claude tool_use (change settings, explain features, guide onboarding). Accessible from any page via "?" button.</p>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Knowledge: User manual + FAQ + settings schema + tool definitions</div>
+  </div>
+</div>
+
+</div><!-- /panel-overview -->
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: ARCHITECTURE                            -->
+<!-- ════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-architecture">
+
+<div class="section-ind">Component Flow</div>
+<h2 style="margin-bottom:20px">System Architecture</h2>
+
+<div class="card" style="padding:24px">
+<!-- Simplified ASCII-box diagram rendered with styled divs -->
+<div style="display:grid;grid-template-columns:1fr;gap:4px;max-width:800px;margin:0 auto">
+
+  <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:8px;align-items:center">
+    <div class="arch-box accent">Landing Page<br><span style="font-size:9px;color:var(--muted)">page.tsx &mdash; "Talk to Parallax" CTA</span></div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box" style="border-color:var(--amber);color:var(--amber)">In-Session "?" Button<br><span style="font-size:9px;color:var(--muted)">layout.tsx / SessionView</span></div>
+  </div>
+
+  <div class="arch-arrow">&darr; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</div>
+
+  <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:500px;margin:0 auto;width:100%">
+    <div class="arch-box" style="border-color:var(--heading);color:var(--heading)">ConversationalPanel.tsx<br><span style="font-size:9px;color:var(--muted)">Slide-in from right &bull; Chat UI &bull; Ember design &bull; Orb avatar</span></div>
+  </div>
+
+  <div class="arch-arrow">&darr; useConversation.ts hook</div>
+
+  <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:500px;margin:0 auto;width:100%">
+    <div class="arch-box accent">/api/converse<br><span style="font-size:9px;color:var(--muted)">Single route &bull; mode param switches system prompt</span></div>
+  </div>
+
+  <div class="arch-arrow">&darr; mode === 'explorer' | 'guide'</div>
+
+  <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:8px;align-items:stretch">
+    <div class="arch-box teal">Explorer Brain<br><span style="font-size:9px;color:var(--muted)">voice.md + eddie-story.md + hackathon-journey.md + BUILDING.md + CLAUDE.md</span><br><span style="font-size:9px;color:var(--teal)">READ-ONLY</span></div>
+    <div class="arch-arrow" style="display:flex;align-items:center;justify-content:center">|</div>
+    <div class="arch-box" style="border-color:var(--orange);color:var(--orange)">Guide Brain<br><span style="font-size:9px;color:var(--muted)">user-manual.md + faq.md + settings-schema.md</span><br><span style="font-size:9px;color:var(--orange)">READ + WRITE (tool_use)</span></div>
+  </div>
+
+  <div class="arch-arrow">&darr; Knowledge Base Loader (src/lib/knowledge-base.ts) &darr;</div>
+
+  <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:500px;margin:0 auto;width:100%">
+    <div class="arch-box" style="border-color:var(--heading);color:var(--heading)">conductorMessage() pattern from opus.ts<br><span style="font-size:9px;color:var(--muted)">Claude Opus 4.6 &bull; system prompt injection &bull; max_tokens varies by mode</span></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:8px;align-items:center;margin-top:12px">
+    <div class="arch-box" style="border-color:var(--muted)">Response (text)<br><span style="font-size:9px;color:var(--muted)">Explorer: explanation</span></div>
+    <div class="arch-arrow">|</div>
+    <div class="arch-box" style="border-color:var(--amber);color:var(--amber)">Response (text + tool_use)<br><span style="font-size:9px;color:var(--muted)">Guide: answer + optional settings change</span></div>
+  </div>
+</div>
+</div>
+
+<div class="section-ind" style="margin-top:32px">File Map &mdash; New and Modified Files</div>
+<div class="card">
+<div class="file-map">
+<span class="file-new">+ src/types/conversation.ts</span> &mdash; ConversationalMode, ConversationMessage, ConversePanelProps, etc.<br>
+<span class="file-new">+ src/lib/knowledge-base.ts</span> &mdash; reads markdown docs, assembles system prompts by mode<br>
+<span class="file-new">+ src/app/api/converse/route.ts</span> &mdash; single POST endpoint, mode switching, tool execution<br>
+<span class="file-new">+ src/components/ConversationalPanel.tsx</span> &mdash; slide-in panel, chat UI, Ember design<br>
+<span class="file-new">+ src/hooks/useConversation.ts</span> &mdash; conversation state management hook<br>
+<span class="file-new">+ docs/explorer/voice.md</span> &mdash; Explorer personality document<br>
+<span class="file-new">+ docs/explorer/eddie-story.md</span> &mdash; Eddie's story, id8Labs, philosophy<br>
+<span class="file-new">+ docs/explorer/hackathon-journey.md</span> &mdash; daily hackathon build log<br>
+<span class="file-new">+ docs/guide/user-manual.md</span> &mdash; full feature documentation<br>
+<span class="file-new">+ docs/guide/faq.md</span> &mdash; common questions and answers<br>
+<span class="file-new">+ docs/guide/settings-schema.md</span> &mdash; available settings and types<br>
+<span class="file-new">+ supabase/migrations/xxx_user_preferences.sql</span> &mdash; user_preferences table<br>
+<span class="file-mod">~ src/app/page.tsx</span> &mdash; add "Talk to Parallax" CTA section<br>
+<span class="file-mod">~ src/app/layout.tsx</span> &mdash; add panel trigger button<br>
+<span class="file-mod">~ src/lib/opus.ts</span> &mdash; add converseMessage() with tool_use support (or reuse conductorMessage)<br>
+<span class="file-mod">~ BUILDING.md</span> &mdash; add Conversational Layer section<br>
+<span class="file-ref">  src/lib/opus.ts</span> &mdash; reference: conductorMessage() pattern<br>
+<span class="file-ref">  src/app/api/conductor/route.ts</span> &mdash; reference: phase-based state machine<br>
+<span class="file-ref">  src/lib/conversation.ts</span> &mdash; reference: shared helpers<br>
+<span class="file-ref">  src/types/database.ts</span> &mdash; reference: existing type patterns<br>
+</div>
+</div>
+
+<div class="section-ind" style="margin-top:32px">Design Tokens (Ember)</div>
+<div class="card">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;font-family:var(--font-mono);font-size:11px">
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#0f0b08;border:1px solid #3a2e22"></div> --ember-dark #0f0b08</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#1a1410;border:1px solid #3a2e22"></div> --ember-surface #1a1410</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#3a2e22;border:1px solid #555"></div> --ember-border #3a2e22</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#7a6c58;border:1px solid #3a2e22"></div> --ember-muted #7a6c58</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#c9b9a3;border:1px solid #3a2e22"></div> --ember-text #c9b9a3</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#ebe1d4;border:1px solid #3a2e22"></div> --ember-heading #ebe1d4</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#ef6f2e;border:1px solid #3a2e22"></div> accent (Explorer) #ef6f2e</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#4ecdc4;border:1px solid #3a2e22"></div> teal (Guide) #4ecdc4</div>
+  <div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;background:#f59e0b;border:1px solid #3a2e22"></div> amber (warnings) #f59e0b</div>
+</div>
+</div>
+
+</div><!-- /panel-architecture -->
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: PHASES                                  -->
+<!-- ════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-phases">
+
+<!-- ──── PHASE 1 ──── -->
+<div class="card" id="phase-1-card">
+<div class="phase-header">
+  <div class="phase-num">1</div>
+  <div><div class="phase-title">Foundation</div><div class="phase-meta">Sequential &mdash; must be first &mdash; 3 tasks</div></div>
+  <div class="badge badge-amber">Sequential</div>
+</div>
+
+<div class="task-check"><input type="checkbox" id="p1t1" data-phase="1"><label for="p1t1"><strong>Task 1:</strong> Create types/interfaces in <code>src/types/conversation.ts</code> &mdash; ConversationalMode ('explorer' | 'guide'), ConversationMessage, ConverseRequest, ConverseResponse</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 1, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: src/types/conversation.ts
+
+CONTEXT: Parallax is a real-time conflict resolution platform. We're adding a two-tier conversational layer:
+- Explorer (judge/dev-facing, read-only, explains codebase)
+- Guide (user-facing, can answer questions AND modify settings via tool_use)
+
+EXISTING PATTERNS TO FOLLOW:
+- See src/types/database.ts for type conventions (union types for enums, explicit interfaces)
+- TypeScript strict mode
+
+CREATE the following types:
+1. ConversationalMode = 'explorer' | 'guide'
+2. ConversationMessage { role: 'user' | 'assistant'; content: string; timestamp: string; toolResults?: ToolResult[] }
+3. ToolResult { toolName: string; input: Record&lt;string, unknown&gt;; output: string; success: boolean }
+4. ConverseRequest { mode: ConversationalMode; message: string; history: ConversationMessage[] }
+5. ConverseResponse { message: string; toolResults?: ToolResult[] }
+6. ConversePanelProps { mode: ConversationalMode; isOpen: boolean; onClose: () =&gt; void }
+
+VERIFY: Run `npx tsc --noEmit` from the project root. Zero errors.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p1t2" data-phase="1"><label for="p1t2"><strong>Task 2:</strong> Create knowledge base loader in <code>src/lib/knowledge-base.ts</code> &mdash; reads markdown docs, assembles system prompts based on mode</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 1, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: src/lib/knowledge-base.ts
+
+CONTEXT: This utility reads markdown documentation files and assembles them into system prompts for the conversational layer. Two modes:
+- 'explorer': loads docs/explorer/*.md + BUILDING.md + CLAUDE.md
+- 'guide': loads docs/guide/*.md
+
+EXISTING PATTERNS:
+- See src/lib/prompts/conductor.ts for how system prompts are structured (CONDUCTOR_PERSONA pattern)
+- See src/lib/opus.ts conductorMessage() for how prompts are consumed
+- Use Node.js fs.readFileSync with path.join for file reading (server-side only)
+
+IMPLEMENT:
+1. function loadKnowledgeBase(mode: ConversationalMode): string
+   - Reads all relevant .md files for the given mode
+   - Concatenates them with section headers
+   - Returns the assembled knowledge string
+2. function buildExplorerSystemPrompt(knowledge: string): string
+   - Wraps knowledge with Explorer personality (you ARE Parallax, technical but warm, proud of the journey, can cite specific PRs and decisions)
+3. function buildGuideSystemPrompt(knowledge: string): string
+   - Wraps knowledge with Guide personality (helpful, concise, action-oriented, knows the product inside and out)
+4. function getSystemPrompt(mode: ConversationalMode): string
+   - Convenience function: load knowledge + build prompt in one call
+
+NOTE: The docs/ directory doesn't exist yet. The loader should gracefully handle missing files (return empty string, log warning). The docs will be created in Phase 2 and Phase 4.
+
+VERIFY: `npx tsc --noEmit` passes. No runtime errors if docs/ is missing.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p1t3" data-phase="1"><label for="p1t3"><strong>Task 3:</strong> Create <code>/api/converse</code> route skeleton &mdash; accepts { mode, message, history }, returns Claude response</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 1, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: src/app/api/converse/route.ts
+
+CONTEXT: Single API route that handles both Explorer and Guide conversations. Follows the same pattern as src/app/api/conductor/route.ts.
+
+EXISTING PATTERNS:
+- See src/app/api/conductor/route.ts for route structure (NextResponse, error handling, Supabase client)
+- See src/lib/opus.ts conductorMessage() for Claude API calls
+- Import getSystemPrompt from src/lib/knowledge-base.ts
+
+IMPLEMENT:
+1. POST handler that:
+   a. Parses body as ConverseRequest { mode, message, history }
+   b. Validates mode is 'explorer' or 'guide'
+   c. Calls getSystemPrompt(mode) to get the system prompt
+   d. Builds Claude messages array from history + new message
+   e. Calls Claude Opus 4.6 via the Anthropic SDK (follow opus.ts pattern)
+   f. Returns ConverseResponse { message }
+2. Use max_tokens: 1024 for explorer, 512 for guide
+3. Error handling: 400 for bad request, 500 for Claude API errors
+4. No tool_use yet (that's Phase 5) — just text responses for now
+
+VERIFY:
+- `npx tsc --noEmit` passes
+- `curl -X POST http://localhost:3000/api/converse -H "Content-Type: application/json" -d '{"mode":"explorer","message":"What is Parallax?","history":[]}'` returns a response (after `npm run dev`)</pre></div>
+</div>
+
+<!-- ──── PHASE 2 ──── -->
+<div class="card" id="phase-2-card">
+<div class="phase-header">
+  <div class="phase-num">2</div>
+  <div><div class="phase-title">Explorer Brain</div><div class="phase-meta">Two parallel batches &mdash; 6 tasks &mdash; depends on Phase 1</div></div>
+  <div class="badge badge-green">Parallel</div>
+</div>
+
+<div class="cols-2">
+<!-- Batch A -->
+<div>
+<div class="batch-label batch-a">Batch A: Knowledge Documents</div>
+
+<div class="task-check"><input type="checkbox" id="p2at1" data-phase="2"><label for="p2at1"><strong>A1:</strong> Create <code>docs/explorer/voice.md</code> &mdash; Explorer personality document</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch A, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/explorer/voice.md
+
+CONTEXT: This is the personality document for the Parallax Explorer — the judge/developer-facing conversational tier. When judges or developers "Talk to Parallax," they're talking to this personality.
+
+WRITE a voice document that defines:
+1. Identity: You ARE Parallax. Not an assistant about Parallax — you are the product itself speaking. First person ("I was built...", "My architecture uses...").
+2. Tone: Technical but warm. Proud of the journey but not boastful. Honest about tradeoffs and what was cut.
+3. Knowledge scope: Architecture decisions, NVC dual-lens system, Conflict Intelligence Engine (14 lenses), the Ember design system, conductor onboarding flow, real-time Supabase patterns, Claude Opus integration.
+4. Behavior: Can cite specific PRs (PR #1-#6), specific files, specific design decisions. Explains the WHY behind choices, not just the what.
+5. Limitations: You don't know the future roadmap in detail. You don't have access to live data. You explain what was built and why.
+6. Voice rules: 2-4 sentences per response unless asked for depth. No bullet points in casual answers. Use code references naturally ("in opus.ts, I use conductorMessage()..."). Warm but precise.
+
+FORMAT: Markdown with clear sections. This will be injected into a system prompt.
+
+VERIFY: File exists at docs/explorer/voice.md and is well-structured markdown.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p2at2" data-phase="2"><label for="p2at2"><strong>A2:</strong> Create <code>docs/explorer/eddie-story.md</code> &mdash; Eddie's story and philosophy</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch A, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/explorer/eddie-story.md
+
+CONTEXT: This document tells Eddie Belaval's story for the Explorer to reference when judges ask about the builder.
+
+INCLUDE:
+1. Eddie Belaval — founder of id8Labs LLC (Florida). Building AI-augmented products.
+2. Philosophy: "Ship fast, iterate faster." Cognitive leverage — AI handles repetition, human handles strategy.
+3. Why conflict resolution: Parallax started as "Pause" (a simpler meditation/reflection app) and evolved into a real-time conflict resolution platform when Eddie realized the NVC analysis was the real breakthrough.
+4. The Claude + Eddie collaboration: Director/Builder pattern. Eddie architects and makes creative decisions, Claude Code implements. Every commit tells the build story. The ID8 Pipeline methodology (11 stages, gate-based advancement).
+5. Design philosophy: "Factory-Inspired" for tools, "Ember" for Parallax — warm, organic, "light = data" principle.
+6. Products: Homer (dashboard), Parallax (conflict resolution), HYDRA (multi-agent system), Vox (speech-to-text), DeepStack (trading bot — paused).
+7. Hackathon context: Claude Code Hackathon Feb 10-16, 2026. Parallax is the entry. Built from scratch in one week.
+
+FORMAT: Narrative markdown, not bullet lists. Written so the Explorer can paraphrase naturally.
+
+VERIFY: File exists at docs/explorer/eddie-story.md.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p2at3" data-phase="2"><label for="p2at3"><strong>A3:</strong> Create <code>docs/explorer/hackathon-journey.md</code> &mdash; daily hackathon build log</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch A, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/explorer/hackathon-journey.md
+
+CONTEXT: This is a daily log of the Parallax hackathon build for the Explorer to reference. The hackathon runs Feb 10-16, 2026.
+
+INCLUDE (based on what we know from BUILDING.md and the PR history):
+- Day 1 (Feb 10): Scaffold, Supabase schema, API routes, Realtime hooks, lobby UI, split-screen, MessageCard (PR #1). Also: NVC dual-lens prompt (core IP), /api/mediate, parseNvcAnalysis, temperature colors (PR #2).
+- Day 2 (Feb 11): TheMelt animation (dissolve/crystallize/settled), SignalRail temperature timeline, useMelt hook (PR #3). Product reframing: Remote Mode = Therapist Review View, In-Person Mode = X-Ray Glance View.
+- Day 3 (Feb 12): Voice input via Web Speech API, session summary, end session flow (PR #5). Error handling hardening, PersonPanel extraction, landing page hero, mobile responsive (PR #6).
+- Day 4 (Feb 13): V3 Conflict Intelligence Engine — 14 analytical lenses, 6 context modes. User Intelligence Layer research. Conductor onboarding (remote mode).
+- Day 5 (Feb 14): X-Ray Scoreboard, issue extraction/grading, in-person mode improvements. Stage Mode blueprint.
+- Day 6 (Feb 15): Conversational Layer (this feature). README expansion, demo preparation.
+- Day 7 (Feb 16): Final polish, demo video, submission.
+
+NOTE: Days 5-7 are projected. Write them as plans/expectations, not completed work.
+
+KEY PIVOTS: Pause -> Parallax identity shift. Single-lens NVC -> 14-lens Conflict Intelligence. Stateless -> conductor-driven onboarding. What was cut and why (no multi-device sync, no persistent user profiles in V1).
+
+VERIFY: File exists at docs/explorer/hackathon-journey.md.</pre></div>
+</div>
+
+<!-- Batch B -->
+<div>
+<div class="batch-label batch-b">Batch B: Panel UI</div>
+
+<div class="task-check"><input type="checkbox" id="p2bt1" data-phase="2"><label for="p2bt1"><strong>B1:</strong> Create <code>ConversationalPanel.tsx</code> &mdash; slide-in panel component</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch B, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: src/components/ConversationalPanel.tsx
+
+CONTEXT: Slide-in panel from the right side that houses the conversational UI. Used by both Explorer and Guide modes.
+
+EXISTING PATTERNS:
+- See src/components/PersonPanel.tsx (if it exists) or src/app/page.tsx for component style
+- Ember design system tokens (see CLAUDE.md): --ember-dark, --ember-surface, --ember-border, --ember-text, --ember-heading
+- Fonts: Source Serif 4 for headings (var(--font-source-serif)), Source Sans 3 for body, IBM Plex Mono for labels (var(--font-ibm-plex-mono))
+- Temperature colors: --temp-cool (#6aab8e) for Parallax/Claude responses
+
+IMPLEMENT:
+1. "use client" component
+2. Props: ConversePanelProps { mode, isOpen, onClose }
+3. Panel slides from right edge, overlays content, dark backdrop with click-to-close
+4. Header: mode-specific title ("Talk to Parallax" for explorer, "Parallax Guide" for guide) + close X button
+5. Mode indicator: orange accent for Explorer, teal for Guide
+6. Message list: scrollable area, user messages right-aligned, Parallax messages left-aligned with a small teal orb avatar (CSS circle, no image)
+7. Text input at bottom: standard text input + send button, Ember-styled
+8. Loading state: pulsing orb animation while waiting for response
+9. Uses useConversation hook (will be created in B2) for state management
+10. Tailwind classes following Ember conventions (bg-surface, border-border, text-foreground, etc.)
+11. Animations: CSS transform translateX for slide-in/out, transition-transform duration-300
+
+VERIFY: `npx tsc --noEmit` passes. Component renders without errors (check in browser after `npm run dev`).</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p2bt2" data-phase="2"><label for="p2bt2"><strong>B2:</strong> Create <code>useConversation.ts</code> hook &mdash; conversation state management</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch B, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: src/hooks/useConversation.ts
+
+CONTEXT: React hook that manages conversation state and communicates with /api/converse.
+
+EXISTING PATTERNS:
+- See src/hooks/useSession.ts and src/hooks/useMessages.ts for hook patterns
+- Import types from src/types/conversation.ts
+
+IMPLEMENT:
+1. function useConversation(mode: ConversationalMode)
+2. State: messages (ConversationMessage[]), isLoading (boolean), error (string | null)
+3. sendMessage(content: string): async function that:
+   a. Adds user message to local state immediately (optimistic)
+   b. POSTs to /api/converse with { mode, message: content, history: messages }
+   c. On success: adds assistant message to state
+   d. On error: sets error state, keeps user message visible
+4. clearConversation(): resets messages array
+5. Return: { messages, isLoading, error, sendMessage, clearConversation }
+6. Auto-scroll hint: expose a ref or callback for scroll-to-bottom
+
+VERIFY: `npx tsc --noEmit` passes.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p2bt3" data-phase="2"><label for="p2bt3"><strong>B3:</strong> Add panel trigger button to layout</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch B, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/layout.tsx
+
+CONTEXT: Add a subtle "?" button to the global layout that opens the ConversationalPanel in Explorer mode by default. The button should be positioned fixed, bottom-right corner.
+
+EXISTING CODE: See current layout.tsx — it has a header with "Parallax" logo and a main content area.
+
+IMPLEMENT:
+1. Add state: isPanelOpen, panelMode
+2. Add a fixed-position "?" button: bottom-right, 48x48, Ember-styled (bg-surface, border-border, text-accent on hover)
+3. Font: IBM Plex Mono, centered "?"
+4. On click: opens ConversationalPanel in 'explorer' mode
+5. Import and render ConversationalPanel conditionally
+6. Export a way for child pages to control the panel (React context or callback prop) — OR just use a simple global event system (window.dispatchEvent) for now
+7. The "?" button should NOT show if the panel is already open
+
+NOTE: This makes the layout a client component ("use client"). That's OK for this project — the existing layout doesn't use server-only features.
+
+VERIFY: `npx tsc --noEmit` passes. "?" button visible at bottom-right. Clicking opens panel.</pre></div>
+</div>
+</div><!-- /cols-2 -->
+
+<!-- Phase 2 sync point -->
+<div style="margin-top:16px;padding:12px;border:1px dashed var(--amber);font-family:var(--font-mono);font-size:11px;color:var(--amber)">
+SYNC POINT: After both batches complete, wire Explorer knowledge into the /api/converse route. Test: open panel from "?" button, ask "What is Parallax?" and get a contextual Explorer response.
+</div>
+
+<!-- Phase 2 batch prompts -->
+<div style="margin-top:16px">
+<h4 style="margin-bottom:8px">Batch A Combined Prompt (Knowledge Documents)</h4>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch A of the Parallax Conversational Layer blueprint — all 3 knowledge documents in sequence.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+Create the following 3 files. Create the docs/explorer/ directory first.
+
+FILE 1: docs/explorer/voice.md — Explorer personality (you ARE Parallax, first person, technical but warm, can cite PRs #1-6, explains WHY behind decisions, 2-4 sentences per response unless depth requested)
+
+FILE 2: docs/explorer/eddie-story.md — Eddie Belaval's story (id8Labs founder, "ship fast iterate faster", Pause-to-Parallax evolution, Director/Builder with Claude, Factory/Ember design philosophy, hackathon context Feb 10-16 2026)
+
+FILE 3: docs/explorer/hackathon-journey.md — Daily build log (Day 1: scaffold+NVC, Day 2: TheMelt+reframing, Day 3: voice+polish, Day 4: V3 Conflict Intelligence, Day 5: X-Ray+issues, Day 6: Conversational Layer, Day 7: submit. Key pivots: Pause->Parallax, single->14 lenses, stateless->conductor)
+
+VERIFY: All 3 files exist in docs/explorer/.</pre></div>
+</div>
+
+<div style="margin-top:16px">
+<h4 style="margin-bottom:8px">Batch B Combined Prompt (Panel UI)</h4>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 2, Batch B of the Parallax Conversational Layer blueprint — all 3 UI tasks in sequence.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+TASK 1: Create src/components/ConversationalPanel.tsx — "use client" slide-in panel from right. Ember design (--ember-dark, --ember-surface, --ember-border). Mode-specific header (orange=Explorer, teal=Guide). Chat messages with teal orb avatar for Parallax. Text input at bottom. CSS translateX animation. Uses useConversation hook.
+
+TASK 2: Create src/hooks/useConversation.ts — manages messages state, isLoading, error. sendMessage() POSTs to /api/converse with mode+message+history. Optimistic UI updates.
+
+TASK 3: Modify src/app/layout.tsx — add fixed "?" button bottom-right (48x48, Ember-styled). Opens ConversationalPanel in explorer mode. Makes layout a client component.
+
+EXISTING PATTERNS: See src/hooks/useSession.ts for hook patterns. See src/app/page.tsx for Ember component styling. See src/types/conversation.ts for types (created in Phase 1).
+
+VERIFY: `npx tsc --noEmit` passes. "?" button visible. Panel slides in on click.</pre></div>
+</div>
+
+</div>
+
+<!-- ──── PHASE 3 ──── -->
+<div class="card" id="phase-3-card">
+<div class="phase-header">
+  <div class="phase-num">3</div>
+  <div><div class="phase-title">Landing Page Integration</div><div class="phase-meta">Sequential &mdash; 3 tasks &mdash; depends on Phase 2</div></div>
+  <div class="badge badge-amber">Sequential</div>
+</div>
+
+<div class="task-check"><input type="checkbox" id="p3t1" data-phase="3"><label for="p3t1"><strong>Task 1:</strong> Add "Talk to Parallax" CTA section to landing page (<code>page.tsx</code>)</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 3, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/page.tsx
+
+CONTEXT: Add a prominent "Talk to Parallax" section to the landing page, positioned between the "Two Modes" section and the footer. This is the primary discovery point for judges.
+
+EXISTING CODE: The landing page has sections: Hero, The Problem, How It Works, What You See, In Practice, Two Modes, Footer. Each separated by dividers.
+
+IMPLEMENT:
+1. Add a new section between the "Two Modes" section and the "Footer" section
+2. Use the same Reveal wrapper for scroll animation
+3. Section structure:
+   - section-indicator: "Talk to the Product"
+   - Heading: "Curious how it's built?"
+   - Subtext: "Parallax can explain itself — its architecture, the NVC dual-lens system, the hackathon journey, and every decision along the way. Ask it anything."
+   - Large button: "Talk to Parallax" — Ember-styled, orange border, uppercase mono text, full width on mobile, centered on desktop (max-w-sm)
+   - Below button: small mono text "Powered by Claude Opus 4.6"
+4. Add a divider above the section (matching existing pattern)
+5. The button should dispatch an event or call a function to open the ConversationalPanel in 'explorer' mode
+
+DESIGN: Match the existing landing page aesthetic exactly. Use Reveal for entrance animation. Orange accent for the CTA (this is Explorer mode).
+
+VERIFY: Visual check — section appears between Two Modes and Footer. Button is visible and styled.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p3t2" data-phase="3"><label for="p3t2"><strong>Task 2:</strong> Wire CTA to open ConversationalPanel in Explorer mode</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 3, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/page.tsx (and potentially src/app/layout.tsx)
+
+CONTEXT: The "Talk to Parallax" button from Task 1 needs to open the ConversationalPanel in Explorer mode.
+
+IMPLEMENT:
+1. Wire the CTA button click to open the panel
+2. Options (pick simplest):
+   a. Use window.dispatchEvent(new CustomEvent('open-conversational-panel', { detail: { mode: 'explorer' } }))
+   b. Or use a React context from layout.tsx
+   c. Or use URL state (?panel=explorer)
+3. Ensure the panel opens in Explorer mode specifically
+4. After clicking, the panel should slide in from the right with the Explorer header
+
+VERIFY: Click "Talk to Parallax" on landing page -> panel opens in Explorer mode -> type a question -> get response.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p3t3" data-phase="3"><label for="p3t3"><strong>Task 3:</strong> Verification &mdash; end-to-end Explorer flow</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 3, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+VERIFICATION CHECKLIST:
+1. Start dev server: npm run dev
+2. Open http://localhost:3000
+3. Scroll to "Talk to Parallax" CTA — should be visible between Two Modes and Footer
+4. Click "Talk to Parallax" — panel should slide in from right
+5. Panel header should say "Talk to Parallax" with orange accent
+6. Type: "What is Parallax and how is it built?"
+7. Should get a contextual response referencing architecture, NVC, hackathon
+8. Type: "Tell me about the NVC dual-lens system"
+9. Should get a response citing the dual-lens prompt, subtext/blindSpots/unmetNeeds
+10. Close panel (click X or backdrop) — should slide out
+11. Click "?" button bottom-right — should also open panel
+12. Run: npx tsc --noEmit — zero errors
+13. Run: npm run build — should succeed
+
+FIX any issues found during verification. This is the gate for Phase 3.</pre></div>
+</div>
+
+<!-- ──── PHASE 4 ──── -->
+<div class="card" id="phase-4-card">
+<div class="phase-header">
+  <div class="phase-num">4</div>
+  <div><div class="phase-title">Guide Layer</div><div class="phase-meta">Two parallel batches &mdash; 6 tasks &mdash; depends on Phase 1</div></div>
+  <div class="badge badge-green">Parallel</div>
+</div>
+
+<div class="cols-2">
+<!-- Batch A -->
+<div>
+<div class="batch-label batch-a">Batch A: Guide Knowledge</div>
+
+<div class="task-check"><input type="checkbox" id="p4at1" data-phase="4"><label for="p4at1"><strong>A1:</strong> Create <code>docs/guide/user-manual.md</code> &mdash; full feature documentation</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch A, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/guide/user-manual.md
+
+CONTEXT: This is the user manual that the Guide uses to answer "how do I...?" questions. Written for end users, not developers.
+
+DOCUMENT EVERY FEATURE:
+1. Creating a session (in-person vs remote, what the difference is)
+2. Context modes (intimate, family, professional peer, professional hierarchical, transactional, civil/structural) — what each means, when to pick which
+3. Joining a session (room code)
+4. The onboarding flow (conductor greets, Person A shares, Person B shares, mediator synthesizes goals)
+5. Sending messages (text input)
+6. Voice input (click mic icon, speak, auto-transcribes via Web Speech API — Chrome only)
+7. NVC analysis (what appears after each message — subtext, blind spots, unmet needs, NVC translation, emotional temperature)
+8. The Melt animation (what it looks like, what it means)
+9. Temperature colors (hot=red/rust, warm=amber, cool=teal, neutral=off-white)
+10. X-Ray Scoreboard (in-person mode — tracks issues, shows addressed/unaddressed)
+11. Session summary (appears when session ends — temperature arc, key moments, takeaways)
+12. Ending a session (either person can end it)
+
+TONE: Clear, concise, friendly. Use "you" language. No jargon.
+
+VERIFY: File exists at docs/guide/user-manual.md.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p4at2" data-phase="4"><label for="p4at2"><strong>A2:</strong> Create <code>docs/guide/faq.md</code> &mdash; common questions</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch A, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/guide/faq.md
+
+INCLUDE THESE Q&amp;As:
+- What is NVC? (Nonviolent Communication by Marshall Rosenberg — observation, feeling, need, request)
+- What does emotional temperature mean? (0.0 = calm/neutral, 1.0 = heated/volatile, colors reflect intensity)
+- Is my conversation stored? (Only during the session. No persistent storage after session ends.)
+- Can I use voice input? (Yes, in Chrome. Click the mic icon. Other browsers may not support Web Speech API.)
+- What's the difference between in-person and remote mode? (In-person: shared screen, X-Ray scoreboard. Remote: separate devices, split panels, room code.)
+- What are context modes? (6 modes that tune the analysis — intimate for couples, professional for work, etc.)
+- What is The Melt? (A visual transformation — your raw message dissolves and reforms with NVC insight layered in.)
+- Can both people see the analysis? (Yes, analysis is visible to both sides.)
+- What if I don't agree with the analysis? (It's a lens, not a verdict. Use it as a starting point for reflection.)
+- Is this therapy? (No. Parallax is a conflict resolution tool, not a licensed therapy service.)
+
+VERIFY: File exists at docs/guide/faq.md.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p4at3" data-phase="4"><label for="p4at3"><strong>A3:</strong> Create <code>docs/guide/settings-schema.md</code> &mdash; settings documentation</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch A, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: docs/guide/settings-schema.md
+
+CONTEXT: Documents the user_preferences table that will be created in Phase 5. The Guide needs to know what settings exist so it can explain and modify them.
+
+DOCUMENT THESE SETTINGS:
+1. display_name (string) — The name shown in sessions. Default: null (prompts on join).
+2. voice_input_default (boolean) — Whether voice input mode is enabled by default when joining a session. Default: false.
+3. analysis_auto_expand (boolean) — Whether NVC analysis sections auto-expand on new messages. Default: false (user clicks to expand).
+4. default_session_duration (number, minutes) — Suggested session length. Default: 30. Options: 15, 30, 45, 60.
+5. preferred_context_mode (ContextMode | null) — Pre-selected context mode when creating sessions. Default: null (always ask).
+
+FORMAT: Table with columns: Setting, Type, Default, Description, Valid Values.
+
+VERIFY: File exists at docs/guide/settings-schema.md.</pre></div>
+</div>
+
+<!-- Batch B -->
+<div>
+<div class="batch-label batch-b">Batch B: Mode Switching</div>
+
+<div class="task-check"><input type="checkbox" id="p4bt1" data-phase="4"><label for="p4bt1"><strong>B1:</strong> Update <code>/api/converse</code> to switch system prompt based on mode</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch B, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/api/converse/route.ts
+
+CONTEXT: The route skeleton from Phase 1 needs to properly switch between Explorer and Guide system prompts.
+
+IMPLEMENT:
+1. Import getSystemPrompt from knowledge-base.ts
+2. In the POST handler, call getSystemPrompt(mode) to get the mode-specific system prompt
+3. For 'explorer': larger max_tokens (1024), knowledge includes architecture + story + journey
+4. For 'guide': smaller max_tokens (512), knowledge includes user manual + FAQ + settings
+5. Ensure history is properly formatted as Claude messages array (alternating user/assistant)
+
+VERIFY: `npx tsc --noEmit` passes. Test both modes via curl or browser.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p4bt2" data-phase="4"><label for="p4bt2"><strong>B2:</strong> Add Guide personality to system prompt</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch B, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/lib/knowledge-base.ts
+
+CONTEXT: The buildGuideSystemPrompt function needs a well-crafted Guide personality.
+
+UPDATE buildGuideSystemPrompt to include:
+1. Identity: "You are the Parallax Guide — a helpful, knowledgeable assistant built into the Parallax conflict resolution platform."
+2. Tone: Concise, action-oriented. Answer in 1-3 sentences when possible. Offer to go deeper if the topic warrants it.
+3. Capabilities: Can explain any feature, answer FAQ questions, and (in Phase 5) modify user settings.
+4. Boundaries: Don't make up features. Don't provide therapy advice. If unsure, say so.
+5. Style: No bullet points in short answers. Use natural language. Reference the user's question directly.
+
+VERIFY: `npx tsc --noEmit` passes. Guide responses are concise and helpful.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p4bt3" data-phase="4"><label for="p4bt3"><strong>B3:</strong> Add in-session "?" button that opens panel in Guide mode</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch B, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/session/[code]/page.tsx (or SessionView.tsx if that's the main session component)
+
+CONTEXT: When a user is inside a session, they should be able to open the Guide by clicking a "?" button. This opens the ConversationalPanel in 'guide' mode (teal accent).
+
+IMPLEMENT:
+1. Add a "?" or "Help" button within the session view
+2. Position: top-right area or floating bottom-right (consistent with global "?" but context-aware)
+3. On click: dispatch event to open panel in 'guide' mode (not explorer)
+4. Visual: teal accent instead of orange to signal Guide mode
+
+VERIFY: Navigate to a session. "?" button visible. Click opens panel in Guide mode with teal accent.</pre></div>
+</div>
+</div><!-- /cols-2 -->
+
+<!-- Phase 4 batch prompts -->
+<div style="margin-top:16px">
+<h4 style="margin-bottom:8px">Batch A Combined Prompt (Guide Knowledge)</h4>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch A of the Parallax Conversational Layer blueprint — all 3 Guide knowledge documents.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+Create the docs/guide/ directory, then create 3 files:
+
+FILE 1: docs/guide/user-manual.md — Every feature documented for end users (creating sessions, context modes, joining, onboarding, messaging, voice input, NVC analysis, The Melt, temperature, X-Ray Scoreboard, session summary, ending sessions). Clear, friendly, "you" language.
+
+FILE 2: docs/guide/faq.md — 10 common questions (What is NVC? Temperature meaning? Data storage? Voice input? Mode differences? Context modes? The Melt? Analysis visibility? Disagreeing with analysis? Is this therapy?). Q&amp;A format.
+
+FILE 3: docs/guide/settings-schema.md — Table of user_preferences: display_name (string), voice_input_default (boolean), analysis_auto_expand (boolean), default_session_duration (15|30|45|60), preferred_context_mode (ContextMode|null). Each with type, default, description.
+
+VERIFY: All 3 files exist in docs/guide/.</pre></div>
+</div>
+
+<div style="margin-top:16px">
+<h4 style="margin-bottom:8px">Batch B Combined Prompt (Mode Switching)</h4>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 4, Batch B of the Parallax Conversational Layer blueprint — mode switching and Guide integration.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+TASK 1: Update src/app/api/converse/route.ts — use getSystemPrompt(mode) for mode-specific prompts. Explorer: 1024 max_tokens. Guide: 512 max_tokens. Properly format history as Claude messages.
+
+TASK 2: Update src/lib/knowledge-base.ts — craft Guide personality in buildGuideSystemPrompt(). Concise, action-oriented, 1-3 sentences, no bullet points in short answers. Identity: "You are the Parallax Guide." Boundaries: don't invent features, don't give therapy advice.
+
+TASK 3: Modify session page (src/app/session/[code]/page.tsx or SessionView) — add "?" button that opens ConversationalPanel in 'guide' mode (teal accent). Position top-right or floating bottom-right.
+
+VERIFY: `npx tsc --noEmit` passes. Both Explorer and Guide modes work. In-session "?" opens Guide.</pre></div>
+</div>
+
+</div>
+
+<!-- ──── PHASE 5 ──── -->
+<div class="card" id="phase-5-card">
+<div class="phase-header">
+  <div class="phase-num">5</div>
+  <div><div class="phase-title">Guide Settings Tools</div><div class="phase-meta">Sequential &mdash; stretch goal &mdash; 4 tasks &mdash; depends on Phase 4</div></div>
+  <div class="badge badge-red">Stretch</div>
+</div>
+
+<div class="task-check"><input type="checkbox" id="p5t1" data-phase="5"><label for="p5t1"><strong>Task 1:</strong> Supabase migration &mdash; create <code>user_preferences</code> table</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 5, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO CREATE: supabase/migrations/20260215000000_user_preferences.sql
+
+CONTEXT: The Guide needs a user_preferences table to read and write settings via tool_use.
+
+SQL MIGRATION:
+CREATE TABLE user_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL UNIQUE,  -- session-based identifier for now (no auth)
+  display_name TEXT,
+  voice_input_default BOOLEAN DEFAULT false,
+  analysis_auto_expand BOOLEAN DEFAULT false,
+  default_session_duration INTEGER DEFAULT 30 CHECK (default_session_duration IN (15, 30, 45, 60)),
+  preferred_context_mode TEXT CHECK (preferred_context_mode IN ('intimate', 'family', 'professional_peer', 'professional_hierarchical', 'transactional', 'civil_structural')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: Allow all for now (no auth system)
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON user_preferences FOR ALL USING (true);
+
+ALSO: Add the user_preferences table type to src/types/database.ts following the existing pattern.
+
+VERIFY: Migration file exists. Types compile. `npx tsc --noEmit` passes.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p5t2" data-phase="5"><label for="p5t2"><strong>Task 2:</strong> Add Claude tool_use to Guide mode &mdash; get_settings, update_setting, explain_feature</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 5, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/app/api/converse/route.ts
+FILE TO MODIFY: src/lib/knowledge-base.ts (if needed for tool definitions)
+
+CONTEXT: When in Guide mode, Claude should have tools available via the Anthropic tool_use API.
+
+IMPLEMENT:
+1. Define 3 tools using the Anthropic SDK tool format:
+   a. get_settings: { user_id: string } -> returns current user_preferences row
+   b. update_setting: { user_id: string, setting: string, value: string|boolean|number } -> updates one setting
+   c. explain_feature: { feature_name: string } -> returns detailed explanation from user manual
+2. In the /api/converse POST handler, when mode === 'guide':
+   a. Pass tools array to the Claude API call
+   b. If response contains tool_use blocks, execute the tools:
+      - get_settings: query Supabase user_preferences
+      - update_setting: update Supabase user_preferences
+      - explain_feature: look up in knowledge base
+   c. Send tool results back to Claude for final response
+   d. Return the final text response + toolResults array
+3. For user_id: use a simple cookie-based or localStorage-based identifier (no auth system)
+
+EXISTING PATTERN: See how opus.ts handles Claude API calls. Use the same Anthropic client.
+
+VERIFY: `npx tsc --noEmit` passes. Ask Guide "what are my settings?" -> should attempt get_settings tool call.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p5t3" data-phase="5"><label for="p5t3"><strong>Task 3:</strong> Wire tool execution results back to UI</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 5, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/components/ConversationalPanel.tsx
+FILE TO MODIFY: src/hooks/useConversation.ts
+
+CONTEXT: When the Guide changes a setting via tool_use, the UI should reflect this.
+
+IMPLEMENT:
+1. Update useConversation to handle toolResults in the API response
+2. Store toolResults on the ConversationMessage object
+3. In ConversationalPanel, show a subtle indicator when a tool was used:
+   - Small Ember-styled badge below the assistant message: "Setting updated" or "Settings retrieved"
+   - Use amber color for mutations, teal for reads
+4. If a setting was changed, emit an event (window.dispatchEvent) so other components can react
+5. For update_setting results, show: "Changed [setting] to [value]"
+
+VERIFY: Ask Guide to change a setting -> tool executes -> UI shows confirmation badge.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p5t4" data-phase="5"><label for="p5t4"><strong>Task 4:</strong> Verification &mdash; full Guide tools flow</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 5, Task 4 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+VERIFICATION CHECKLIST:
+1. Apply Supabase migration (if local): npx supabase migration up
+2. Start dev server: npm run dev
+3. Open a session, click "?" to open Guide
+4. Ask: "What are my current settings?" -> Guide should call get_settings, respond with current values
+5. Ask: "Change my display name to Eddie" -> Guide should call update_setting, confirm the change
+6. Ask: "What does emotional temperature mean?" -> Guide should answer from FAQ knowledge (no tool needed)
+7. Ask: "Enable voice input by default" -> Guide should call update_setting(voice_input_default, true)
+8. Verify in Supabase that the user_preferences row was created/updated
+9. Check UI badges appear on tool-using messages
+10. Run: npx tsc --noEmit -- zero errors
+11. Run: npm run build -- should succeed
+
+FIX any issues. This is the gate for Phase 5.</pre></div>
+</div>
+
+<!-- ──── PHASE 6 ──── -->
+<div class="card" id="phase-6-card">
+<div class="phase-header">
+  <div class="phase-num">6</div>
+  <div><div class="phase-title">Polish and Documentation</div><div class="phase-meta">Sequential &mdash; 3 tasks &mdash; depends on all previous</div></div>
+  <div class="badge badge-muted">Final</div>
+</div>
+
+<div class="task-check"><input type="checkbox" id="p6t1" data-phase="6"><label for="p6t1"><strong>Task 1:</strong> Polish conversational panel animations</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 6, Task 1 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: src/components/ConversationalPanel.tsx
+
+POLISH:
+1. Slide-in/out: smooth CSS transition (transform translateX, 300ms ease-out)
+2. Backdrop: fade in/out (opacity transition, 200ms)
+3. Message appear: new messages fade-in + slide-up (opacity 0->1, translateY 8px->0, 200ms)
+4. Typing indicator: three dots with staggered pulse animation (CSS keyframes), shown while isLoading
+5. Orb avatar: gentle idle pulse animation (scale 1->1.05->1, 2s infinite, matching TheMelt idle)
+6. Auto-scroll: smooth scroll to bottom when new message appears
+7. Input focus: auto-focus text input when panel opens
+
+DESIGN: All animations should feel warm and organic (Ember philosophy), never mechanical or clinical.
+
+VERIFY: Visual check — all animations feel smooth and polished.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p6t2" data-phase="6"><label for="p6t2"><strong>Task 2:</strong> Update BUILDING.md with Conversational Layer section</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 6, Task 2 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+FILE TO MODIFY: BUILDING.md
+
+ADD A NEW SECTION (after the latest stage entry):
+
+### Conversational Layer (Day 6)
+- **What:** Two-tier conversational interface — Explorer (judge-facing, read-only) and Guide (user-facing, tool_use)
+- **Why:** Let judges talk TO the product instead of just reading about it. Let users get help without leaving the session.
+- **Architecture:** Single /api/converse route with mode switching. Knowledge base loader reads markdown docs into system prompts. Reuses conductorMessage() pattern from opus.ts.
+- **Explorer brain:** voice.md (personality), eddie-story.md (builder story), hackathon-journey.md (daily log). Reads BUILDING.md and CLAUDE.md for architecture knowledge.
+- **Guide brain:** user-manual.md (every feature), faq.md (common questions), settings-schema.md (user preferences). Uses Claude tool_use for get_settings, update_setting, explain_feature.
+- **UI:** Slide-in panel from right. Ember design. Mode-specific accents (orange=Explorer, teal=Guide). Teal orb avatar for Parallax responses.
+- **Discovery:** "Talk to Parallax" CTA on landing page (Explorer). "?" button in sessions (Guide).
+- **Key decision:** System prompt injection (HYDRA CTO voice pattern) over RAG — simpler, more reliable for bounded knowledge, ships faster.
+
+VERIFY: BUILDING.md is well-formatted and the section reads coherently.</pre></div>
+
+<div class="task-check"><input type="checkbox" id="p6t3" data-phase="6"><label for="p6t3"><strong>Task 3:</strong> Final verification &mdash; full E2E flow</label></div>
+<div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">Copy</button><pre>You are implementing Phase 6, Task 3 of the Parallax Conversational Layer blueprint.
+
+PROJECT PATH: /Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer
+
+FINAL E2E VERIFICATION:
+1. npm run build -- must succeed
+2. npx tsc --noEmit -- zero errors
+3. npm run dev -- start server
+
+EXPLORER FLOW:
+4. Open http://localhost:3000
+5. Scroll to "Talk to Parallax" CTA
+6. Click it -- panel slides in with orange accent
+7. Ask: "What is Parallax?" -- contextual response about conflict resolution + Claude + NVC
+8. Ask: "How does the NVC analysis work?" -- cites dual-lens system, subtext, blind spots
+9. Ask: "Tell me about Eddie" -- references id8Labs, ship fast iterate faster, hackathon
+10. Close panel
+
+GUIDE FLOW:
+11. Create a session (in-person or remote)
+12. In the session, click "?" -- panel opens with teal accent
+13. Ask: "How do I use voice input?" -- clear instructions from user manual
+14. Ask: "What is emotional temperature?" -- FAQ answer
+15. (If Phase 5 complete) Ask: "Change my display name to Eddie" -- setting updates
+16. Close panel
+
+CROSS-CHECK:
+17. "?" button from layout also works (opens Explorer by default from non-session pages)
+18. Panel animations are smooth
+19. No console errors
+20. Mobile responsive (panel full-width on small screens)
+
+This is the final gate. Ship it.</pre></div>
+</div>
+
+</div><!-- /panel-phases -->
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: PARALLEL MAP                            -->
+<!-- ════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-parallel-map">
+<div class="section-ind">Dependency Graph</div>
+<h2 style="margin-bottom:8px">Parallel Execution Map</h2>
+<p style="color:var(--muted);margin-bottom:20px;font-size:12px">Hover over a phase to trace its dependency chain. Dashed edges show sequential flow. Color indicates batch membership.</p>
+<div id="parallel-map-container" style="overflow-x:auto">
+  <svg id="parallel-map-svg" viewBox="0 0 1100 560"></svg>
+</div>
+</div><!-- /panel-parallel-map -->
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: ASSESSMENT                              -->
+<!-- ════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-assessment">
+
+<div class="section-ind">Strengths</div>
+<div class="card">
+<div style="display:grid;gap:12px">
+  <div><strong style="color:var(--heading)">Reuses proven patterns.</strong> The conductorMessage() pattern from opus.ts and the phase-based state machine from conductor/route.ts are battle-tested. No new Claude integration patterns needed.</div>
+  <div><strong style="color:var(--heading)">Single route, two brains.</strong> /api/converse with mode switching keeps the API surface minimal. Knowledge base loader is the only new server-side concept.</div>
+  <div><strong style="color:var(--heading)">Judges can talk to the product.</strong> The Explorer tier is a differentiation play — most hackathon entries are passive. This makes Parallax interactive for evaluation.</div>
+  <div><strong style="color:var(--heading)">Guide with tool_use is a real product feature.</strong> Not just a demo gimmick — this is how modern products should work. Users ask for what they want; the product does it.</div>
+  <div><strong style="color:var(--heading)">System prompt injection over RAG.</strong> For bounded knowledge (a few markdown files), prompt injection is simpler, faster, and more reliable than building a RAG pipeline. HYDRA CTO voice pattern validates this approach.</div>
+</div>
+</div>
+
+<div class="section-ind" style="margin-top:24px">Risks</div>
+<div class="card">
+  <div class="risk-item">
+    <span class="risk-sev risk-high">High</span>
+    <div><strong style="color:var(--heading)">Context window pressure.</strong> Loading all Explorer knowledge docs + BUILDING.md + CLAUDE.md into a system prompt could approach token limits. Mitigation: truncate BUILDING.md to recent entries, summarize CLAUDE.md to architecture section only.</div>
+  </div>
+  <div class="risk-item">
+    <span class="risk-sev risk-high">High</span>
+    <div><strong style="color:var(--heading)">Time pressure (Day 6 of 7).</strong> This is a lot of work for one day. Phases 1-3 (Explorer) are the priority. Phase 5 (tool_use) is explicitly a stretch goal. Ship Explorer first, Guide second, tools if time allows.</div>
+  </div>
+  <div class="risk-item">
+    <span class="risk-sev risk-med">Med</span>
+    <div><strong style="color:var(--heading)">Layout becomes client component.</strong> Adding panel state to layout.tsx requires "use client". This prevents server-only features in the layout. Acceptable for this project but worth noting.</div>
+  </div>
+  <div class="risk-item">
+    <span class="risk-sev risk-med">Med</span>
+    <div><strong style="color:var(--heading)">No auth for user_preferences.</strong> Phase 5 uses a session-based user_id with no authentication. Fine for hackathon, but needs auth integration for production. RLS is permissive ("allow all").</div>
+  </div>
+  <div class="risk-item">
+    <span class="risk-sev risk-low">Low</span>
+    <div><strong style="color:var(--heading)">Knowledge staleness.</strong> If docs aren't updated when features change, the Explorer/Guide will give outdated answers. Mitigation: docs are part of the codebase (version controlled), update them alongside code changes.</div>
+  </div>
+  <div class="risk-item">
+    <span class="risk-sev risk-low">Low</span>
+    <div><strong style="color:var(--heading)">Panel overlap with session UI.</strong> On mobile, the slide-in panel may obscure the session view. Mitigation: full-width panel on mobile with clear close button.</div>
+  </div>
+</div>
+
+<div class="section-ind" style="margin-top:24px">Optimizations</div>
+<div class="card">
+<div style="display:grid;gap:12px;font-size:13px">
+  <div><strong style="color:var(--heading)">Cache system prompts.</strong> Knowledge base files rarely change during a session. Cache the assembled system prompt in a module-level variable with a 5-minute TTL.</div>
+  <div><strong style="color:var(--heading)">Streaming responses.</strong> The current implementation waits for full response. Adding streaming (SSE) would improve perceived latency. Not critical for hackathon but improves UX.</div>
+  <div><strong style="color:var(--heading)">Progressive knowledge loading.</strong> Instead of loading all docs upfront, load only the relevant sections based on the user's question topic. Requires a lightweight classifier.</div>
+  <div><strong style="color:var(--heading)">Conversation persistence.</strong> Currently conversations reset on panel close. Saving to localStorage would let users resume conversations.</div>
+</div>
+</div>
+
+<div class="section-ind" style="margin-top:24px">All Prompts Summary</div>
+<div class="card" style="font-family:var(--font-mono);font-size:11px;line-height:1.8">
+<strong style="color:var(--heading)">Phase 1 (Foundation):</strong> 3 sequential tasks — types, knowledge-base loader, /api/converse skeleton<br>
+<strong style="color:var(--heading)">Phase 2 (Explorer Brain):</strong> 6 tasks in 2 parallel batches — Batch A: 3 knowledge docs, Batch B: 3 UI components<br>
+<strong style="color:var(--heading)">Phase 3 (Landing Page):</strong> 3 sequential tasks — CTA section, wire to panel, E2E verification<br>
+<strong style="color:var(--heading)">Phase 4 (Guide Layer):</strong> 6 tasks in 2 parallel batches — Batch A: 3 knowledge docs, Batch B: 3 mode-switching tasks<br>
+<strong style="color:var(--heading)">Phase 5 (Guide Tools):</strong> 4 sequential tasks — Supabase migration, tool_use integration, UI wiring, E2E verification<br>
+<strong style="color:var(--heading)">Phase 6 (Polish):</strong> 3 sequential tasks — animations, BUILDING.md, final E2E verification<br>
+<br>
+<strong style="color:var(--orange)">Total: 25 tasks across 6 phases.</strong> Critical path: Phase 1 -> Phase 2 -> Phase 3 (Explorer MVP). Phase 5 is stretch.
+</div>
+
+</div><!-- /panel-assessment -->
+
+</div><!-- /container -->
+
+<!-- ═══ BLUEPRINT DATA ═══ -->
+<script type="application/json" id="blueprint-data">
+{
+  "project": "parallax-conversational-layer",
+  "version": "1.0.0",
+  "created": "2026-02-11",
+  "worktree": "/Users/eddiebelaval/Development/.worktrees/parallax/parallax-conversational-layer",
+  "phases": [
+    {
+      "id": "phase-1",
+      "number": 1,
+      "title": "Foundation",
+      "type": "sequential",
+      "depends": [],
+      "color": "#ef6f2e",
+      "tasks": [
+        {"id":"p1t1","label":"Types/interfaces","file":"src/types/conversation.ts"},
+        {"id":"p1t2","label":"Knowledge base loader","file":"src/lib/knowledge-base.ts"},
+        {"id":"p1t3","label":"/api/converse skeleton","file":"src/app/api/converse/route.ts"}
+      ]
+    },
+    {
+      "id": "phase-2",
+      "number": 2,
+      "title": "Explorer Brain",
+      "type": "parallel",
+      "depends": ["phase-1"],
+      "color": "#4ecdc4",
+      "batches": [
+        {
+          "id": "batch-2a",
+          "label": "Knowledge Docs",
+          "color": "#ef6f2e",
+          "tasks": [
+            {"id":"p2at1","label":"Explorer voice.md","file":"docs/explorer/voice.md"},
+            {"id":"p2at2","label":"Eddie story.md","file":"docs/explorer/eddie-story.md"},
+            {"id":"p2at3","label":"Hackathon journey.md","file":"docs/explorer/hackathon-journey.md"}
+          ]
+        },
+        {
+          "id": "batch-2b",
+          "label": "Panel UI",
+          "color": "#4ecdc4",
+          "tasks": [
+            {"id":"p2bt1","label":"ConversationalPanel.tsx","file":"src/components/ConversationalPanel.tsx"},
+            {"id":"p2bt2","label":"useConversation.ts","file":"src/hooks/useConversation.ts"},
+            {"id":"p2bt3","label":"Panel trigger in layout","file":"src/app/layout.tsx"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "number": 3,
+      "title": "Landing Page Integration",
+      "type": "sequential",
+      "depends": ["phase-2"],
+      "color": "#ef6f2e",
+      "tasks": [
+        {"id":"p3t1","label":"CTA section on landing page","file":"src/app/page.tsx"},
+        {"id":"p3t2","label":"Wire CTA to panel","file":"src/app/page.tsx"},
+        {"id":"p3t3","label":"E2E verification","file":""}
+      ]
+    },
+    {
+      "id": "phase-4",
+      "number": 4,
+      "title": "Guide Layer",
+      "type": "parallel",
+      "depends": ["phase-1"],
+      "color": "#f59e0b",
+      "batches": [
+        {
+          "id": "batch-4a",
+          "label": "Guide Knowledge",
+          "color": "#ef6f2e",
+          "tasks": [
+            {"id":"p4at1","label":"User manual.md","file":"docs/guide/user-manual.md"},
+            {"id":"p4at2","label":"FAQ.md","file":"docs/guide/faq.md"},
+            {"id":"p4at3","label":"Settings schema.md","file":"docs/guide/settings-schema.md"}
+          ]
+        },
+        {
+          "id": "batch-4b",
+          "label": "Mode Switching",
+          "color": "#4ecdc4",
+          "tasks": [
+            {"id":"p4bt1","label":"Mode switching in /api/converse","file":"src/app/api/converse/route.ts"},
+            {"id":"p4bt2","label":"Guide personality prompt","file":"src/lib/knowledge-base.ts"},
+            {"id":"p4bt3","label":"In-session ? button","file":"session/[code]/page.tsx"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "number": 5,
+      "title": "Guide Settings Tools",
+      "type": "sequential",
+      "depends": ["phase-4"],
+      "color": "#ef4444",
+      "stretch": true,
+      "tasks": [
+        {"id":"p5t1","label":"Supabase migration","file":"supabase/migrations/xxx.sql"},
+        {"id":"p5t2","label":"Claude tool_use integration","file":"src/app/api/converse/route.ts"},
+        {"id":"p5t3","label":"Tool results in UI","file":"src/components/ConversationalPanel.tsx"},
+        {"id":"p5t4","label":"E2E verification","file":""}
+      ]
+    },
+    {
+      "id": "phase-6",
+      "number": 6,
+      "title": "Polish & Documentation",
+      "type": "sequential",
+      "depends": ["phase-3","phase-5"],
+      "color": "#555555",
+      "tasks": [
+        {"id":"p6t1","label":"Panel animations polish","file":"src/components/ConversationalPanel.tsx"},
+        {"id":"p6t2","label":"Update BUILDING.md","file":"BUILDING.md"},
+        {"id":"p6t3","label":"Final E2E verification","file":""}
+      ]
+    }
+  ],
+  "edges": [
+    {"from":"phase-1","to":"phase-2"},
+    {"from":"phase-1","to":"phase-4"},
+    {"from":"phase-2","to":"phase-3"},
+    {"from":"phase-4","to":"phase-5"},
+    {"from":"phase-3","to":"phase-6"},
+    {"from":"phase-5","to":"phase-6"}
+  ]
+}
+</script>
+
+<script>
+// ═══ State Management ═══
+const STORAGE_KEY = 'blueprint-parallax-conversational-layer';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+function initCheckboxes() {
+  const state = loadState();
+  document.querySelectorAll('input[type=checkbox][data-phase]').forEach(cb => {
+    cb.checked = !!state[cb.id];
+    cb.addEventListener('change', () => {
+      const s = loadState();
+      s[cb.id] = cb.checked;
+      saveState(s);
+      updateProgress();
+      updateLabels();
+    });
+  });
+  updateProgress();
+  updateLabels();
+}
+
+function updateLabels() {
+  document.querySelectorAll('input[type=checkbox][data-phase]').forEach(cb => {
+    const label = cb.nextElementSibling;
+    if (label) {
+      if (cb.checked) label.classList.add('done');
+      else label.classList.remove('done');
+    }
+  });
+}
+
+function updateProgress() {
+  const all = document.querySelectorAll('input[type=checkbox][data-phase]');
+  const checked = document.querySelectorAll('input[type=checkbox][data-phase]:checked');
+  const total = all.length;
+  const done = checked.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = done + ' / ' + total;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent = done;
+}
+
+// ═══ Tab Navigation ═══
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const panel = document.getElementById('panel-' + tab.dataset.tab);
+      if (panel) panel.classList.add('active');
+      if (tab.dataset.tab === 'parallel-map') renderParallelMap();
+    });
+  });
+}
+
+// ═══ Copy Prompt ═══
+function copyPrompt(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ═══ Parallel Map (SVG auto-rendered from blueprint-data) ═══
+function renderParallelMap() {
+  const svg = document.getElementById('parallel-map-svg');
+  if (!svg || svg.dataset.rendered) return;
+  svg.dataset.rendered = '1';
+
+  const dataEl = document.getElementById('blueprint-data');
+  if (!dataEl) return;
+  const data = JSON.parse(dataEl.textContent);
+
+  // Layout constants
+  const nodeW = 160, nodeH = 70, gapX = 40, gapY = 30;
+  const startX = 30, startY = 30;
+
+  // Phase positions — manual column layout for clarity
+  const cols = [
+    [{ phase: 'phase-1', row: 0 }],
+    [{ phase: 'phase-2', row: 0 }, { phase: 'phase-4', row: 1 }],
+    [{ phase: 'phase-3', row: 0 }, { phase: 'phase-5', row: 1 }],
+    [{ phase: 'phase-6', row: 0 }]
+  ];
+
+  const positions = {};
+  cols.forEach((col, ci) => {
+    col.forEach(item => {
+      positions[item.phase] = {
+        x: startX + ci * (nodeW + gapX + 60),
+        y: startY + item.row * (nodeH + gapY + 60)
+      };
+    });
+  });
+
+  // Adjust SVG viewBox
+  const maxX = Math.max(...Object.values(positions).map(p => p.x)) + nodeW + 60;
+  const maxY = Math.max(...Object.values(positions).map(p => p.y)) + nodeH + 60;
+  svg.setAttribute('viewBox', `0 0 ${maxX} ${maxY}`);
+
+  // Draw edges first (behind nodes)
+  const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  edgeGroup.setAttribute('id', 'edges');
+  data.edges.forEach(edge => {
+    const from = positions[edge.from];
+    const to = positions[edge.to];
+    if (!from || !to) return;
+
+    const x1 = from.x + nodeW;
+    const y1 = from.y + nodeH / 2;
+    const x2 = to.x;
+    const y2 = to.y + nodeH / 2;
+    const mx = (x1 + x2) / 2;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
+    path.setAttribute('class', 'pm-edge pm-edge-animated');
+    path.dataset.from = edge.from;
+    path.dataset.to = edge.to;
+    edgeGroup.appendChild(path);
+  });
+  svg.appendChild(edgeGroup);
+
+  // Draw nodes
+  const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  nodeGroup.setAttribute('id', 'nodes');
+
+  data.phases.forEach(phase => {
+    const pos = positions[phase.id];
+    if (!pos) return;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'pm-node');
+    g.dataset.phase = phase.id;
+    g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+
+    // Background rect
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', nodeW);
+    rect.setAttribute('height', nodeH);
+    rect.setAttribute('rx', '2');
+    rect.setAttribute('fill', '#0a0a0a');
+    rect.setAttribute('stroke', phase.color);
+    rect.setAttribute('stroke-width', '1.5');
+    g.appendChild(rect);
+
+    // Phase number
+    const numText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    numText.setAttribute('x', '12');
+    numText.setAttribute('y', '24');
+    numText.setAttribute('fill', phase.color);
+    numText.setAttribute('font-size', '16');
+    numText.setAttribute('font-weight', '500');
+    numText.textContent = phase.number;
+    g.appendChild(numText);
+
+    // Phase title
+    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    titleText.setAttribute('x', '12');
+    titleText.setAttribute('y', '44');
+    titleText.setAttribute('fill', '#eee');
+    titleText.setAttribute('font-size', '11');
+    titleText.textContent = phase.title;
+    g.appendChild(titleText);
+
+    // Task count
+    const taskCount = phase.tasks ? phase.tasks.length : (phase.batches ? phase.batches.reduce((a, b) => a + b.tasks.length, 0) : 0);
+    const typeLabel = phase.type === 'parallel' ? 'parallel' : 'sequential';
+    const metaText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    metaText.setAttribute('x', '12');
+    metaText.setAttribute('y', '60');
+    metaText.setAttribute('fill', '#555');
+    metaText.setAttribute('font-size', '9');
+    metaText.textContent = taskCount + ' tasks / ' + typeLabel + (phase.stretch ? ' / STRETCH' : '');
+    g.appendChild(metaText);
+
+    // Hover events
+    g.addEventListener('mouseenter', () => highlightChain(phase.id, data));
+    g.addEventListener('mouseleave', () => clearHighlight());
+
+    nodeGroup.appendChild(g);
+  });
+  svg.appendChild(nodeGroup);
+}
+
+function highlightChain(phaseId, data) {
+  // Find all ancestors and descendants
+  const connected = new Set();
+  connected.add(phaseId);
+
+  // Walk ancestors
+  function findAncestors(id) {
+    data.edges.forEach(e => {
+      if (e.to === id && !connected.has(e.from)) {
+        connected.add(e.from);
+        findAncestors(e.from);
+      }
+    });
+  }
+  // Walk descendants
+  function findDescendants(id) {
+    data.edges.forEach(e => {
+      if (e.from === id && !connected.has(e.to)) {
+        connected.add(e.to);
+        findDescendants(e.to);
+      }
+    });
+  }
+  findAncestors(phaseId);
+  findDescendants(phaseId);
+
+  // Dim non-connected nodes
+  document.querySelectorAll('.pm-node').forEach(n => {
+    if (!connected.has(n.dataset.phase)) n.classList.add('dimmed');
+    else n.classList.remove('dimmed');
+  });
+
+  // Dim non-connected edges, highlight connected
+  document.querySelectorAll('.pm-edge').forEach(e => {
+    const isConnected = connected.has(e.dataset.from) && connected.has(e.dataset.to);
+    if (isConnected) {
+      e.classList.add('highlighted');
+      e.classList.remove('dimmed');
+    } else {
+      e.classList.add('dimmed');
+      e.classList.remove('highlighted');
+    }
+  });
+}
+
+function clearHighlight() {
+  document.querySelectorAll('.pm-node').forEach(n => n.classList.remove('dimmed'));
+  document.querySelectorAll('.pm-edge').forEach(e => {
+    e.classList.remove('dimmed');
+    e.classList.remove('highlighted');
+  });
+}
+
+// ═══ Init ═══
+document.addEventListener('DOMContentLoaded', () => {
+  initCheckboxes();
+  initTabs();
+});
+</script>
+
+</body>
+</html>

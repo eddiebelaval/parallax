@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Ember Design System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+  }
+
+  /* ─── NAV ─── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    gap: 4px;
+    padding: 12px 32px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #222;
+    overflow-x: auto;
+  }
+  .nav button {
+    padding: 8px 16px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #888;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav button:hover { border-color: #555; color: #ccc; }
+  .nav button.active { border-color: #d4a040; color: #d4a040; }
+
+  .section { padding: 40px 32px; display: none; }
+  .section.active { display: block; }
+
+  h2 {
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid #3a2e22;
+    color: #7a6c58;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #7a6c58;
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.7;
+    max-width: 640px;
+    margin-bottom: 28px;
+  }
+  .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  /* ─── SWATCHES ─── */
+  .swatch-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .swatch-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch {
+    width: 64px;
+    height: 44px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .swatch-hex {
+    font-size: 9px;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    color: #666;
+  }
+  .swatch-name {
+    font-size: 9px;
+    color: #888;
+  }
+
+  /* ─── MODE COMPARISON ─── */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .mode-panel {
+    border: 1px solid;
+    overflow: hidden;
+  }
+  .mode-panel-header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid;
+  }
+  .mode-panel-body { padding: 20px; }
+
+  /* ─── ASCII ART ─── */
+  .ascii-container {
+    font-family: 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: pre;
+    overflow: hidden;
+  }
+  .ascii-demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .ascii-demo {
+    border: 1px solid #3a2e22;
+    padding: 20px;
+    background: #0f0b08;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .ascii-demo .label {
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .ascii-demo-light {
+    background: #f5efe6;
+    border-color: #d4c4aa;
+  }
+  .ascii-demo-light .label { color: #8a7b68; }
+
+  /* ASCII animation: breathing */
+  @keyframes ascii-breathe {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.02); }
+  }
+  .ascii-breathe {
+    animation: ascii-breathe 4s ease-in-out infinite;
+  }
+  .ascii-breathe-delay { animation-delay: 1s; }
+  .ascii-breathe-delay2 { animation-delay: 2s; }
+
+  /* ASCII animation: grow */
+  @keyframes ascii-grow {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .ascii-grow-line {
+    opacity: 0;
+    animation: ascii-grow 0.6s ease-out forwards;
+  }
+
+  /* ASCII animation: drift */
+  @keyframes ascii-drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+  }
+  .ascii-drift {
+    animation: ascii-drift 6s ease-in-out infinite;
+  }
+
+  /* ─── PARALLAX DEMO ─── */
+  .parallax-demo {
+    position: relative;
+    height: 500px;
+    overflow: hidden;
+    border: 1px solid #3a2e22;
+    margin-top: 20px;
+  }
+  .parallax-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    will-change: transform;
+  }
+  .parallax-bg {
+    top: 0;
+    height: 100%;
+    background: #0f0b08;
+  }
+  .parallax-ascii-bg {
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.08;
+    font-family: 'SF Mono', monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: pre;
+    color: #d4a040;
+    pointer-events: none;
+  }
+  .parallax-content {
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+  }
+  .parallax-fg {
+    bottom: 0;
+    height: 40%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 30px;
+    pointer-events: none;
+    opacity: 0.12;
+    font-family: 'SF Mono', monospace;
+    font-size: 9px;
+    line-height: 1.2;
+    white-space: pre;
+    color: #c45c3c;
+  }
+
+  /* ─── LANDING PARALLAX SCROLL ─── */
+  .scroll-demo {
+    position: relative;
+    height: 800px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #3a2e22;
+    margin-top: 20px;
+  }
+  .scroll-demo::-webkit-scrollbar { width: 4px; }
+  .scroll-demo::-webkit-scrollbar-track { background: #1a1410; }
+  .scroll-demo::-webkit-scrollbar-thumb { background: #3a2e22; }
+
+  .scroll-inner { position: relative; height: 2000px; }
+
+  .scroll-layer-back {
+    position: sticky;
+    top: 0;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SF Mono', monospace;
+    font-size: 9px;
+    line-height: 1.2;
+    white-space: pre;
+    color: #d4a040;
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .scroll-hero {
+    position: relative;
+    z-index: 1;
+    padding: 80px 48px;
+    margin-top: -400px;
+  }
+
+  .scroll-section {
+    position: relative;
+    z-index: 2;
+    padding: 60px 48px;
+  }
+
+  /* ─── USAGE CONTEXTS ─── */
+  .usage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .usage-card {
+    border: 1px solid #3a2e22;
+    background: #0f0b08;
+    padding: 24px;
+    min-height: 220px;
+  }
+  .usage-card-light {
+    background: #f5efe6;
+    border-color: #d4c4aa;
+  }
+
+  .hidden { display: none; }
+
+  @media (max-width: 768px) {
+    .mode-grid, .ascii-demo-grid, .usage-grid { grid-template-columns: 1fr; }
+    .section { padding: 24px 16px; }
+    .nav { padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="active" onclick="showTab('palette')">Palette</button>
+  <button onclick="showTab('light-mode')">Light Mode</button>
+  <button onclick="showTab('ascii')">ASCII Art</button>
+  <button onclick="showTab('parallax-effect')">Parallax Effect</button>
+  <button onclick="showTab('combined')">Full Landing Mock</button>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TAB: PALETTE                                -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="tab-palette" class="section active">
+  <h2>Ember<span class="tag">Confirmed</span></h2>
+  <p class="subtitle">"Having the hard conversation by firelight"</p>
+  <p class="desc">Deep chocolate warmth, amber illumination, eucalyptus calm. Now extended with a warm light mode counterpart. Both modes share the same accent/temperature system.</p>
+
+  <div class="label">Dark Mode Foundation</div>
+  <div class="swatch-row">
+    <div class="swatch-card"><div class="swatch" style="background:#0f0b08"></div><div class="swatch-name">bg</div><div class="swatch-hex">#0f0b08</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#1a1410"></div><div class="swatch-name">surface</div><div class="swatch-hex">#1a1410</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#261e16"></div><div class="swatch-name">elevated</div><div class="swatch-hex">#261e16</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#3a2e22"></div><div class="swatch-name">border</div><div class="swatch-hex">#3a2e22</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#c9b9a3"></div><div class="swatch-name">text</div><div class="swatch-hex">#c9b9a3</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#ebe1d4"></div><div class="swatch-name">heading</div><div class="swatch-hex">#ebe1d4</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#7a6c58"></div><div class="swatch-name">muted</div><div class="swatch-hex">#7a6c58</div></div>
+  </div>
+
+  <div class="label">Light Mode Foundation</div>
+  <div class="swatch-row">
+    <div class="swatch-card"><div class="swatch" style="background:#f5efe6; border-color:#d4c4aa;"></div><div class="swatch-name">bg</div><div class="swatch-hex">#f5efe6</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#ede6db; border-color:#d4c4aa;"></div><div class="swatch-name">surface</div><div class="swatch-hex">#ede6db</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#e2d8c8; border-color:#d4c4aa;"></div><div class="swatch-name">elevated</div><div class="swatch-hex">#e2d8c8</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#d4c4aa; border-color:#c4b494;"></div><div class="swatch-name">border</div><div class="swatch-hex">#d4c4aa</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#3a2e22; border-color:#d4c4aa;"></div><div class="swatch-name">text</div><div class="swatch-hex">#3a2e22</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#1e1810; border-color:#d4c4aa;"></div><div class="swatch-name">heading</div><div class="swatch-hex">#1e1810</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#8a7b68; border-color:#d4c4aa;"></div><div class="swatch-name">muted</div><div class="swatch-hex">#8a7b68</div></div>
+  </div>
+
+  <div class="label">Shared Accents + Temperature</div>
+  <div class="swatch-row">
+    <div class="swatch-card"><div class="swatch" style="background:#c45c3c"></div><div class="swatch-name">hot / person-a</div><div class="swatch-hex">#c45c3c</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#d4a040"></div><div class="swatch-name">warm / accent</div><div class="swatch-hex">#d4a040</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#6aab8e"></div><div class="swatch-name">cool / nvc</div><div class="swatch-hex">#6aab8e</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#d4a040"></div><div class="swatch-name">person-b</div><div class="swatch-hex">#d4a040</div></div>
+  </div>
+
+  <div class="label">Light Mode Accent Adjustments (Deeper for contrast)</div>
+  <div class="swatch-row">
+    <div class="swatch-card"><div class="swatch" style="background:#a84428; border-color:#d4c4aa;"></div><div class="swatch-name">hot-light</div><div class="swatch-hex">#a84428</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#b8882a; border-color:#d4c4aa;"></div><div class="swatch-name">warm-light</div><div class="swatch-hex">#b8882a</div></div>
+    <div class="swatch-card"><div class="swatch" style="background:#3d8a6e; border-color:#d4c4aa;"></div><div class="swatch-name">cool-light</div><div class="swatch-hex">#3d8a6e</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TAB: LIGHT MODE                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="tab-light-mode" class="section">
+  <h2>Light Mode<span class="tag">Warm Parchment</span></h2>
+  <p class="subtitle">"Morning light through linen curtains"</p>
+  <p class="desc">The inverse of Ember dark. Warm cream/parchment base, deep brown text. Like aged paper, a counselor's notebook, natural fiber. The accents deepen slightly for WCAG contrast on the light background.</p>
+
+  <div class="mode-grid">
+    <!-- DARK -->
+    <div class="mode-panel" style="background:#0f0b08; border-color:#3a2e22;">
+      <div class="mode-panel-header" style="border-color:#261e16;">
+        <span style="color:#d4a040; font-family:'SF Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</span>
+        <span style="color:#7a6c58; font-size:9px; letter-spacing:0.1em; text-transform:uppercase;">Dark Mode</span>
+      </div>
+      <div class="mode-panel-body">
+        <div style="color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px;">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#d4a040; margin-right:8px;"></span>Real-time Mediation
+        </div>
+        <h3 style="font-size:22px; font-weight:300; letter-spacing:-0.02em; color:#ebe1d4; margin-bottom:8px; line-height:1.3;">See the conversation you're actually having</h3>
+        <p style="font-size:13px; color:#7a6c58; line-height:1.7; margin-bottom:20px;">NVC-powered conflict resolution in everyone's hands.</p>
+
+        <!-- Message card dark -->
+        <div style="border-left:2px solid #c45c3c; padding-left:10px; margin-bottom:16px;">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#c45c3c;">Alex</span>
+            <span style="font-size:9px; font-family:'SF Mono',monospace; color:#4a3e30;">2:14 PM</span>
+            <span style="font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#c45c3c; margin-left:auto;">HEATED</span>
+          </div>
+          <p style="font-size:13px; line-height:1.6; color:#c9b9a3; margin-bottom:6px;">You never listen to what I'm actually saying.</p>
+          <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <span style="padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em; text-transform:uppercase;">VALIDATION</span>
+            <span style="padding:2px 6px; font-size:9px; border:1px solid #3a2e22; color:#7a6c58; letter-spacing:0.06em; text-transform:uppercase;">PRESENCE</span>
+          </div>
+          <div style="border-left:1px solid #6aab8e; padding-left:8px; font-size:12px; font-style:italic; color:#6aab8e; line-height:1.5;">"I need to feel that you're really hearing me."</div>
+        </div>
+
+        <div style="border-left:2px solid #d4a040; padding-left:10px;">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#d4a040;">Jordan</span>
+            <span style="font-size:9px; font-family:'SF Mono',monospace; color:#4a3e30;">2:16 PM</span>
+            <span style="font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#d4a040; margin-left:auto;">WARM</span>
+          </div>
+          <p style="font-size:13px; line-height:1.6; color:#c9b9a3;">I do listen. I just don't always agree.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="mode-panel" style="background:#f5efe6; border-color:#d4c4aa;">
+      <div class="mode-panel-header" style="border-color:#e2d8c8;">
+        <span style="color:#b8882a; font-family:'SF Mono',monospace; font-size:10px; letter-spacing:0.15em;">PARALLAX</span>
+        <span style="color:#8a7b68; font-size:9px; letter-spacing:0.1em; text-transform:uppercase;">Light Mode</span>
+      </div>
+      <div class="mode-panel-body">
+        <div style="color:#8a7b68; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px;">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#b8882a; margin-right:8px;"></span>Real-time Mediation
+        </div>
+        <h3 style="font-size:22px; font-weight:300; letter-spacing:-0.02em; color:#1e1810; margin-bottom:8px; line-height:1.3;">See the conversation you're actually having</h3>
+        <p style="font-size:13px; color:#8a7b68; line-height:1.7; margin-bottom:20px;">NVC-powered conflict resolution in everyone's hands.</p>
+
+        <!-- Message card light -->
+        <div style="border-left:2px solid #a84428; padding-left:10px; margin-bottom:16px;">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#a84428;">Alex</span>
+            <span style="font-size:9px; font-family:'SF Mono',monospace; color:#b8a890;">2:14 PM</span>
+            <span style="font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#a84428; margin-left:auto;">HEATED</span>
+          </div>
+          <p style="font-size:13px; line-height:1.6; color:#3a2e22; margin-bottom:6px;">You never listen to what I'm actually saying.</p>
+          <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <span style="padding:2px 6px; font-size:9px; border:1px solid #d4c4aa; color:#8a7b68; letter-spacing:0.06em; text-transform:uppercase;">VALIDATION</span>
+            <span style="padding:2px 6px; font-size:9px; border:1px solid #d4c4aa; color:#8a7b68; letter-spacing:0.06em; text-transform:uppercase;">PRESENCE</span>
+          </div>
+          <div style="border-left:1px solid #3d8a6e; padding-left:8px; font-size:12px; font-style:italic; color:#3d8a6e; line-height:1.5;">"I need to feel that you're really hearing me."</div>
+        </div>
+
+        <div style="border-left:2px solid #b8882a; padding-left:10px;">
+          <div style="display:flex; gap:6px; align-items:baseline; margin-bottom:4px;">
+            <span style="font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#b8882a;">Jordan</span>
+            <span style="font-size:9px; font-family:'SF Mono',monospace; color:#b8a890;">2:16 PM</span>
+            <span style="font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:#b8882a; margin-left:auto;">WARM</span>
+          </div>
+          <p style="font-size:13px; line-height:1.6; color:#3a2e22;">I do listen. I just don't always agree.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:28px; padding-top:20px; border-top:1px solid #222;">
+    <div class="label">Light Mode Philosophy</div>
+    <p class="desc">Not a simple invert. The light mode is <em>warm parchment</em> — #f5efe6 has a yellow-brown undertone, not blue-white. Think: aged paper, natural linen, a counselor's notepad. The accents deepen by ~15% to maintain WCAG 4.5:1 contrast on the warm background.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TAB: ASCII ART                              -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="tab-ascii" class="section">
+  <h2>ASCII Art + Motion<span class="tag">Botanical</span></h2>
+  <p class="subtitle">"Organic growth, not mechanical precision"</p>
+  <p class="desc">Botanical ASCII art as texture — vines, leaves, blooming forms. The motifs are metaphoric: growth, unfurling, branching out. They breathe with subtle animation. Used as background texture (very low opacity), loading states, section dividers, and the "waiting for partner" state.</p>
+
+  <div class="label">Motif Library — Dark Mode</div>
+  <div class="ascii-demo-grid">
+    <!-- Vine / Branch -->
+    <div class="ascii-demo">
+      <div class="label">Vine / Growth</div>
+      <div class="ascii-container ascii-breathe" style="color:#d4a040; opacity:0.6;">
+        .
+       \|/
+        |
+       /|\
+      / | \
+     /  |  \
+    .   |   .
+   /|   |   |\
+  / |  \|/  | \
+ .  |   |   |  .
+    |  /|\  |
+    | / | \ |
+    ./  |  \.
+        |
+       \|/
+        .
+      </div>
+    </div>
+
+    <!-- Fern / Unfurl -->
+    <div class="ascii-demo">
+      <div class="label">Fern / Unfurl</div>
+      <div class="ascii-container ascii-breathe ascii-breathe-delay" style="color:#6aab8e; opacity:0.6;">
+            ,
+           /|
+          / |
+         /  |  ,
+        /   | /|
+       /    |/ |
+      /     /  |
+     /     /|  |
+    /     / |  |
+   /     /  | /
+  /     /   |/
+ /     /    /
+      /    /
+     /    /
+    /    /
+   /   /
+  /  /
+ / /
+//
+      </div>
+    </div>
+
+    <!-- Bloom / Flower -->
+    <div class="ascii-demo">
+      <div class="label">Bloom / Opening</div>
+      <div class="ascii-container ascii-breathe ascii-breathe-delay2" style="color:#c45c3c; opacity:0.5;">
+         .  *  .
+      *    |    *
+    .   \  |  /   .
+   ------\-+-/------
+    .   / \|/ \   .
+      *    |    *
+         . * .
+        /  |  \
+       /   |   \
+      /    |    \
+     .     |     .
+           |
+           |
+           |
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Motif Library — Light Mode</div>
+  <div class="ascii-demo-grid">
+    <div class="ascii-demo ascii-demo-light">
+      <div class="label">Vine / Growth</div>
+      <div class="ascii-container ascii-breathe" style="color:#b8882a; opacity:0.25;">
+        .
+       \|/
+        |
+       /|\
+      / | \
+     /  |  \
+    .   |   .
+   /|   |   |\
+  / |  \|/  | \
+ .  |   |   |  .
+    |  /|\  |
+    | / | \ |
+    ./  |  \.
+        |
+       \|/
+        .
+      </div>
+    </div>
+    <div class="ascii-demo ascii-demo-light">
+      <div class="label">Fern / Unfurl</div>
+      <div class="ascii-container ascii-breathe ascii-breathe-delay" style="color:#3d8a6e; opacity:0.2;">
+            ,
+           /|
+          / |
+         /  |  ,
+        /   | /|
+       /    |/ |
+      /     /  |
+     /     /|  |
+    /     / |  |
+   /     /  | /
+  /     /   |/
+ /     /    /
+      /    /
+     /    /
+    /    /
+   /   /
+  /  /
+ / /
+//
+      </div>
+    </div>
+    <div class="ascii-demo ascii-demo-light">
+      <div class="label">Bloom / Opening</div>
+      <div class="ascii-container ascii-breathe ascii-breathe-delay2" style="color:#a84428; opacity:0.18;">
+         .  *  .
+      *    |    *
+    .   \  |  /   .
+   ------\-+-/------
+    .   / \|/ \   .
+      *    |    *
+         . * .
+        /  |  \
+       /   |   \
+      /    |    \
+     .     |     .
+           |
+           |
+           |
+      </div>
+    </div>
+  </div>
+
+  <div class="label">Usage Contexts</div>
+  <div class="usage-grid">
+    <!-- Waiting State -->
+    <div class="usage-card">
+      <div class="label" style="color:#7a6c58;">Waiting for Partner</div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:20px;">
+        <div class="ascii-container ascii-drift" style="color:#d4a040; opacity:0.3; font-size:10px; margin-bottom:12px;">
+    .       .
+   / \     / \
+  /   \   /   \
+ /     \ /     \
+.       .       .
+ \     / \     /
+  \   /   \   /
+   \ /     \ /
+    .       .
+        </div>
+        <span style="font-size:11px; color:#7a6c58; font-family:'SF Mono',monospace; letter-spacing:0.1em; text-transform:uppercase;">Waiting for Jordan...</span>
+      </div>
+    </div>
+
+    <!-- Section Divider -->
+    <div class="usage-card">
+      <div class="label" style="color:#7a6c58;">Section Divider</div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:20px;">
+        <div style="font-size:13px; color:#c9b9a3; margin-bottom:16px; text-align:center; line-height:1.6;">...and that's what I heard you say.</div>
+        <div class="ascii-container" style="color:#3a2e22; font-size:9px; margin-bottom:16px; text-align:center;">
+~~~/\~~~/\~~~/\~~~/\~~~/\~~~/\~~~
+        </div>
+        <span style="font-size:10px; color:#7a6c58; font-family:'SF Mono',monospace; letter-spacing:0.15em; text-transform:uppercase;">Session Summary</span>
+      </div>
+    </div>
+
+    <!-- Loading/Analyzing -->
+    <div class="usage-card">
+      <div class="label" style="color:#7a6c58;">Analyzing Message</div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:20px;">
+        <div class="ascii-container ascii-breathe" style="color:#6aab8e; opacity:0.5; font-size:10px; margin-bottom:12px;">
+     ,
+    /|\
+   / | \
+  /  |  \
+ /   |   \
+     |
+        </div>
+        <span style="font-size:11px; color:#6aab8e; font-family:'SF Mono',monospace; letter-spacing:0.1em; text-transform:uppercase;">Seeing beneath...</span>
+      </div>
+    </div>
+
+    <!-- Background Texture -->
+    <div class="usage-card">
+      <div class="label" style="color:#7a6c58;">Background Texture (5% opacity)</div>
+      <div style="position:relative; height:140px; overflow:hidden;">
+        <div class="ascii-container ascii-drift" style="position:absolute; top:0; left:0; right:0; bottom:0; color:#d4a040; opacity:0.05; font-size:8px; line-height:1.1; overflow:hidden;">
+.   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+ \  |  /  \ | /   \ | /   \ | /   \ | /   \ | /   \ | /
+  \ | /    \|/     \|/     \|/     \|/     \|/     \|/
+---+---  ---+---  ---+---  ---+---  ---+---  ---+---  ---+---
+  / | \    /|\     /|\     /|\     /|\     /|\     /|\
+ /  |  \  / | \   / | \   / | \   / | \   / | \   / | \
+.   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+ \  |  /  \ | /   \ | /   \ | /   \ | /   \ | /   \ | /
+  \ | /    \|/     \|/     \|/     \|/     \|/     \|/
+---+---  ---+---  ---+---  ---+---  ---+---  ---+---  ---+---
+  / | \    /|\     /|\     /|\     /|\     /|\     /|\
+ /  |  \  / | \   / | \   / | \   / | \   / | \   / | \
+.   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+        </div>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
+          <p style="font-size:20px; font-weight:300; color:#ebe1d4; letter-spacing:-0.02em;">Content sits on top</p>
+          <p style="font-size:12px; color:#7a6c58; margin-top:4px;">ASCII texture barely visible underneath</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TAB: PARALLAX EFFECT                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="tab-parallax-effect" class="section">
+  <h2>Parallax Scrolling<span class="tag">Namesake</span></h2>
+  <p class="subtitle">"Different layers moving at different speeds — just like perspectives in a conflict"</p>
+  <p class="desc">The product is called Parallax. The landing page should use the effect. Three layers: ASCII botanical texture in the deep background (slowest), content in the middle, and a foreground accent element. Scroll the demo below to see it in action.</p>
+
+  <div class="label">Scroll to see the parallax effect</div>
+  <div class="scroll-demo" id="parallaxScroll">
+    <div class="scroll-inner">
+      <!-- Sticky ASCII background -->
+      <div class="scroll-layer-back" id="parallaxBack">
+<pre style="font-size:8px; line-height:1.1;">
+        .       .       .       .       .       .       .
+       /|\     /|\     /|\     /|\     /|\     /|\     /|\
+      / | \   / | \   / | \   / | \   / | \   / | \   / | \
+     /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \
+    .   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+     \  |  / \  |  / \  |  / \  |  / \  |  / \  |  / \  |  /
+      \ | /   \ | /   \ | /   \ | /   \ | /   \ | /   \ | /
+       \|/     \|/     \|/     \|/     \|/     \|/     \|/
+        .       .       .       .       .       .       .
+       /|\     /|\     /|\     /|\     /|\     /|\     /|\
+      / | \   / | \   / | \   / | \   / | \   / | \   / | \
+     /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \
+    .   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+     \  |  / \  |  / \  |  / \  |  / \  |  / \  |  / \  |  /
+      \ | /   \ | /   \ | /   \ | /   \ | /   \ | /   \ | /
+       \|/     \|/     \|/     \|/     \|/     \|/     \|/
+        .       .       .       .       .       .       .
+       /|\     /|\     /|\     /|\     /|\     /|\     /|\
+      / | \   / | \   / | \   / | \   / | \   / | \   / | \
+     /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \ /  |  \
+    .   |   .   |   .   |   .   |   .   |   .   |   .   |   .
+     \  |  / \  |  / \  |  / \  |  / \  |  / \  |  / \  |  /
+      \ | /   \ | /   \ | /   \ | /   \ | /   \ | /   \ | /
+       \|/     \|/     \|/     \|/     \|/     \|/     \|/
+        .       .       .       .       .       .       .
+</pre>
+      </div>
+
+      <!-- Hero content (medium speed) -->
+      <div class="scroll-hero" id="parallaxContent" style="background:rgba(15,11,8,0.92);">
+        <div style="max-width:480px;">
+          <div style="color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; font-family:'SF Mono',monospace;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#d4a040; margin-right:8px;"></span>Real-time Mediation
+          </div>
+          <h2 style="font-size:36px; font-weight:300; letter-spacing:-0.02em; color:#ebe1d4; margin-bottom:12px; line-height:1.2;">See the conversation you're actually having</h2>
+          <p style="font-size:15px; color:#7a6c58; line-height:1.7; margin-bottom:28px;">Professional mediation costs $300-500/hr. Most conflicts never get help. Parallax puts NVC-powered conflict resolution in everyone's hands — powered by Claude.</p>
+          <div style="display:flex; gap:8px;">
+            <div style="padding:10px 16px; border:1px solid #3a2e22; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:10px; font-family:'SF Mono',monospace; color:#d4a040; letter-spacing:0.1em;">01</span>
+              <span style="font-size:11px; color:#7a6c58; text-transform:uppercase; letter-spacing:0.05em;">Start a session</span>
+            </div>
+            <div style="padding:10px 16px; border:1px solid #3a2e22; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:10px; font-family:'SF Mono',monospace; color:#d4a040; letter-spacing:0.1em;">02</span>
+              <span style="font-size:11px; color:#7a6c58; text-transform:uppercase; letter-spacing:0.05em;">Take turns</span>
+            </div>
+            <div style="padding:10px 16px; border:1px solid #3a2e22; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:10px; font-family:'SF Mono',monospace; color:#d4a040; letter-spacing:0.1em;">03</span>
+              <span style="font-size:11px; color:#7a6c58; text-transform:uppercase; letter-spacing:0.05em;">See beneath</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second section -->
+      <div class="scroll-section" id="parallaxSection2" style="background:rgba(15,11,8,0.96); margin-top:40px;">
+        <div style="max-width:480px;">
+          <div style="color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; font-family:'SF Mono',monospace;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#6aab8e; margin-right:8px;"></span>Powered by NVC
+          </div>
+          <h3 style="font-size:24px; font-weight:300; color:#ebe1d4; margin-bottom:12px; letter-spacing:-0.02em;">Every message gets a dual-lens analysis</h3>
+          <p style="font-size:14px; color:#7a6c58; line-height:1.7; margin-bottom:20px;">Classic NVC (observation, feeling, need, request) plus our Parallax lens — subtext, blind spots, unmet needs, and a translation of what they actually mean.</p>
+
+          <!-- Temp bar -->
+          <div style="display:flex; gap:3px; height:8px; margin-bottom:8px;">
+            <div style="flex:1; background:#c45c3c;"></div>
+            <div style="flex:1; background:#cc7e3e;"></div>
+            <div style="flex:1; background:#d4a040;"></div>
+            <div style="flex:1; background:#9fa668;"></div>
+            <div style="flex:1; background:#6aab8e;"></div>
+            <div style="flex:1; background:#c9b9a3;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:#7a6c58; letter-spacing:0.1em; text-transform:uppercase; font-family:'SF Mono',monospace;">
+            <span>HOT</span><span>WARM</span><span>COOL</span><span>NEUTRAL</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Third section -->
+      <div class="scroll-section" id="parallaxSection3" style="background:rgba(15,11,8,0.96); margin-top:40px;">
+        <div style="max-width:480px;">
+          <div style="color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; font-family:'SF Mono',monospace;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#c45c3c; margin-right:8px;"></span>Start a session
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+            <div style="padding:16px; border:1px solid #3a2e22;">
+              <p style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#ebe1d4; margin-bottom:4px;">In-Person</p>
+              <p style="font-size:12px; color:#7a6c58;">Same device, shared screen</p>
+            </div>
+            <div style="padding:16px; border:1px solid #3a2e22;">
+              <p style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#ebe1d4; margin-bottom:4px;">Remote</p>
+              <p style="font-size:12px; color:#7a6c58;">Different devices, room code</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="flex:1; height:1px; background:#3a2e22;"></div>
+            <span style="font-size:10px; color:#7a6c58; font-family:'SF Mono',monospace; letter-spacing:0.1em; text-transform:uppercase;">OR JOIN</span>
+            <div style="flex:1; height:1px; background:#3a2e22;"></div>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <div style="flex:1; padding:12px 16px; background:#1a1410; border:1px solid #3a2e22; font-family:'SF Mono',monospace; font-size:12px; color:#7a6c58; letter-spacing:0.15em; text-align:center;">ROOM CODE</div>
+            <div style="padding:12px 20px; border:1px solid #3a2e22; font-size:11px; color:#ebe1d4; text-transform:uppercase; letter-spacing:0.1em;">Join</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <div class="label">Implementation Notes</div>
+    <p class="desc">The parallax effect uses CSS sticky positioning and transforms. The ASCII botanical texture stays fixed at a slower scroll rate while content slides over it. On mobile, the parallax degrades gracefully to a static background — performance over spectacle.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TAB: COMBINED                               -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="tab-combined" class="section">
+  <h2>Full Design Language Summary<span class="tag">Ember + Botanical + Parallax</span></h2>
+  <p class="subtitle">"Firelight, growth, and shifting perspectives"</p>
+
+  <div class="desc">
+    <strong>The Ember system in three sentences:</strong> Deep chocolate warmth creates safety for vulnerable conversations. Botanical ASCII art — breathing, growing, unfurling — embodies the organic nature of conflict resolution (not mechanical, not clinical). Parallax scrolling reinforces the product's core idea: the same conversation looks different depending on your depth of view.
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:32px;">
+    <div style="border:1px solid #3a2e22; padding:20px; background:#0f0b08;">
+      <div class="label" style="color:#d4a040;">Dark Mode</div>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6;">Deep chocolate base. Amber illumination. The default — for intimate, focused sessions. "Firelight conversation."</p>
+    </div>
+    <div style="border:1px solid #d4c4aa; padding:20px; background:#f5efe6;">
+      <div class="label" style="color:#b8882a;">Light Mode</div>
+      <p style="font-size:12px; color:#8a7b68; line-height:1.6;">Warm parchment base. Deep brown text. For daytime use, accessibility. "Morning light through linen."</p>
+    </div>
+    <div style="border:1px solid #3a2e22; padding:20px; background:#0f0b08;">
+      <div class="label" style="color:#6aab8e;">Shared System</div>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6;">Temperature scale, person colors, NVC green, ASCII motifs — identical semantics in both modes.</p>
+    </div>
+  </div>
+
+  <div class="label">Design Token Map</div>
+  <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:32px;">
+    <thead>
+      <tr style="border-bottom:1px solid #3a2e22;">
+        <th style="text-align:left; padding:8px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;">Token</th>
+        <th style="text-align:center; padding:8px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;">Dark</th>
+        <th style="text-align:center; padding:8px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;">Light</th>
+        <th style="text-align:left; padding:8px; color:#7a6c58; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;">Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--bg</td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#0f0b08; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#0f0b08</span></td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#f5efe6; border:1px solid #d4c4aa; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#f5efe6</span></td>
+        <td style="padding:8px; color:#7a6c58;">Page background</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--surface</td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#1a1410; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#1a1410</span></td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#ede6db; border:1px solid #d4c4aa; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#ede6db</span></td>
+        <td style="padding:8px; color:#7a6c58;">Cards, inputs</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--border</td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#3a2e22; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#3a2e22</span></td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#d4c4aa; border:1px solid #c4b494; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#d4c4aa</span></td>
+        <td style="padding:8px; color:#7a6c58;">Dividers, outlines</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--text</td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#c9b9a3; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#c9b9a3</span></td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#3a2e22; border:1px solid #d4c4aa; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#3a2e22</span></td>
+        <td style="padding:8px; color:#7a6c58;">Body copy</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--heading</td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#ebe1d4; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#ebe1d4</span></td>
+        <td style="padding:8px; text-align:center;"><span style="display:inline-block; width:16px; height:16px; background:#1e1810; border:1px solid #d4c4aa; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#1e1810</span></td>
+        <td style="padding:8px; color:#7a6c58;">Headings, emphasis</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--accent</td>
+        <td style="padding:8px; text-align:center;" colspan="2"><span style="display:inline-block; width:16px; height:16px; background:#d4a040; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#d4a040</span> / <span style="color:#666; font-family:monospace;">#b8882a</span></td>
+        <td style="padding:8px; color:#7a6c58;">Primary accent (amber)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--temp-hot</td>
+        <td style="padding:8px; text-align:center;" colspan="2"><span style="display:inline-block; width:16px; height:16px; background:#c45c3c; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#c45c3c</span> / <span style="color:#666; font-family:monospace;">#a84428</span></td>
+        <td style="padding:8px; color:#7a6c58;">Emotional heat, Person A</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1a1410;">
+        <td style="padding:8px; color:#c9b9a3;">--temp-cool</td>
+        <td style="padding:8px; text-align:center;" colspan="2"><span style="display:inline-block; width:16px; height:16px; background:#6aab8e; border:1px solid #3a2e22; vertical-align:middle;"></span> <span style="color:#666; font-family:monospace;">#6aab8e</span> / <span style="color:#666; font-family:monospace;">#3d8a6e</span></td>
+        <td style="padding:8px; color:#7a6c58;">NVC translation, cool-down</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="label">The Three Pillars</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:32px;">
+    <div style="border:1px solid #3a2e22; padding:20px; background:#0f0b08;">
+      <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#d4a040; margin-bottom:8px;">1. Ember Palette</div>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6;"><strong style="color:#c9b9a3;">What:</strong> Warm chocolate dark + parchment light, amber/coral/eucalyptus accents.</p>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6; margin-top:6px;"><strong style="color:#c9b9a3;">Why:</strong> Safety. People need to feel held before they can be honest.</p>
+    </div>
+    <div style="border:1px solid #3a2e22; padding:20px; background:#0f0b08;">
+      <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#6aab8e; margin-bottom:8px;">2. Botanical ASCII</div>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6;"><strong style="color:#c9b9a3;">What:</strong> Organic vine/fern/bloom motifs rendered in ASCII, breathing with subtle animation.</p>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6; margin-top:6px;"><strong style="color:#c9b9a3;">Why:</strong> Growth metaphor. Conflict resolution is organic, not mechanical.</p>
+    </div>
+    <div style="border:1px solid #3a2e22; padding:20px; background:#0f0b08;">
+      <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#c45c3c; margin-bottom:8px;">3. Parallax Scroll</div>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6;"><strong style="color:#c9b9a3;">What:</strong> Multi-layer depth on landing page — ASCII texture behind, content middle, accent foreground.</p>
+      <p style="font-size:12px; color:#7a6c58; line-height:1.6; margin-top:6px;"><strong style="color:#c9b9a3;">Why:</strong> Namesake. Same conversation, different depths — the product's core insight.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// Parallax scroll effect
+const scrollDemo = document.getElementById('parallaxScroll');
+if (scrollDemo) {
+  scrollDemo.addEventListener('scroll', () => {
+    const scrollTop = scrollDemo.scrollTop;
+    const back = document.getElementById('parallaxBack');
+    const content = document.getElementById('parallaxContent');
+    if (back) back.style.transform = `translateY(${scrollTop * 0.3}px)`;
+    if (content) content.style.transform = `translateY(${scrollTop * -0.05}px)`;
+  });
+}
+
+// ASCII grow animation on tab switch
+function animateAsciiGrow() {
+  document.querySelectorAll('.ascii-grow-line').forEach((el, i) => {
+    el.style.animationDelay = `${i * 100}ms`;
+  });
+}
+</script>
+</body>
+</html>

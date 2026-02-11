@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Conflict Intelligence Engine Blueprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #020202;
+    --fg: #eeeeee;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    --border-subtle: rgba(238,238,238,0.08);
+    --border-visible: rgba(238,238,238,0.15);
+    --base-card: rgba(238,238,238,0.03);
+    --accent: #ef6f2e;
+    --amber: #f59e0b;
+    --teal: #4ecdc4;
+    --cyan: #06b6d4;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --rose: #f472b6;
+    --lime: #84cc16;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Geist Mono', monospace;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .header {
+    padding: 40px 40px 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .header-meta {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 700px;
+    margin-bottom: 24px;
+  }
+  .header-stats {
+    display: flex;
+    gap: 32px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 2px; }
+  .stat-value { font-size: 22px; font-weight: 300; color: var(--fg); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.teal { color: var(--teal); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    max-width: 1400px;
+    margin: 24px auto 0;
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text-secondary); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 40px 80px;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .section { margin-bottom: 48px; }
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .section-label span { color: var(--accent); }
+
+  .card {
+    background: var(--base-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card:hover { border-color: var(--border-visible); }
+  .card-title { font-size: 14px; font-weight: 400; margin-bottom: 8px; }
+  .card-desc { color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+  /* Lens Cards */
+  .lens-card {
+    background: var(--base-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .lens-card:hover { border-color: var(--border-visible); transform: translateY(-1px); }
+  .lens-card.expanded { grid-column: 1 / -1; border-color: var(--accent); }
+  .lens-category-label {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .lens-category-label.universal { color: var(--accent); }
+  .lens-category-label.intimate { color: var(--rose); }
+  .lens-category-label.professional { color: var(--cyan); }
+  .lens-name { font-size: 15px; font-weight: 400; margin-bottom: 4px; }
+  .lens-creator { font-size: 10px; color: var(--text-muted); margin-bottom: 12px; }
+  .lens-detects { font-size: 11px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; list-style: none; }
+  .lens-detects li { padding-left: 12px; position: relative; }
+  .lens-detects li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .lens-signals {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    line-height: 1.7;
+    display: none;
+  }
+  .lens-card.expanded .lens-signals { display: block; }
+  .lens-signals strong { color: var(--text-secondary); }
+
+  .modelability {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: rgba(238,238,238,0.05);
+  }
+  .modelability.high { color: var(--teal); }
+  .modelability.medium { color: var(--amber); }
+  .modelability-bar { display: flex; gap: 2px; }
+  .modelability-bar span {
+    width: 8px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--border-subtle);
+  }
+  .modelability.high .modelability-bar span { background: var(--teal); }
+  .modelability.medium .modelability-bar span:nth-child(-n+2) { background: var(--amber); }
+
+  .context-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+  .ctx-badge {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+  .ctx-badge.intimate { color: var(--rose); border-color: rgba(244,114,182,0.3); }
+  .ctx-badge.prof-peer { color: var(--cyan); border-color: rgba(6,182,212,0.3); }
+  .ctx-badge.prof-hier { color: var(--purple); border-color: rgba(167,139,250,0.3); }
+  .ctx-badge.transactional { color: var(--amber); border-color: rgba(245,158,11,0.3); }
+  .ctx-badge.all { color: var(--accent); border-color: rgba(239,111,46,0.3); }
+
+  /* Router */
+  .router-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .router-mode {
+    padding: 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    background: var(--base-card);
+  }
+  .router-mode:hover { border-color: var(--border-visible); }
+  .router-mode.active { border-color: var(--accent); background: rgba(239,111,46,0.05); }
+  .router-mode .mode-name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+  .router-mode .mode-desc { font-size: 10px; color: var(--text-muted); }
+  .router-mode .mode-count { font-size: 18px; font-weight: 300; color: var(--accent); margin-top: 8px; }
+  .router-lenses {
+    padding: 20px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--base-card);
+    min-height: 60px;
+  }
+  .active-lens-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .active-lens-tag {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border-visible);
+    transition: all 0.3s ease;
+  }
+  .active-lens-tag.highlighted {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(239,111,46,0.08);
+  }
+
+  /* Engine Flow */
+  .engine-flow { display: flex; align-items: center; gap: 0; padding: 32px 0; overflow-x: auto; }
+  .flow-node {
+    padding: 16px 24px;
+    border: 1px solid var(--border-visible);
+    border-radius: 4px;
+    background: var(--base-card);
+    text-align: center;
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+  .flow-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .flow-value { font-size: 13px; font-weight: 400; }
+  .flow-node.accent-node { border-color: var(--accent); background: rgba(239,111,46,0.05); }
+  .flow-node.accent-node .flow-label { color: var(--accent); }
+  .flow-node.teal-node { border-color: var(--teal); }
+  .flow-node.teal-node .flow-label { color: var(--teal); }
+  .flow-arrow {
+    width: 40px;
+    height: 1px;
+    background: var(--border-visible);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -4px;
+    border: 4px solid transparent;
+    border-left-color: var(--border-visible);
+  }
+
+  /* Composite Analysis */
+  .message-display {
+    background: rgba(239,111,46,0.05);
+    border: 1px solid rgba(239,111,46,0.2);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 24px;
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.8;
+    text-align: center;
+  }
+  .highlight-word { color: var(--accent); border-bottom: 1px dashed rgba(239,111,46,0.4); }
+
+  .analysis-layers { display: flex; flex-direction: column; gap: 12px; }
+  .analysis-layer {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    padding: 16px 20px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--base-card);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.4;
+  }
+  .analysis-layer.visible { opacity: 1; }
+  .analysis-layer.visible:hover { border-color: var(--border-visible); }
+  .layer-name { font-size: 11px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .layer-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .layer-finding { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-right: 4px;
+  }
+  .tag.warning { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .tag.danger { background: rgba(239,68,68,0.15); color: var(--red); }
+  .tag.info { background: rgba(6,182,212,0.15); color: var(--cyan); }
+  .tag.neutral { background: rgba(238,238,238,0.08); color: var(--text-secondary); }
+
+  .animate-btn {
+    background: rgba(239,111,46,0.1);
+    border: 1px solid rgba(239,111,46,0.3);
+    color: var(--accent);
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+  }
+  .animate-btn:hover { background: rgba(239,111,46,0.2); }
+
+  /* Blind Spots */
+  .blindspot-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  .blindspot-gap {
+    padding: 12px 16px;
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 4px;
+    background: rgba(239,68,68,0.03);
+    font-size: 11px;
+  }
+  .gap-label { color: var(--red); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .blindspot-fill {
+    padding: 12px 16px;
+    border: 1px solid rgba(78,205,196,0.2);
+    border-radius: 4px;
+    background: rgba(78,205,196,0.03);
+    font-size: 11px;
+  }
+  .fill-label { color: var(--teal); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .blindspot-arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 16px; }
+
+  /* Timeline */
+  .timeline { display: flex; gap: 0; align-items: stretch; margin: 32px 0; }
+  .timeline-phase {
+    flex: 1;
+    padding: 24px;
+    border: 1px solid var(--border-subtle);
+    position: relative;
+  }
+  .timeline-phase:first-child { border-radius: 4px 0 0 4px; }
+  .timeline-phase:last-child { border-radius: 0 4px 4px 0; }
+  .timeline-phase.current { border-color: var(--accent); background: rgba(239,111,46,0.03); }
+  .phase-version { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .timeline-phase.current .phase-version { color: var(--accent); }
+  .phase-title { font-size: 15px; font-weight: 400; margin-bottom: 8px; }
+  .phase-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+  .phase-lenses { display: flex; flex-wrap: wrap; gap: 4px; }
+  .phase-lenses span {
+    font-size: 9px;
+    padding: 2px 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    color: var(--text-muted);
+  }
+  .timeline-connector { display: flex; align-items: center; padding: 0 4px; color: var(--text-muted); font-size: 18px; }
+
+  /* Assessment */
+  .assessment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .assessment-card {
+    padding: 24px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--base-card);
+  }
+  .assessment-card.strength { border-left: 3px solid var(--teal); }
+  .assessment-card.risk { border-left: 3px solid var(--red); }
+  .assessment-card.optimization { border-left: 3px solid var(--amber); }
+  .assessment-card.full-width { grid-column: 1 / -1; }
+  .a-title { font-size: 12px; font-weight: 500; margin-bottom: 12px; }
+  .assessment-card.strength .a-title { color: var(--teal); }
+  .assessment-card.risk .a-title { color: var(--red); }
+  .assessment-card.optimization .a-title { color: var(--amber); }
+  .assessment-list { list-style: none; }
+  .assessment-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .assessment-list li:last-child { border-bottom: none; }
+  .severity {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+    margin-right: 6px;
+  }
+  .severity.high { background: rgba(239,68,68,0.15); color: var(--red); }
+  .severity.medium { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .severity.low { background: rgba(78,205,196,0.15); color: var(--teal); }
+
+  /* Matrix table */
+  .matrix-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .matrix-table th {
+    text-align: center;
+    padding: 8px 12px;
+    font-weight: 400;
+    border-bottom: 1px solid var(--border-visible);
+  }
+  .matrix-table th:first-child { text-align: left; }
+  .matrix-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); }
+  .matrix-table td:first-child { color: var(--fg); }
+  .matrix-table td:not(:first-child) { text-align: center; }
+  .dot-active { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+  .dot-inactive { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--border-subtle); }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .router-modes { grid-template-columns: 1fr 1fr; }
+    .blindspot-row { grid-template-columns: 1fr; gap: 8px; }
+    .blindspot-arrow { transform: rotate(90deg); }
+    .timeline { flex-direction: column; }
+    .engine-flow { flex-direction: column; }
+    .flow-arrow { width: 1px; height: 30px; }
+    .flow-arrow::after { right: -4px; top: auto; bottom: 0; border: 4px solid transparent; border-top-color: var(--border-visible); }
+    .analysis-layer { grid-template-columns: 1fr; }
+    .assessment-grid { grid-template-columns: 1fr; }
+  }
+
+  .content { animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-meta">Parallax / Conflict Intelligence Engine / Architecture Blueprint</div>
+  <h1>Multi-Lens <span>Conflict Intelligence</span></h1>
+  <div class="header-sub">
+    Expanding Parallax from a single NVC translator into a composite conflict analysis engine
+    with 14 analytical lenses, context-aware routing, and professional + intimate coverage.
+  </div>
+  <div class="header-stats">
+    <div class="stat-item"><div class="stat-value accent">14</div><div class="stat-label">Analytical Lenses</div></div>
+    <div class="stat-item"><div class="stat-value teal">4</div><div class="stat-label">Context Modes</div></div>
+    <div class="stat-item"><div class="stat-value amber">8</div><div class="stat-label">NVC Blind Spots Covered</div></div>
+    <div class="stat-item"><div class="stat-value">5</div><div class="stat-label">Universal</div></div>
+    <div class="stat-item"><div class="stat-value">3</div><div class="stat-label">Intimate</div></div>
+    <div class="stat-item"><div class="stat-value">6</div><div class="stat-label">Professional</div></div>
+  </div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab active" data-tab="overview" role="tab">Overview</button>
+  <button class="tab" data-tab="architecture" role="tab">Architecture</button>
+  <button class="tab" data-tab="lenses" role="tab">Lens Registry</button>
+  <button class="tab" data-tab="composite" role="tab">Composite Analysis</button>
+  <button class="tab" data-tab="blindspots" role="tab">NVC Blind Spots</button>
+  <button class="tab" data-tab="assessment" role="tab">Assessment</button>
+</div>
+
+<div class="content">
+
+<!-- OVERVIEW -->
+<div class="tab-panel active" id="panel-overview">
+  <div class="section">
+    <div class="section-label"><span>01</span> The Thesis</div>
+    <div class="card">
+      <div class="card-desc" style="font-size:14px; line-height:1.8;">
+        <strong style="color:var(--fg);">NVC is a brilliant empathic core. But it has blind spots.</strong><br><br>
+        Nonviolent Communication sees every utterance as an expression of needs. This is powerful for de-escalation,
+        but it misses patterns (escalation cycles), power dynamics (a boss's "request" isn't a request),
+        structural roles (Persecutor/Victim/Rescuer), thinking errors (catastrophizing, mind-reading),
+        and the fundamentally different dynamics of professional vs. intimate conflict.<br><br>
+        <strong style="color:var(--accent);">Parallax's evolution:</strong> From an NVC translator to a conflict intelligence platform
+        that knows which analytical lenses to apply based on the type of relationship -- the way a
+        seasoned mediator reaches for different tools depending on who's sitting across the table.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>02</span> Evolution Timeline</div>
+    <div class="timeline">
+      <div class="timeline-phase current">
+        <div class="phase-version">V1 -- Now</div>
+        <div class="phase-title">Single Lens</div>
+        <div class="phase-desc">NVC dual-lens analysis (Classic Rosenberg + "Beneath the Surface" Parallax lens). Remote Mode. Production deployed. Ship hackathon Feb 16.</div>
+        <div class="phase-lenses"><span>NVC</span></div>
+      </div>
+      <div class="timeline-connector">&rarr;</div>
+      <div class="timeline-phase">
+        <div class="phase-version">V2 -- Next</div>
+        <div class="phase-title">Multi-Lens Core</div>
+        <div class="phase-desc">Add Gottman Four Horsemen + CBT Cognitive Distortions + Thomas-Kilmann Modes. Context mode selector. Stage Mode UI.</div>
+        <div class="phase-lenses"><span>NVC</span><span>Gottman</span><span>CBT</span><span>TKI</span></div>
+      </div>
+      <div class="timeline-connector">&rarr;</div>
+      <div class="timeline-phase">
+        <div class="phase-version">V3 -- Vision</div>
+        <div class="phase-title">Full Conflict Intelligence</div>
+        <div class="phase-desc">All 14 lenses. Pattern tracking over time. Relationship health scoring. Professional + intimate contexts. Power analysis. Narrative detection.</div>
+        <div class="phase-lenses"><span>All 14</span><span>Patterns</span><span>Scoring</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>03</span> Why This Matters</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title" style="color:var(--red);">65%</div>
+        <div class="card-desc">of high-potential startups fail from co-founder conflict (HBS). NVC alone can't detect the professional dynamics driving this.</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--amber);">90%</div>
+        <div class="card-desc">accuracy predicting relationship failure from Gottman's Four Horsemen. Contempt is categorically more destructive than criticism -- NVC doesn't distinguish them.</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--teal);">20-25%</div>
+        <div class="card-desc">higher resolution rates when hybrid AI-human systems are used vs. either alone. Multi-lens analysis is the AI differentiator.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="tab-panel" id="panel-architecture">
+  <div class="section">
+    <div class="section-label"><span>01</span> Engine Flow</div>
+    <div class="engine-flow">
+      <div class="flow-node"><div class="flow-label">Input</div><div class="flow-value">User Message</div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node accent-node"><div class="flow-label">Router</div><div class="flow-value">Context Mode</div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node"><div class="flow-label">Analysis</div><div class="flow-value">Active Lens Stack</div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node"><div class="flow-label">Synthesis</div><div class="flow-value">Composite Signal</div></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node teal-node"><div class="flow-label">Output</div><div class="flow-value">UI Display</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>02</span> Context Router -- Click a Mode</div>
+    <div class="router-modes" id="router-modes"></div>
+    <div class="router-lenses">
+      <div class="active-lens-list" id="active-lens-list"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>03</span> Key Architecture Decisions</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Single Prompt, Multi-Lens Output</div>
+        <div class="card-desc">All active lenses analyzed in a single Claude API call, not separate requests per lens. The system prompt instructs Claude to return structured JSON with sections for each active lens. One round-trip, maximum analytical depth.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Context Mode Set at Session Creation</div>
+        <div class="card-desc">Users select relationship type when creating a session. This activates the appropriate lens stack. Future: auto-detect context from language patterns (hierarchical language, intimacy markers, etc.)</div>
+      </div>
+      <div class="card">
+        <div class="card-title">NVC Always On</div>
+        <div class="card-desc">NVC remains the empathic core in all context modes. Other lenses augment -- they don't replace. The feelings/needs layer is universal; additional lenses add pattern, power, and cognitive analysis.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Progressive Disclosure in UI</div>
+        <div class="card-desc">Users see emotional temperature + primary insight by default. Expanding a message reveals the full multi-lens analysis layer by layer. Prevents cognitive overload while maintaining depth.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>04</span> Lens Activation Matrix</div>
+    <div style="overflow-x:auto;">
+      <table class="matrix-table" id="matrix-table">
+        <thead>
+          <tr>
+            <th style="text-align:left; color:var(--text-muted);">Lens</th>
+            <th style="color:var(--rose);">Intimate</th>
+            <th style="color:var(--cyan);">Prof Peer</th>
+            <th style="color:var(--purple);">Prof Hier</th>
+            <th style="color:var(--amber);">Transactional</th>
+          </tr>
+        </thead>
+        <tbody id="matrix-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- LENS REGISTRY -->
+<div class="tab-panel" id="panel-lenses">
+  <div class="section">
+    <div class="section-label"><span>01</span> Universal Lenses -- Active in All Context Modes</div>
+    <div class="grid-4" id="universal-lenses"></div>
+  </div>
+  <div class="section">
+    <div class="section-label"><span>02</span> Intimate-Relationship Lenses</div>
+    <div class="grid-4" id="intimate-lenses"></div>
+  </div>
+  <div class="section">
+    <div class="section-label"><span>03</span> Professional Lenses</div>
+    <div class="grid-4" id="professional-lenses"></div>
+  </div>
+</div>
+
+<!-- COMPOSITE ANALYSIS -->
+<div class="tab-panel" id="panel-composite">
+  <div class="section">
+    <div class="section-label"><span>01</span> Example Message -- Multi-Lens Analysis</div>
+    <div class="message-display">
+      "I've told you <span class="highlight-word">a hundred times</span>, you <span class="highlight-word">never</span> listen to what the team actually needs."
+    </div>
+    <button class="animate-btn" id="animate-analysis">Animate Layer-by-Layer Analysis</button>
+    <div class="analysis-layers" id="analysis-layers"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>02</span> What a Mediator Sees vs. What NVC Alone Sees</div>
+    <div class="grid-2">
+      <div class="card" style="border-left:3px solid var(--amber);">
+        <div class="card-title" style="color:var(--amber);">NVC Alone</div>
+        <div class="card-desc">
+          <strong>Feeling:</strong> Frustration<br>
+          <strong>Need:</strong> To be heard, consideration<br>
+          <strong>Observation:</strong> Missing (using "never" = evaluation)<br>
+          <strong>Translation:</strong> "When I share ideas about what the team needs and don't hear a response, I feel frustrated because I have a need for consideration and partnership."<br><br>
+          <em style="color:var(--text-muted);">Valid and helpful -- but misses 6 critical signals.</em>
+        </div>
+      </div>
+      <div class="card" style="border-left:3px solid var(--teal);">
+        <div class="card-title" style="color:var(--teal);">Full Conflict Intelligence</div>
+        <div class="card-desc">
+          <strong>NVC:</strong> Frustration + need to be heard<br>
+          <strong>Gottman:</strong> Criticism detected -- harsh startup<br>
+          <strong>CBT:</strong> Overgeneralization + emotional reasoning<br>
+          <strong>TKI:</strong> Competing mode<br>
+          <strong>Drama Triangle:</strong> Persecutor role<br>
+          <strong>Narrative:</strong> Totalizing narrative + identity claim<br>
+          <strong>SCARF:</strong> Status + Relatedness threats<br><br>
+          <em style="color:var(--teal);">Same message -- 7x the analytical depth.</em>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NVC BLIND SPOTS -->
+<div class="tab-panel" id="panel-blindspots">
+  <div class="section">
+    <div class="section-label"><span>01</span> NVC's Eight Blind Spots -- and What Fills Each Gap</div>
+    <div id="blindspots-container"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>02</span> The Rescuer Trap -- NVC's Most Dangerous Blind Spot</div>
+    <div class="card" style="border-left:3px solid var(--red);">
+      <div class="card-title" style="color:var(--red);">Why This Matters Most</div>
+      <div class="card-desc" style="line-height:1.8;">
+        NVC's emphasis on empathy can inadvertently <strong style="color:var(--fg);">train people into the Rescuer role</strong>
+        in Karpman's Drama Triangle. When someone is performing helplessness (Victim role) and someone else is
+        performing empathic listening (Rescuer role), NVC sees healthy communication. The Drama Triangle sees a
+        codependent pattern that will cycle forever.<br><br>
+        The Rescuer feels needed. The Victim stays dependent. The cycle persists -- and NVC, by design,
+        doesn't have the vocabulary to name it. This is why a multi-lens approach isn't a nice-to-have.
+        <strong style="color:var(--fg);">A single-lens system can actively reinforce the dynamics it's trying to resolve.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label"><span>03</span> The Professional Gap -- What NVC Misses at Work</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Power Is Not Symmetrical</div>
+        <div class="card-desc">NVC treats all parties as peers expressing needs. But a manager's "request" carries implicit authority. A board's "suggestion" isn't optional. <strong style="color:var(--fg);">Power analysis</strong> detects these asymmetries.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Silence Is Not Peace</div>
+        <div class="card-desc">The absence of conflict in professional settings often means people stopped speaking up -- not that they agree. <strong style="color:var(--fg);">Psychological Safety</strong> detection identifies organizational silence.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Exit Costs Shape Everything</div>
+        <div class="card-desc">You can't just "break up" with a co-founder -- there are cap tables, vesting, and legal obligations. <strong style="color:var(--fg);">IBR + Power Analysis</strong> model these constraints.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Task vs. Relationship Confusion</div>
+        <div class="card-desc">"I disagree with the feature" often means "I disagree with who gets to decide." <strong style="color:var(--fg);">Jehn's Conflict Typology</strong> separates task, process, and relationship conflict.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ASSESSMENT -->
+<div class="tab-panel" id="panel-assessment">
+  <div class="section">
+    <div class="section-label"><span>01</span> Senior Assessment of This Architecture</div>
+    <div class="assessment-grid">
+      <div class="assessment-card strength">
+        <div class="a-title">Strengths</div>
+        <ul class="assessment-list">
+          <li>Multi-lens approach is genuinely novel -- no existing product combines NVC + Gottman + CBT + professional frameworks in real-time text analysis</li>
+          <li>Context routing is architecturally sound -- same engine, different lens stacks. Clean separation of concerns.</li>
+          <li>Single API call per message keeps latency manageable despite analytical depth</li>
+          <li>Progressive disclosure solves the "too much information" UX problem</li>
+          <li>NVC-as-core means the empathic foundation is never lost, even as analytical complexity grows</li>
+          <li>Professional context coverage (SCARF, Org Justice, Jehn's) addresses a genuine gap -- most conflict tools are therapy-derived</li>
+        </ul>
+      </div>
+      <div class="assessment-card risk">
+        <div class="a-title">Risks and Gaps</div>
+        <ul class="assessment-list">
+          <li><span class="severity high">High</span>Prompt complexity: 14 lenses in one system prompt may exceed Claude's consistent application. Need tiered approach -- core lenses always, secondary on-demand.</li>
+          <li><span class="severity high">High</span>Validation: How do we know the analysis is accurate? Each lens needs a test corpus of labeled examples to verify detection quality.</li>
+          <li><span class="severity medium">Medium</span>User comprehension: Multiple analytical layers may overwhelm users. UI must default to simple.</li>
+          <li><span class="severity medium">Medium</span>Cultural bias: Most frameworks were developed in Western, English-speaking contexts. Cross-cultural conflict may need different baselines.</li>
+          <li><span class="severity medium">Medium</span>Pathologizing risk: Labels like "Persecutor" or "cognitive distortion" can feel judgmental. Framing matters enormously.</li>
+          <li><span class="severity low">Low</span>Latency: More analysis = longer response times. V1 fire-and-forget pattern scales naturally.</li>
+        </ul>
+      </div>
+      <div class="assessment-card optimization full-width">
+        <div class="a-title">High-Impact Optimizations</div>
+        <ul class="assessment-list">
+          <li><strong style="color:var(--fg);">Tiered lens activation:</strong> Run core lenses (NVC + Gottman + CBT) every message. Run secondary lenses only when signals suggest they're relevant. Saves tokens, improves focus.</li>
+          <li><strong style="color:var(--fg);">Conversation-level patterns:</strong> Track patterns across the conversation: escalation trajectory, repair attempt success rate, role rotation frequency, mode shifts.</li>
+          <li><strong style="color:var(--fg);">Warmth-first framing:</strong> Never say "you're in Persecutor mode." Say "this message carries strong authority -- here's how it might land." Clinical accuracy with human warmth.</li>
+          <li><strong style="color:var(--fg);">Lens confidence scores:</strong> Each lens returns a confidence level. Low-confidence detections are suppressed. Only show what the engine is sure about.</li>
+          <li><strong style="color:var(--fg);">Differential insights:</strong> Highlight where lenses disagree. "NVC sees a need for respect, but Gottman flags this as contempt -- here's why both matter."</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- BLUEPRINT DATA -->
+<script type="application/json" id="blueprint-data">
+{
+  "project": "parallax",
+  "title": "Parallax Conflict Intelligence Engine",
+  "generated": "2026-02-11T06:00:00Z",
+  "type": "architecture-vision",
+  "lenses": [
+    {"id":"nvc","name":"NVC (Nonviolent Communication)","creator":"Marshall Rosenberg","category":"universal","detects":["Feelings and unmet needs behind statements","Observations vs. evaluations","Requests vs. demands"],"signals":"Feeling words, need categories (connection, autonomy, meaning), 'I feel X when Y' patterns, universal needs taxonomy","modelability":"high","contexts":["intimate","prof-peer","prof-hier","transactional"]},
+    {"id":"cbt","name":"CBT Cognitive Distortions","creator":"Aaron Beck","category":"universal","detects":["Mind-reading, catastrophizing, all-or-nothing thinking","Should-statements, labeling, overgeneralization","Emotional reasoning (feeling = fact)"],"signals":"'You think...', 'you always/never', 'should/ought to', 'you're a [noun]', extreme outcome language, binary framing","modelability":"high","contexts":["intimate","prof-peer","prof-hier","transactional"]},
+    {"id":"tki","name":"Thomas-Kilmann Conflict Modes","creator":"Kenneth Thomas and Ralph Kilmann","category":"universal","detects":["Competing, accommodating, avoiding, collaborating, compromising modes","Assertiveness vs. cooperativeness balance","Problematic mode combinations (competitor vs. accommodator)"],"signals":"Demands/imperatives (competing), immediate concession (accommodating), topic changes (avoiding), 'we' language (collaborating), conditional offers (compromising)","modelability":"medium-high","contexts":["intimate","prof-peer","prof-hier","transactional"]},
+    {"id":"drama","name":"Drama Triangle","creator":"Stephen Karpman","category":"universal","detects":["Persecutor, Victim, Rescuer role performance","Role rotation within a conversation","Secondary gain (benefit from conflict position)"],"signals":"Blame language (persecutor), helplessness/'I can't' (victim), unsolicited advice/'let me handle this' (rescuer), sharp shifts in linguistic posture","modelability":"medium-high","contexts":["intimate","prof-peer","prof-hier"]},
+    {"id":"narrative","name":"Narrative Mediation","creator":"John Winslade and Gerald Monk","category":"universal","detects":["Totalizing narratives that erase complexity","Identity claims and fixed character attributions","Unique outcomes (counter-evidence being ignored)"],"signals":"'You always/never', 'that's just who they are', 'I'm the kind of person who...', character-level generalizations, absence of qualifiers","modelability":"medium","contexts":["intimate","prof-peer","prof-hier"]},
+    {"id":"gottman","name":"Gottman Four Horsemen","creator":"John and Julie Gottman","category":"intimate","detects":["Criticism, Contempt (most toxic), Defensiveness, Stonewalling","Repair attempts and whether they're received","Harsh vs. soft startup / 5:1 positive-negative ratio"],"signals":"Character attacks (criticism), sarcasm/mockery/disgust (contempt), counter-attack/deflection (defensiveness), withdrawal/silence (stonewalling), humor/affection (repair)","modelability":"high","contexts":["intimate","prof-peer"]},
+    {"id":"attachment","name":"Attachment Theory","creator":"Sue Johnson (EFT)","category":"intimate","detects":["Secure, Anxious-Preoccupied, Dismissive-Avoidant, Fearful-Avoidant styles","Pursue-withdraw cycle detection","Attachment alarm vs. surface issue"],"signals":"Repetition/escalation (anxious), shorter responses/emotional flattening (avoidant), comfort with disagreement (secure), alternating pursue/withdraw (disorganized)","modelability":"medium","contexts":["intimate"]},
+    {"id":"restorative","name":"Restorative Justice","creator":"Howard Zehr","category":"intimate","detects":["Harm acknowledgment and impact statements","Accountability vs. deflection","Concrete repair offers vs. abstract apologies"],"signals":"'I can see that what I did caused...' (harm acknowledgment), first-person responsibility (accountability), 'but you also...' (deflection)","modelability":"medium","contexts":["intimate","prof-peer"]},
+    {"id":"scarf","name":"SCARF Model","creator":"David Rock","category":"professional","detects":["Status, Certainty, Autonomy, Relatedness, Fairness threat triggers","Which SCARF domain is under threat in each message","Threat vs. reward state for each domain"],"signals":"Public correction/credit-taking (status), vague timelines (certainty), prescriptive directives (autonomy), exclusion language (relatedness), inconsistent rules (fairness)","modelability":"medium-high","contexts":["prof-peer","prof-hier","transactional"]},
+    {"id":"org-justice","name":"Organizational Justice","creator":"Greenberg / Colquitt","category":"professional","detects":["Distributive justice (outcome fairness)","Procedural justice (process fairness)","Interactional justice (dignity in treatment)"],"signals":"'Why does X get to...' (distributive), 'nobody asked us' (procedural), dismissive tone / lack of explanation (interactional)","modelability":"medium-high","contexts":["prof-peer","prof-hier","transactional"]},
+    {"id":"psych-safety","name":"Psychological Safety","creator":"Amy Edmondson","category":"professional","detects":["Voice suppression and fear signals","Organizational silence markers","Fear-based compliance vs. genuine agreement"],"signals":"Hedging before opinions, 'I might be wrong but...', absence of dissent, deferring to authority without engagement, passive agreement","modelability":"medium","contexts":["prof-hier"]},
+    {"id":"jehn","name":"Jehn's Conflict Typology","creator":"Karen Jehn","category":"professional","detects":["Task conflict (what to do)","Process conflict (how to do it / who decides)","Relationship conflict (personal friction) + degradation detection"],"signals":"Content disagreements (task), role/authority disputes (process), personal attacks (relationship), task language degrading into personal (degradation)","modelability":"medium-high","contexts":["prof-peer","prof-hier"]},
+    {"id":"power","name":"Power Analysis","creator":"Cross-framework","category":"professional","detects":["Hierarchical power expression and asymmetry","Information asymmetry as a power tool","Exit cost asymmetry shaping negotiation"],"signals":"Directive language, conditional framing, vague info references, implicit consequences, obligation framing, who asks vs. who demands","modelability":"medium","contexts":["prof-hier","transactional"]},
+    {"id":"ibr","name":"IBR (Interest-Based Relational)","creator":"Fisher and Ury (Harvard)","category":"professional","detects":["Positions vs. underlying interests","BATNA awareness (alternatives to agreement)","Option generation and objective criteria usage"],"signals":"'I want X' (position) vs. 'because...' (interest), 'what if' (option generation), precedent/fairness references (criteria), 'take it or leave it' (no BATNA)","modelability":"medium-high","contexts":["transactional"]}
+  ],
+  "contextModes": {
+    "intimate": {"name":"Intimate","description":"Romantic, close family","lenses":["nvc","gottman","attachment","drama","cbt","narrative"]},
+    "prof-peer": {"name":"Professional Peer","description":"Co-founders, partners, colleagues","lenses":["nvc","tki","scarf","org-justice","cbt","drama","jehn","gottman","restorative"]},
+    "prof-hier": {"name":"Professional Hierarchical","description":"Manager/report, board/CEO","lenses":["nvc","tki","scarf","power","org-justice","psych-safety","jehn"]},
+    "transactional": {"name":"Transactional","description":"Client/vendor, negotiation","lenses":["ibr","tki","scarf","org-justice","power"]}
+  },
+  "blindSpots": [
+    {"gap":"Pattern-blind","desc":"Analyzes each message atomically","fill":"Gottman","fillDesc":"Tracks escalation patterns, repair attempts, positive-negative ratio over time"},
+    {"gap":"Power-blind","desc":"Treats all parties as symmetrical peers","fill":"Power Analysis + SCARF","fillDesc":"Detects hierarchical power, information asymmetry, exit cost asymmetry"},
+    {"gap":"Behavior-blind","desc":"All negativity = 'tragic expressions of needs'","fill":"Gottman Four Horsemen","fillDesc":"Distinguishes toxicity levels: contempt > criticism > defensiveness > stonewalling"},
+    {"gap":"Role-blind","desc":"Doesn't detect structural conflict roles","fill":"Drama Triangle","fillDesc":"Identifies Persecutor/Victim/Rescuer performance and role rotation"},
+    {"gap":"Narrative-blind","desc":"Tries to get under the story to the need","fill":"Narrative Mediation","fillDesc":"Engages with totalizing narratives, identity claims, fixed character attributions"},
+    {"gap":"Thinking-error-blind","desc":"Treats feelings as reliable signals","fill":"CBT Cognitive Distortions","fillDesc":"Names specific distortions: mind-reading, catastrophizing, overgeneralization"},
+    {"gap":"Outcome-blind","desc":"Process-oriented, doesn't model solutions","fill":"IBR","fillDesc":"Positions vs. interests, option generation, objective criteria, BATNA"},
+    {"gap":"Context-blind","desc":"Same analysis regardless of relationship type","fill":"Context Router + Jehn's","fillDesc":"Routes to appropriate lens stack; distinguishes task, process, and relationship conflict"}
+  ],
+  "compositeExample": {
+    "message": "I've told you a hundred times, you never listen to what the team actually needs.",
+    "layers": [
+      {"lens":"NVC","color":"#ef6f2e","tags":[{"text":"FEELING","type":"neutral"},{"text":"NEED","type":"neutral"}],"finding":"Feeling: frustration. Need: to be heard, consideration. Observation missing (using 'never' = evaluation, not observation)."},
+      {"lens":"Gottman","color":"#ef4444","tags":[{"text":"CRITICISM","type":"danger"},{"text":"HARSH STARTUP","type":"warning"}],"finding":"Criticism detected: character-level attack via 'you never.' Harsh startup predicts negative conversation trajectory 96% of the time."},
+      {"lens":"CBT","color":"#f59e0b","tags":[{"text":"OVERGENERALIZATION","type":"warning"},{"text":"EMOTIONAL REASONING","type":"warning"}],"finding":"Two distortions: 'a hundred times' and 'never' are overgeneralizations. Emotional intensity suggests emotional reasoning (feeling unheard = you don't listen)."},
+      {"lens":"TKI","color":"#06b6d4","tags":[{"text":"COMPETING","type":"info"}],"finding":"Competing mode: high assertiveness (demands, absolutes), low cooperativeness (no invitation to respond). Will escalate if met with competing."},
+      {"lens":"Drama Triangle","color":"#a78bfa","tags":[{"text":"PERSECUTOR","type":"danger"}],"finding":"Persecutor role: blame language + moral authority claim. Positioning self as spokesperson for 'the team' amplifies the persecutor dynamic."},
+      {"lens":"Narrative","color":"#f472b6","tags":[{"text":"TOTALIZING","type":"warning"},{"text":"IDENTITY CLAIM","type":"info"}],"finding":"Totalizing narrative: 'never' erases all counter-evidence of listening. Identity claim: 'the team actually needs' positions speaker as the one who truly understands."},
+      {"lens":"SCARF","color":"#84cc16","tags":[{"text":"STATUS THREAT","type":"warning"},{"text":"RELATEDNESS THREAT","type":"warning"}],"finding":"Status: expertise/competence dismissed ('you never listen'). Relatedness: in-group exclusion ('the team' vs. 'you' creates us-vs-them framing)."}
+    ]
+  }
+}
+</script>
+
+<script>
+(function() {
+  var data = JSON.parse(document.getElementById('blueprint-data').textContent);
+
+  // Tabs
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.tab-panel');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Lens Registry - build cards with safe DOM methods
+  var containers = {
+    universal: document.getElementById('universal-lenses'),
+    intimate: document.getElementById('intimate-lenses'),
+    professional: document.getElementById('professional-lenses')
+  };
+
+  function buildLensCard(lens) {
+    var card = document.createElement('div');
+    card.className = 'lens-card';
+
+    var catLabel = lens.category === 'universal' ? 'Universal' : lens.category === 'intimate' ? 'Intimate' : 'Professional';
+
+    var catEl = document.createElement('div');
+    catEl.className = 'lens-category-label ' + lens.category;
+    catEl.textContent = catLabel;
+    card.appendChild(catEl);
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'lens-name';
+    nameEl.textContent = lens.name;
+    card.appendChild(nameEl);
+
+    var creatorEl = document.createElement('div');
+    creatorEl.className = 'lens-creator';
+    creatorEl.textContent = lens.creator || '';
+    card.appendChild(creatorEl);
+
+    var detectsList = document.createElement('ul');
+    detectsList.className = 'lens-detects';
+    lens.detects.forEach(function(d) {
+      var li = document.createElement('li');
+      li.textContent = d;
+      detectsList.appendChild(li);
+    });
+    card.appendChild(detectsList);
+
+    var signalsEl = document.createElement('div');
+    signalsEl.className = 'lens-signals';
+    var signalsStrong = document.createElement('strong');
+    signalsStrong.textContent = 'Text signals: ';
+    signalsEl.appendChild(signalsStrong);
+    signalsEl.appendChild(document.createTextNode(lens.signals || ''));
+    card.appendChild(signalsEl);
+
+    var bottomRow = document.createElement('div');
+    bottomRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;';
+
+    var modelEl = document.createElement('div');
+    var modelClass = (lens.modelability === 'high' || lens.modelability === 'medium-high') ? 'high' : 'medium';
+    modelEl.className = 'modelability ' + modelClass;
+    var barEl = document.createElement('div');
+    barEl.className = 'modelability-bar';
+    for (var i = 0; i < 3; i++) { barEl.appendChild(document.createElement('span')); }
+    modelEl.appendChild(barEl);
+    modelEl.appendChild(document.createTextNode(' ' + lens.modelability));
+    bottomRow.appendChild(modelEl);
+    card.appendChild(bottomRow);
+
+    var badges = document.createElement('div');
+    badges.className = 'context-badges';
+    if (lens.contexts.length >= 4) {
+      var allBadge = document.createElement('span');
+      allBadge.className = 'ctx-badge all';
+      allBadge.textContent = 'All Modes';
+      badges.appendChild(allBadge);
+    } else {
+      lens.contexts.forEach(function(ctx) {
+        var badge = document.createElement('span');
+        var label = ctx === 'intimate' ? 'Intimate' : ctx === 'prof-peer' ? 'Prof Peer' : ctx === 'prof-hier' ? 'Prof Hier' : 'Transactional';
+        badge.className = 'ctx-badge ' + ctx;
+        badge.textContent = label;
+        badges.appendChild(badge);
+      });
+    }
+    card.appendChild(badges);
+
+    card.addEventListener('click', function() {
+      var wasExpanded = card.classList.contains('expanded');
+      document.querySelectorAll('.lens-card.expanded').forEach(function(c) { c.classList.remove('expanded'); });
+      if (!wasExpanded) card.classList.add('expanded');
+    });
+
+    return card;
+  }
+
+  data.lenses.forEach(function(lens) {
+    var container = containers[lens.category];
+    if (container) container.appendChild(buildLensCard(lens));
+  });
+
+  // Context Router
+  var routerContainer = document.getElementById('router-modes');
+  var lensList = document.getElementById('active-lens-list');
+  var modeConfigs = [
+    { key: 'intimate', name: 'Intimate', desc: 'Romantic, close family' },
+    { key: 'prof-peer', name: 'Professional Peer', desc: 'Co-founders, colleagues' },
+    { key: 'prof-hier', name: 'Prof Hierarchical', desc: 'Manager/report, board/CEO' },
+    { key: 'transactional', name: 'Transactional', desc: 'Client/vendor, negotiation' }
+  ];
+
+  modeConfigs.forEach(function(mc, idx) {
+    var btn = document.createElement('div');
+    btn.className = 'router-mode' + (idx === 0 ? ' active' : '');
+    btn.dataset.mode = mc.key;
+
+    var nameDiv = document.createElement('div');
+    nameDiv.className = 'mode-name';
+    nameDiv.textContent = mc.name;
+    btn.appendChild(nameDiv);
+
+    var descDiv = document.createElement('div');
+    descDiv.className = 'mode-desc';
+    descDiv.textContent = mc.desc;
+    btn.appendChild(descDiv);
+
+    var countDiv = document.createElement('div');
+    countDiv.className = 'mode-count';
+    countDiv.textContent = data.contextModes[mc.key].lenses.length + ' lenses';
+    btn.appendChild(countDiv);
+
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.router-mode').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      updateRouter(mc.key);
+    });
+    routerContainer.appendChild(btn);
+  });
+
+  function updateRouter(modeKey) {
+    var mode = data.contextModes[modeKey];
+    if (!mode) return;
+    while (lensList.firstChild) lensList.removeChild(lensList.firstChild);
+    mode.lenses.forEach(function(lensId) {
+      var lens = data.lenses.find(function(l) { return l.id === lensId; });
+      if (!lens) return;
+      var tag = document.createElement('span');
+      tag.className = 'active-lens-tag highlighted';
+      tag.textContent = lens.name;
+      lensList.appendChild(tag);
+    });
+  }
+  updateRouter('intimate');
+
+  // Matrix
+  var matrixBody = document.getElementById('matrix-body');
+  var modeKeys = ['intimate', 'prof-peer', 'prof-hier', 'transactional'];
+  data.lenses.forEach(function(lens) {
+    var row = document.createElement('tr');
+    var nameCell = document.createElement('td');
+    nameCell.textContent = lens.name;
+    row.appendChild(nameCell);
+    modeKeys.forEach(function(mk) {
+      var cell = document.createElement('td');
+      var dot = document.createElement('span');
+      dot.className = data.contextModes[mk].lenses.indexOf(lens.id) !== -1 ? 'dot-active' : 'dot-inactive';
+      cell.appendChild(dot);
+      row.appendChild(cell);
+    });
+    matrixBody.appendChild(row);
+  });
+
+  // Composite Analysis
+  var analysisContainer = document.getElementById('analysis-layers');
+  var layers = data.compositeExample.layers;
+
+  layers.forEach(function(layer, i) {
+    var el = document.createElement('div');
+    el.className = 'analysis-layer visible';
+    el.dataset.index = String(i);
+
+    var nameDiv = document.createElement('div');
+    nameDiv.className = 'layer-name';
+    var dot = document.createElement('span');
+    dot.className = 'layer-dot';
+    dot.style.background = layer.color;
+    nameDiv.appendChild(dot);
+    nameDiv.appendChild(document.createTextNode(' ' + layer.lens));
+    el.appendChild(nameDiv);
+
+    var findingDiv = document.createElement('div');
+    findingDiv.className = 'layer-finding';
+    layer.tags.forEach(function(t) {
+      var tagSpan = document.createElement('span');
+      tagSpan.className = 'tag ' + t.type;
+      tagSpan.textContent = t.text;
+      findingDiv.appendChild(tagSpan);
+    });
+    findingDiv.appendChild(document.createTextNode(' ' + layer.finding));
+    el.appendChild(findingDiv);
+
+    el.addEventListener('click', function() { el.classList.toggle('visible'); });
+    analysisContainer.appendChild(el);
+  });
+
+  document.getElementById('animate-analysis').addEventListener('click', function() {
+    var allLayers = document.querySelectorAll('.analysis-layer');
+    allLayers.forEach(function(l) { l.classList.remove('visible'); });
+    allLayers.forEach(function(l, i) {
+      setTimeout(function() { l.classList.add('visible'); }, i * 600);
+    });
+  });
+
+  // Blind Spots
+  var bsContainer = document.getElementById('blindspots-container');
+  data.blindSpots.forEach(function(bs) {
+    var row = document.createElement('div');
+    row.className = 'blindspot-row';
+
+    var gapDiv = document.createElement('div');
+    gapDiv.className = 'blindspot-gap';
+    var gapLabel = document.createElement('div');
+    gapLabel.className = 'gap-label';
+    gapLabel.textContent = 'NVC Blind Spot';
+    var gapName = document.createElement('div');
+    gapName.style.cssText = 'color:var(--fg); font-weight:400;';
+    gapName.textContent = bs.gap;
+    var gapDesc = document.createElement('div');
+    gapDesc.style.cssText = 'color:var(--text-muted); font-size:10px; margin-top:4px;';
+    gapDesc.textContent = bs.desc;
+    gapDiv.appendChild(gapLabel);
+    gapDiv.appendChild(gapName);
+    gapDiv.appendChild(gapDesc);
+
+    var arrowDiv = document.createElement('div');
+    arrowDiv.className = 'blindspot-arrow';
+    arrowDiv.textContent = '\u2192';
+
+    var fillDiv = document.createElement('div');
+    fillDiv.className = 'blindspot-fill';
+    var fillLabel = document.createElement('div');
+    fillLabel.className = 'fill-label';
+    fillLabel.textContent = 'Filled By';
+    var fillName = document.createElement('div');
+    fillName.style.cssText = 'color:var(--fg); font-weight:400;';
+    fillName.textContent = bs.fill;
+    var fillDesc = document.createElement('div');
+    fillDesc.style.cssText = 'color:var(--text-muted); font-size:10px; margin-top:4px;';
+    fillDesc.textContent = bs.fillDesc;
+    fillDiv.appendChild(fillLabel);
+    fillDiv.appendChild(fillName);
+    fillDiv.appendChild(fillDesc);
+
+    row.appendChild(gapDiv);
+    row.appendChild(arrowDiv);
+    row.appendChild(fillDiv);
+    bsContainer.appendChild(row);
+  });
+
+})();
+</script>
+
+</body>
+</html>
