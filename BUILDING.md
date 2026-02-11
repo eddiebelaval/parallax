@@ -429,3 +429,77 @@ After building V3 (Conflict Intelligence Engine) and V4 (Strategy Arena), we ran
 - `npx tsc --noEmit` -- clean
 - `npm run build` -- production build succeeds
 - UI for browsing Arena results and strategy performance
+
+---
+
+## Conversational Layer: Parallax Speaks
+
+**Date:** 2026-02-11
+**Branch:** `parallax/conversational-layer`
+
+### The Idea
+
+What if the product could explain itself? Not through a README that judges skim, but through a conversation where they can ask anything — about the architecture, the NVC dual-lens system, the hackathon journey, the decisions that were made and why.
+
+The inspiration came from HYDRA (another id8Labs project), which has a "CTO Voice" system — a Claude instance injected with project documentation that can answer technical questions in first person. Parallax takes this further: the product speaks AS itself, not about itself.
+
+### Two Tiers, One Infrastructure
+
+The Conversational Layer has two personalities sharing the same API route, the same chat UI, and the same infrastructure:
+
+**Parallax Explorer** (judge/developer-facing, hackathon-only)
+- Speaks in first person: "I use Claude Opus for mediation" not "Parallax uses Claude Opus"
+- Knowledge base: BUILDING.md, CLAUDE.md, docs/explorer/*.md, docs/research/*.md
+- Personality: Technical but warm. Narrative-driven. Proud of the journey, honest about limitations.
+- Capabilities: READ-ONLY — explains everything, modifies nothing
+- Discovery: Prominent "Talk to Parallax" CTA on landing page + floating "?" button
+
+**Parallax Guide** (user-facing, permanent)
+- Speaks as a helpful product assistant
+- Knowledge base: docs/guide/*.md (user manual, FAQ, settings schema)
+- Personality: Concise, action-oriented. Like a knowledgeable friend, not a manual.
+- Capabilities: AGENTIC — can read and change user settings via Claude tool_use
+- Discovery: Floating "?" button auto-switches to Guide mode on session pages
+
+### Architecture Decisions
+
+1. **Single API route, mode-switched.** `POST /api/converse` accepts `{ mode: 'explorer' | 'guide', message, history }`. The mode determines which knowledge base, system prompt, and tools are injected. One route, two personalities.
+
+2. **Knowledge-base injection via system prompt.** Same pattern as HYDRA CTO voice. Markdown documentation files are read from disk at request time, concatenated, and injected into Claude's system prompt. No vector database, no embeddings — just raw context. For the knowledge base sizes involved (~10-15K tokens), this is simpler and just as effective.
+
+3. **React Context for panel state.** The ConversationalPanel can be opened from any page (landing page CTA, session page "?", floating button). A `ConversationalContext` provides `openPanel(mode)` / `closePanel()` to any component in the tree.
+
+4. **Route-aware mode defaults.** `usePathname()` in the LayoutShell determines which mode the floating "?" opens. Landing page → Explorer. Session pages → Guide. Zero configuration per page.
+
+5. **Tool_use loop for Guide settings.** The Guide can change user preferences (display name, voice input, analysis visibility, temperature display, auto-expand) via Claude's tool_use protocol. The API route handles a bounded loop (max 3 rounds): Claude calls a tool → server executes → sends tool_result → Claude responds. Settings persist in localStorage.
+
+6. **Client-server tool split.** The server validates and acknowledges tool calls. The frontend applies them to localStorage via an `onToolResults` callback. This avoids needing a Supabase migration while still demonstrating the full agentic capability.
+
+### What Was Built
+
+| File | Purpose |
+|------|---------|
+| `src/types/conversation.ts` | Foundation types: ConversationalMode, ConversationMessage, ToolResult, ConverseRequest/Response |
+| `src/lib/knowledge-base.ts` | Reads markdown docs, assembles mode-specific system prompts with persona injection |
+| `src/lib/guide-tools.ts` | Claude tool definitions (update_setting, get_settings) + server-side execution |
+| `src/app/api/converse/route.ts` | Unified API route with tool_use loop for Guide mode |
+| `src/contexts/ConversationalContext.tsx` | React context for panel open/close/mode state |
+| `src/components/ConversationalPanel.tsx` | Slide-in panel with Ember design, tool execution indicators |
+| `src/hooks/useConversation.ts` | Conversation state management with onToolResults callback |
+| `src/hooks/useSettings.ts` | localStorage-backed settings with tool result application |
+| `docs/explorer/voice.md` | Explorer personality and voice rules |
+| `docs/explorer/eddie-story.md` | Eddie Belaval narrative — id8Labs, philosophy, collaboration |
+| `docs/explorer/hackathon-journey.md` | Day-by-day hackathon build log |
+| `docs/guide/user-manual.md` | How Parallax works — sessions, voice, analysis, The Melt |
+| `docs/guide/faq.md` | 11 common questions with clear answers |
+| `docs/guide/settings-schema.md` | All user settings with types, defaults, descriptions |
+| `src/app/layout.tsx` | Modified — ConversationalProvider, route-aware LayoutShell |
+| `src/app/page.tsx` | Modified — "Talk to Parallax" CTA section |
+
+### The Demo Moment
+
+A judge lands on Parallax. Below the product explanation, they see: **"This product can explain itself."** They click "Talk to Parallax." A panel slides in from the right. They type: "How does the NVC analysis work?" Parallax answers — not from a script, but from its own documentation, in first person, citing specific files and PRs.
+
+Then they start a session. The "?" button now opens the Guide. They type: "Turn off the temperature display." A teal pill appears: "Updated show_temperature." The setting changes. The product just responded to a natural language command.
+
+That's the conversational layer. The product has a voice.

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { isValidRoomCode } from "@/lib/room-code";
 import { ContextModePicker } from "@/components/ContextModePicker";
+import { useConversationalPanel } from "@/contexts/ConversationalContext";
 import type { SessionMode, ContextMode } from "@/types/database";
 
 /* ─── Scroll Reveal ─── */
@@ -50,6 +51,7 @@ function Reveal({
 
 export default function Home() {
   const router = useRouter();
+  const { openPanel } = useConversationalPanel();
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<SessionMode | null>(null);
@@ -415,6 +417,36 @@ export default function Home() {
             </div>
           </Reveal>
         </div>
+      </section>
+
+      {/* ─── Divider ─── */}
+      <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+      {/* ─── Talk to Parallax (Explorer CTA) ─── */}
+      <section className="px-6 py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mx-auto text-center">
+            <p className="section-indicator mb-6">The Conversational Layer</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl leading-[1.15] mb-4">
+              This product can explain itself
+            </h2>
+            <p className="text-muted text-sm leading-relaxed max-w-lg mx-auto mb-10">
+              Ask Parallax about its architecture, the NVC dual-lens system, how the
+              14 analytical lenses work, or the story of how it was built in seven days.
+              It speaks from memory, not from a script.
+            </p>
+            <button
+              onClick={() => openPanel("explorer")}
+              className="group inline-flex items-center gap-3 px-8 py-4 border border-success text-success hover:bg-success/10 font-mono text-sm uppercase tracking-wider transition-all"
+            >
+              <span className="w-2 h-2 rounded-full bg-success group-hover:animate-pulse" />
+              Talk to Parallax
+            </button>
+            <p className="text-ember-700 text-[10px] font-mono uppercase tracking-widest mt-4">
+              Powered by Claude Opus 4.6
+            </p>
+          </div>
+        </Reveal>
       </section>
 
       {/* ─── Footer ─── */}
