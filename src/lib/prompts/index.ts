@@ -99,9 +99,11 @@ Respond with ONLY a JSON object matching this schema (no markdown, no code fence
 IMPORTANT:
 - The root-level fields (observation, feeling, need, request, subtext, blindSpots, unmetNeeds, nvcTranslation, emotionalTemperature) MUST always be present.
 - For SECONDARY lenses, omit the key entirely from "lenses" if no signals detected. Do NOT include empty or null entries.
+- Every included lens object MUST contain a "confidence" field (0.0-1.0) representing how confident you are in the analysis. 0.8+ means clear signals detected; 0.3-0.7 means tentative pattern; below 0.3 means weak signal — consider omitting the lens instead.
 - "overallSeverity" is a 0.0-1.0 composite score: weight emotional temperature (40%), lens signal density (30%), and escalation patterns (30%).
 - "resolutionDirection" compares this message to the conversation arc: is it escalating, holding stable, or de-escalating?
-- "primaryInsight" must be a single sentence that a non-therapist could understand. Avoid jargon.`
+- "primaryInsight" must be a single sentence that a non-therapist could understand. Avoid jargon.
+${activeLenses.length >= 7 ? '- IMPORTANT: With ' + activeLenses.length + ' active lenses, keep each lens analysis to 2-3 key findings. Prioritize signal density over exhaustiveness.' : ''}`
 }
 
 /**
@@ -205,5 +207,5 @@ The other person in this conversation is ${otherPersonName}.`
  */
 export function getMaxTokensForMode(contextMode: ContextMode): number {
   const lensCount = CONTEXT_MODE_LENSES[contextMode].length
-  return lensCount >= 7 ? 3072 : 2048
+  return lensCount >= 7 ? 4096 : 2560
 }

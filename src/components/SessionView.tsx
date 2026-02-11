@@ -10,7 +10,7 @@ import { OnboardingFlow } from "./inperson/OnboardingFlow";
 import { XRayView } from "./inperson/XRayView";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
-import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
+import { CONTEXT_MODE_INFO, CONTEXT_MODE_LENSES, LENS_METADATA } from "@/lib/context-modes";
 import type { ContextMode } from "@/types/database";
 
 type InputMode = "text" | "voice";
@@ -200,6 +200,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
 
   const contextMode = (session?.context_mode as ContextMode) || 'intimate';
   const contextModeLabel = CONTEXT_MODE_INFO[contextMode]?.name || 'Intimate Partners';
+  const lensCount = CONTEXT_MODE_LENSES[contextMode].length;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -211,11 +212,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
             currentTurn={currentTurn}
             isAnalyzing={analyzingMessageId != null}
           />
-          <div className="flex justify-center py-1">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ember-600 px-2 py-0.5 border border-border rounded-sm">
-              {contextModeLabel}
-            </span>
-          </div>
+          <ContextModeBadge contextMode={contextMode} label={contextModeLabel} />
         </>
       )}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
@@ -236,6 +233,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
         analyzingMessageId={analyzingMessageId}
         mediationError={mediationError}
         preJoinContent={preJoinA}
+        lensCount={lensCount}
         className="border-b md:border-b-0 md:border-r border-border"
       />
       <PersonPanel
@@ -255,8 +253,43 @@ export function SessionView({ roomCode }: SessionViewProps) {
         analyzingMessageId={analyzingMessageId}
         mediationError={mediationError}
         preJoinContent={preJoinB}
+        lensCount={lensCount}
       />
       </div>
+    </div>
+  );
+}
+
+function ContextModeBadge({ contextMode, label }: { contextMode: ContextMode; label: string }) {
+  const [showLenses, setShowLenses] = useState(false);
+  const activeLenses = CONTEXT_MODE_LENSES[contextMode];
+
+  return (
+    <div className="flex flex-col items-center py-1 relative">
+      <button
+        onClick={() => setShowLenses((s) => !s)}
+        className="font-mono text-[9px] uppercase tracking-[0.2em] text-ember-600 px-2 py-0.5 border border-border rounded-sm hover:border-ember-500 hover:text-ember-500 transition-colors"
+      >
+        {label} · {activeLenses.length} lenses
+      </button>
+      {showLenses && (
+        <div className="mt-1 px-3 py-2 border border-border bg-surface rounded-sm max-w-sm">
+          <div className="flex flex-wrap gap-1.5">
+            {activeLenses.map((id) => {
+              const meta = LENS_METADATA[id];
+              return (
+                <span
+                  key={id}
+                  className="font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 border border-border text-ember-500 rounded-sm"
+                  title={meta.description}
+                >
+                  {meta.shortName}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

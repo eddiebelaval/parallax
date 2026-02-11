@@ -1,5 +1,6 @@
 "use client";
 
+import { Component, type ReactNode } from "react";
 import type {
   LensId,
   GottmanResult,
@@ -39,6 +40,29 @@ interface LensDetailPanelProps {
   onClose: () => void;
 }
 
+class LensErrorBoundary extends Component<
+  { children: ReactNode; lensName: string },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; lensName: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <p className="text-ember-600 text-[11px] italic">
+          {this.props.lensName} analysis unavailable
+        </p>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function LensDetailPanel({
   lensId,
   result,
@@ -67,13 +91,18 @@ export function LensDetailPanel({
         </button>
       </div>
       <div className="text-xs leading-relaxed">
-        {renderLensContent(lensId, result)}
+        <LensErrorBoundary lensName={meta.name}>
+          {renderLensContent(lensId, result)}
+        </LensErrorBoundary>
       </div>
     </div>
   );
 }
 
 function renderLensContent(lensId: LensId, result: AnyLensResult) {
+  if (!result || typeof result !== "object") {
+    return <p className="text-ember-600 text-[11px] italic">No data</p>;
+  }
   switch (lensId) {
     case "gottman":
       return <GottmanDisplay result={result as GottmanResult} />;

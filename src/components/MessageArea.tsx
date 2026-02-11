@@ -3,13 +3,14 @@
 import { useEffect, useRef } from "react";
 import { MessageCard } from "./MessageCard";
 import { SignalRail } from "./SignalRail";
-import type { Message } from "@/types/database";
+import type { Message, ContextMode } from "@/types/database";
 
 interface MessageAreaProps {
   messages: Message[];
   personAName: string;
   personBName: string;
   analyzingMessageId?: string | null;
+  lensCount?: number;
 }
 
 export function MessageArea({
@@ -17,6 +18,7 @@ export function MessageArea({
   personAName,
   personBName,
   analyzingMessageId,
+  lensCount,
 }: MessageAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +63,7 @@ export function MessageArea({
                 <div className="pl-4 mt-2 flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
                   <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                    Analyzing
+                    Analyzing{lensCount ? ` through ${lensCount} lenses` : ''}
                   </span>
                 </div>
               )}
