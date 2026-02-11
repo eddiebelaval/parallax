@@ -117,6 +117,134 @@ export function parseNvcAnalysis(raw: string): NvcAnalysis | null {
 }
 
 /**
+ * Issue Analysis Prompt — extracts discrete issues and grades responses.
+ *
+ * Used in In-Person Mode. Each message goes through this analysis in parallel
+ * with the NVC mediation. The prompt extracts new issues the speaker raises
+ * and grades how well existing issues were addressed by the response.
+ */
+export const ISSUE_ANALYSIS_PROMPT = `You are Parallax, analyzing a conflict conversation to track discrete issues.
+
+Your job is twofold:
+1. EXTRACT new issues from the latest message — concrete conflict points, complaints, or concerns
+2. GRADE how well this message addresses existing unresolved issues from the other person
+
+An "issue" is a specific, discrete point of conflict. Not a feeling, not a vague complaint — a concrete thing that could be resolved. Examples: "wants more help with household chores", "feels excluded from financial decisions", "disagrees about the vacation timeline".
+
+EXTRACTION RULES:
+- Extract 0-3 issues per message (most messages have 1-2)
+- Each issue needs a short label (3-6 words) and a one-sentence description
+- Don't duplicate issues that already exist (check the existing issues list)
+- Don't extract issues from calm, purely responsive messages — only from messages that raise new concerns
+
+GRADING RULES:
+- Grade ONLY issues raised by the OTHER person (not the current speaker's own issues)
+- "well_addressed" = the speaker genuinely acknowledged the concern, showed empathy, offered a solution or compromise
+- "poorly_addressed" = the speaker dismissed, deflected, got defensive about, or made the issue worse
+- Leave issues ungraded if this message doesn't address them at all
+- Be fair but honest — a defensive "well YOU do it too" is poorly_addressed even if technically acknowledging the issue
+
+Respond with ONLY a JSON object (no markdown, no code fences):
+{
+  "newIssues": [
+    {
+      "label": "short issue label",
+      "description": "one sentence description of the concrete conflict point"
+    }
+  ],
+  "gradedIssues": [
+    {
+      "issueId": "uuid of the existing issue",
+      "status": "well_addressed" | "poorly_addressed",
+      "rationale": "one sentence explaining why"
+    }
+  ]
+}`
+
+/**
+ * Build the user message for the issue analysis call.
+ */
+export function buildIssueAnalysisPrompt(
+  conversationHistory: Array<{ sender: string; content: string }>,
+  targetMessage: { sender: string; senderName: string; content: string },
+  otherPersonName: string,
+  existingIssues: Array<{ id: string; label: string; description: string; raised_by: string; status: string }>,
+): string {
+  const historyBlock = conversationHistory.length > 0
+    ? conversationHistory
+        .map((msg) => `[${msg.sender}]: ${msg.content}`)
+        .join('\n')
+    : '(This is the first message in the conversation.)'
+
+  const issuesBlock = existingIssues.length > 0
+    ? existingIssues
+        .filter((i) => i.status === 'unaddressed')
+        .map((i) => `  - [${i.id}] (raised by ${i.raised_by}): ${i.label} — ${i.description}`)
+        .join('\n')
+    : '(No existing issues yet.)'
+
+  return `CONVERSATION SO FAR:
+${historyBlock}
+
+EXISTING UNRESOLVED ISSUES:
+${issuesBlock}
+
+ANALYZE THIS MESSAGE:
+[${targetMessage.senderName}]: ${targetMessage.content}
+
+Speaker is: ${targetMessage.senderName} (${targetMessage.sender})
+The other person is: ${otherPersonName}`
+}
+
+export interface ExtractedIssue {
+  label: string
+  description: string
+}
+
+export interface GradedIssue {
+  issueId: string
+  status: 'well_addressed' | 'poorly_addressed'
+  rationale: string
+}
+
+export interface IssueAnalysisResult {
+  newIssues: ExtractedIssue[]
+  gradedIssues: GradedIssue[]
+}
+
+/**
+ * Parse Claude's issue analysis response.
+ */
+export function parseIssueAnalysis(raw: string): IssueAnalysisResult | null {
+  try {
+    const parsed = JSON.parse(stripCodeFences(raw))
+
+    return {
+      newIssues: Array.isArray(parsed.newIssues)
+        ? parsed.newIssues
+            .filter((i: { label?: string; description?: string }) => i.label && i.description)
+            .map((i: { label: string; description: string }) => ({
+              label: String(i.label),
+              description: String(i.description),
+            }))
+        : [],
+      gradedIssues: Array.isArray(parsed.gradedIssues)
+        ? parsed.gradedIssues
+            .filter((g: { issueId?: string; status?: string }) =>
+              g.issueId && (g.status === 'well_addressed' || g.status === 'poorly_addressed'))
+            .map((g: { issueId: string; status: string; rationale?: string }) => ({
+              issueId: String(g.issueId),
+              status: g.status as 'well_addressed' | 'poorly_addressed',
+              rationale: String(g.rationale || ''),
+            }))
+        : [],
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Session summary prompt — analyzes the full conversation arc.
  * Used at session end to provide both people with insights.
  */
