@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Day One</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=Source+Sans+3:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  :root {
+    --ember-dark: #0f0b08;
+    --ember-surface: #1a1410;
+    --ember-elevated: #261e16;
+    --ember-border: #3a2e22;
+    --ember-muted: #7a6c58;
+    --ember-text: #c9b9a3;
+    --ember-heading: #ebe1d4;
+    --ember-100: #ebe1d4;
+    --ember-200: #d9cfc0;
+    --ember-300: #c9b9a3;
+    --ember-400: #a89582;
+    --ember-500: #8a7a66;
+    --ember-600: #7a6c58;
+    --ember-700: #4a3d2e;
+    --ember-800: #3a2e22;
+    --ember-900: #1a1410;
+    --ember-950: #0f0b08;
+    --accent: #d4a040;
+    --accent-hover: #c89530;
+    --hot: #c45c3c;
+    --cool: #6aab8e;
+    --glow-hot: rgba(196,92,60,0.3);
+    --glow-warm: rgba(212,160,64,0.3);
+    --glow-cool: rgba(106,171,142,0.3);
+    --glow-hot-soft: rgba(196,92,60,0.12);
+    --glow-warm-soft: rgba(212,160,64,0.12);
+    --glow-cool-soft: rgba(106,171,142,0.12);
+    --font-serif: 'Source Serif 4', Georgia, serif;
+    --font-sans: 'Source Sans 3', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--ember-dark);
+    color: var(--ember-text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    padding: 48px 36px 0;
+    max-width: 1100px;
+    margin: 0 auto;
+    animation: fadeSlideUp 0.7s ease both;
+  }
+  .header .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--ember-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .header .label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+  .header h1 {
+    font-family: var(--font-serif);
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+    color: var(--ember-heading);
+    margin-bottom: 8px;
+    animation: fadeSlideUp 0.7s ease 0.15s both;
+  }
+  .header .subtitle {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ember-muted);
+    margin-bottom: 32px;
+    animation: fadeSlideUp 0.7s ease 0.3s both;
+  }
+  .header .date-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    border: 1px solid var(--ember-border);
+    padding: 4px 12px;
+    margin-bottom: 32px;
+    animation: fadeSlideUp 0.7s ease 0.3s both;
+  }
+
+  /* ─── Stats Bar ─── */
+  .stats-bar {
+    display: flex;
+    gap: 32px;
+    padding: 24px 0;
+    border-top: 1px solid var(--ember-border);
+    border-bottom: 1px solid var(--ember-border);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    text-align: left;
+  }
+  .stat-value {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--ember-heading);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.cool { color: var(--cool); }
+  .stat-value.hot { color: var(--hot); }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ember-muted);
+    margin-top: 4px;
+  }
+
+  /* ─── Nav ─── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    gap: 4px;
+    padding: 12px 36px;
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--ember-dark);
+    border-bottom: 1px solid var(--ember-border);
+    overflow-x: auto;
+  }
+  .nav button {
+    padding: 8px 16px;
+    border: 1px solid var(--ember-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ember-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav button:hover { border-color: var(--ember-600); color: var(--ember-text); }
+  .nav button.active { background: var(--accent); color: var(--ember-dark); border-color: var(--accent); }
+
+  /* ─── Sections ─── */
+  .content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 36px 80px;
+  }
+  .section { display: none; padding-top: 40px; }
+  .section.active { display: block; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ember-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .section-label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .section-label.cool::before { background: var(--cool); }
+  .section-label.hot::before { background: var(--hot); }
+
+  h2 {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--ember-heading);
+    margin-bottom: 24px;
+  }
+
+  /* ─── Timeline ─── */
+  .timeline {
+    position: relative;
+    padding-left: 48px;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--ember-border);
+  }
+  .stage {
+    position: relative;
+    margin-bottom: 36px;
+    padding: 20px 24px;
+    background: var(--ember-surface);
+    border: 1px solid var(--ember-border);
+    border-radius: 10px;
+    opacity: 0;
+    animation: fadeSlideUp 0.5s ease both;
+  }
+  .stage::before {
+    content: "";
+    position: absolute;
+    left: -40px;
+    top: 24px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--ember-dark);
+    z-index: 1;
+  }
+  .stage.passed::before { background: var(--cool); box-shadow: 0 0 8px var(--glow-cool); }
+  .stage.shipped::before { background: var(--accent); box-shadow: 0 0 8px var(--glow-warm); }
+
+  .stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stage-name {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ember-heading);
+    letter-spacing: -0.01em;
+  }
+  .stage-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .badge-passed { background: rgba(106,171,142,0.15); color: var(--cool); border: 1px solid rgba(106,171,142,0.3); }
+  .badge-pr { background: rgba(212,160,64,0.12); color: var(--accent); border: 1px solid rgba(212,160,64,0.25); }
+  .badge-commits { background: var(--ember-elevated); color: var(--ember-muted); border: 1px solid var(--ember-border); }
+  .badge-hot { background: rgba(196,92,60,0.12); color: var(--hot); border: 1px solid rgba(196,92,60,0.25); }
+
+  .stage-desc {
+    font-size: 13px;
+    color: var(--ember-400);
+    line-height: 1.7;
+  }
+  .stage-items {
+    list-style: none;
+    margin-top: 12px;
+  }
+  .stage-items li {
+    font-size: 13px;
+    color: var(--ember-text);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .stage-items li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .backlit-left {
+    position: relative;
+  }
+  .backlit-left::after {
+    content: "";
+    position: absolute;
+    left: -28px;
+    top: -4px;
+    bottom: -4px;
+    width: 32px;
+    pointer-events: none;
+    border-radius: 50% 0 0 50%;
+    filter: blur(8px);
+  }
+  .backlit-warm::after { background: radial-gradient(ellipse at right center, var(--glow-warm-soft) 0%, transparent 70%); }
+  .backlit-hot::after { background: radial-gradient(ellipse at right center, var(--glow-hot-soft) 0%, transparent 70%); }
+  .backlit-cool::after { background: radial-gradient(ellipse at right center, var(--glow-cool-soft) 0%, transparent 70%); }
+
+  /* ─── Architecture ─── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+  @media (max-width: 768px) { .arch-grid { grid-template-columns: 1fr; } }
+
+  .arch-card {
+    background: var(--ember-surface);
+    border: 1px solid var(--ember-border);
+    border-radius: 10px;
+    padding: 24px;
+    opacity: 0;
+    animation: fadeSlideUp 0.5s ease both;
+  }
+  .arch-card h3 {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--ember-heading);
+    margin-bottom: 4px;
+  }
+  .arch-card .arch-subtitle {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ember-muted);
+    margin-bottom: 16px;
+  }
+  .file-list {
+    list-style: none;
+  }
+  .file-list li {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ember-400);
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(58,46,34,0.4);
+  }
+  .file-list li:last-child { border-bottom: none; }
+  .file-list .file-name { color: var(--ember-text); }
+  .file-list .file-desc { color: var(--ember-muted); margin-left: 8px; }
+
+  /* ─── Ember Showcase ─── */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 36px;
+  }
+  .swatch {
+    height: 80px;
+    border-radius: 10px;
+    border: 1px solid var(--ember-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 12px;
+    transition: transform 0.2s ease;
+  }
+  .swatch:hover { transform: translateY(-2px); }
+  .swatch-name {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .swatch-value {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    opacity: 0.7;
+  }
+
+  .glow-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .glow-card {
+    padding: 20px 24px;
+    padding-left: 56px;
+    background: var(--ember-surface);
+    border: 1px solid var(--ember-border);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glow-card::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    bottom: -8px;
+    width: 52px;
+    pointer-events: none;
+    border-radius: 50% 0 0 50%;
+    filter: blur(10px);
+  }
+  .glow-card.hot::before { background: radial-gradient(ellipse at right center, var(--glow-hot) 0%, transparent 70%); }
+  .glow-card.warm::before { background: radial-gradient(ellipse at right center, var(--glow-warm) 0%, transparent 70%); }
+  .glow-card.cool::before { background: radial-gradient(ellipse at right center, var(--glow-cool) 0%, transparent 70%); }
+  .glow-card .glow-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .glow-card.hot .glow-label { color: var(--hot); }
+  .glow-card.warm .glow-label { color: var(--accent); }
+  .glow-card.cool .glow-label { color: var(--cool); }
+  .glow-card p {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-style: italic;
+    color: var(--ember-text);
+  }
+
+  .type-showcase {
+    margin-top: 20px;
+    margin-bottom: 36px;
+  }
+  .type-sample {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--ember-border);
+  }
+  .type-sample:last-child { border-bottom: none; }
+  .type-sample .type-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ember-muted);
+    margin-bottom: 8px;
+  }
+  .type-sample .type-demo-serif {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--ember-heading);
+  }
+  .type-sample .type-demo-sans {
+    font-family: var(--font-sans);
+    color: var(--ember-text);
+  }
+  .type-sample .type-demo-mono {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ember-muted);
+  }
+
+  /* ─── PRs Tab ─── */
+  .pr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .pr-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--ember-surface);
+    border: 1px solid var(--ember-border);
+    border-radius: 10px;
+    opacity: 0;
+    animation: fadeSlideUp 0.4s ease both;
+  }
+  .pr-number {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--ember-700);
+    min-width: 40px;
+  }
+  .pr-body { flex: 1; }
+  .pr-title {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--ember-heading);
+    margin-bottom: 4px;
+  }
+  .pr-desc {
+    font-size: 12px;
+    color: var(--ember-muted);
+  }
+  .pr-merged {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cool);
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── Assessment ─── */
+  .assess-progress-bar {
+    margin-bottom: 24px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ember-muted);
+  }
+  .assessment-item {
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    background: var(--ember-surface);
+    border: 1px solid var(--ember-border);
+    border-radius: 10px;
+  }
+  .assessment-item.completed .assess-label {
+    text-decoration: line-through;
+    color: var(--ember-muted);
+  }
+  .assessment-item.completed .assess-body {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+  .assessment-item.completed .severity-badge { opacity: 0.3; }
+  .assess-body { transition: opacity 0.3s ease; }
+  .assess-label { transition: color 0.3s ease; }
+
+  .assessment-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .assess-checkbox {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--ember-600);
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .assess-checkbox:checked {
+    background: var(--cool);
+    border-color: var(--cool);
+  }
+  .assess-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--ember-dark);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .assess-label {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--ember-heading);
+  }
+  .assess-desc {
+    font-size: 13px;
+    color: var(--ember-400);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .severity-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+  .severity-badge.high { background: rgba(196,92,60,0.15); color: var(--hot); }
+  .severity-badge.medium { background: rgba(212,160,64,0.12); color: var(--accent); }
+  .severity-badge.low { background: rgba(106,171,142,0.12); color: var(--cool); }
+
+  .prompt-block {
+    background: var(--ember-elevated);
+    border: 1px solid var(--ember-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ember-text);
+    white-space: pre-wrap;
+    position: relative;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--ember-border);
+    border: none;
+    color: var(--ember-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: var(--ember-600); color: var(--ember-text); }
+
+  .wins-section { margin-bottom: 36px; }
+  .win-card {
+    padding: 12px 16px;
+    border-left: 3px solid var(--cool);
+    margin-bottom: 8px;
+    background: rgba(106,171,142,0.05);
+    border-radius: 0 6px 6px 0;
+  }
+  .win-card p { font-size: 13px; color: var(--ember-text); }
+  .win-card .win-title { font-family: var(--font-serif); font-size: 14px; color: var(--ember-heading); margin-bottom: 2px; }
+
+  /* ─── Animations ─── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 rgba(212,160,64,0); }
+    50% { box-shadow: 0 0 8px rgba(212,160,64,0.4); }
+  }
+  @keyframes countUp {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .header { padding: 32px 20px 0; }
+    .header h1 { font-size: 36px; }
+    .nav { padding: 12px 20px; }
+    .content { padding: 0 20px 60px; }
+    .stats-bar { gap: 20px; }
+    .stat-value { font-size: 28px; }
+    .arch-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<div class="header">
+  <div class="label">PARALLAX</div>
+  <h1>Day One</h1>
+  <div class="subtitle">From initial commit to production in twelve hours</div>
+  <div class="date-badge">FEBRUARY 10, 2026</div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value accent" data-count="68">0</div>
+      <div class="stat-label">Commits</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-count="11">0</div>
+      <div class="stat-label">PRs Merged</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value cool" data-count="13">0</div>
+      <div class="stat-label">Gates Passed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value hot" data-count="7">0</div>
+      <div class="stat-label">Stages Built</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" data-count="2">0</div>
+      <div class="stat-label">Modes Shipped</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value accent" data-count="1">0</div>
+      <div class="stat-label">Design System</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── NAV ─── -->
+<div class="nav">
+  <button class="active" data-tab="journey">The Journey</button>
+  <button data-tab="architecture">Architecture</button>
+  <button data-tab="prs">Pull Requests</button>
+  <button data-tab="ember">Ember Design</button>
+  <button data-tab="assessment">Assessment</button>
+</div>
+
+<!-- ─── CONTENT ─── -->
+<div class="content">
+
+  <!-- TAB: JOURNEY -->
+  <div class="section active" id="journey">
+    <div class="section-label">BUILD TIMELINE</div>
+    <h2>Seven Stages, One Day</h2>
+
+    <div class="timeline">
+
+      <div class="stage passed" style="animation-delay: 0.1s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 3: Architecture</div>
+          <div class="stage-meta">
+            <span class="badge badge-commits">2 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">Project config, pipeline status, env template. The scaffold.</div>
+      </div>
+
+      <div class="stage passed backlit-left backlit-warm" style="animation-delay: 0.2s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 4: Foundation</div>
+          <div class="stage-meta">
+            <span class="badge badge-passed">GATE PASSED</span>
+            <span class="badge badge-pr">PR #1</span>
+            <span class="badge badge-commits">10 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">The substrate. Everything touches Supabase Realtime.</div>
+        <ul class="stage-items">
+          <li>Next.js 16 scaffold with factory design tokens</li>
+          <li>Session lobby with room codes + split-screen layout</li>
+          <li>Supabase schema, API routes, Realtime hooks</li>
+          <li>MessageCard with NVC analysis + temperature colors</li>
+          <li>Two-tab realtime messaging verified working</li>
+        </ul>
+      </div>
+
+      <div class="stage passed backlit-left backlit-hot" style="animation-delay: 0.3s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 5a: Opus Engine</div>
+          <div class="stage-meta">
+            <span class="badge badge-passed">GATE PASSED</span>
+            <span class="badge badge-pr">PR #2</span>
+            <span class="badge badge-commits">8 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">The brain. Dual-lens NVC analysis is the core IP.</div>
+        <ul class="stage-items">
+          <li>Dual-lens NVC system prompt: classic Rosenberg + Parallax "Beneath the Surface"</li>
+          <li>Claude Opus mediation endpoint (fire-and-forget, Realtime handles reactivity)</li>
+          <li>SDK wrapper, type-safe analysis pipeline</li>
+          <li>Reactive message flow: send -> mediate -> patch Supabase -> Realtime UPDATE -> UI</li>
+        </ul>
+      </div>
+
+      <div class="stage passed backlit-left backlit-cool" style="animation-delay: 0.4s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 5b: The Melt</div>
+          <div class="stage-meta">
+            <span class="badge badge-passed">GATE PASSED</span>
+            <span class="badge badge-pr">PR #3</span>
+            <span class="badge badge-commits">6 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">The signature visual. Raw noise dissolves into structured NVC.</div>
+        <ul class="stage-items">
+          <li>TheMelt.tsx: 3-phase animation (noise dissolves, NVC crystallizes, settled)</li>
+          <li>SignalRail: temperature timeline with glow, tracks conversation arc</li>
+          <li>Knuth hash particles, canvas-based</li>
+        </ul>
+      </div>
+
+      <div class="stage passed" style="animation-delay: 0.5s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 5c: Voice + Flow</div>
+          <div class="stage-meta">
+            <span class="badge badge-passed">GATE PASSED</span>
+            <span class="badge badge-pr">PR #5</span>
+            <span class="badge badge-commits">6 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">Talk, don't type. Session lifecycle from start to summary.</div>
+        <ul class="stage-items">
+          <li>VoiceInput: Web Speech API push-to-talk</li>
+          <li>SessionSummary UI + End Session flow</li>
+          <li>Voice/text toggle + session header polish</li>
+        </ul>
+      </div>
+
+      <div class="stage passed backlit-left backlit-warm" style="animation-delay: 0.6s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 6+8: Polish</div>
+          <div class="stage-meta">
+            <span class="badge badge-passed">GATE PASSED</span>
+            <span class="badge badge-pr">PR #6</span>
+            <span class="badge badge-commits">8 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">Review-first. Code-reviewer + code-simplifier findings became the task list.</div>
+        <ul class="stage-items">
+          <li>Error handling hardening: env validation, mediation error UI, useSession race fix</li>
+          <li>PersonPanel extraction (328 -> 204 lines)</li>
+          <li>Landing page hero: "See the conversation you're actually having"</li>
+          <li>Mobile responsive, shared helpers, dead code cleanup</li>
+        </ul>
+      </div>
+
+      <div class="stage shipped backlit-left backlit-hot" style="animation-delay: 0.7s">
+        <div class="stage-header">
+          <div class="stage-name">Stage 9+10: Ship</div>
+          <div class="stage-meta">
+            <span class="badge badge-hot">SHIPPED</span>
+            <span class="badge badge-pr">PRs #7-11</span>
+            <span class="badge badge-commits">24 commits</span>
+          </div>
+        </div>
+        <div class="stage-desc">README, license, docs, Opus 4.6 upgrade, Ember design system, in-person mode.</div>
+        <ul class="stage-items">
+          <li>Comprehensive README for hackathon judges</li>
+          <li>Stage Mode vision doc + blueprint artifact</li>
+          <li>MIT license, BUILDING.md build journal</li>
+          <li>Upgraded to Claude Opus 4.6 for all mediation</li>
+          <li>Ember design system: warm tokens, serif fonts, backlit glow</li>
+          <li>In-person mode: onboarding flow, issue extraction, X-Ray Scoreboard</li>
+          <li>Audio waveform orbs: Web Audio API + SVG, multi-harmonic Claude pattern</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: ARCHITECTURE -->
+  <div class="section" id="architecture">
+    <div class="section-label">SYSTEM MAP</div>
+    <h2>What We Built</h2>
+
+    <div class="arch-grid">
+      <div class="arch-card" style="animation-delay: 0.1s">
+        <h3>API Routes</h3>
+        <div class="arch-subtitle">8 ENDPOINTS</div>
+        <ul class="file-list">
+          <li><span class="file-name">POST /api/sessions</span><span class="file-desc">Create session</span></li>
+          <li><span class="file-name">GET /api/sessions/[code]</span><span class="file-desc">Get session</span></li>
+          <li><span class="file-name">POST /api/sessions/[code]/join</span><span class="file-desc">Join session</span></li>
+          <li><span class="file-name">POST /api/sessions/[code]/end</span><span class="file-desc">End + summary</span></li>
+          <li><span class="file-name">POST /api/sessions/[code]/onboarding</span><span class="file-desc">In-person state machine</span></li>
+          <li><span class="file-name">POST /api/messages</span><span class="file-desc">Send message</span></li>
+          <li><span class="file-name">POST /api/mediate</span><span class="file-desc">Claude NVC analysis</span></li>
+          <li><span class="file-name">POST /api/issues/analyze</span><span class="file-desc">Issue extraction</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card" style="animation-delay: 0.2s">
+        <h3>Components</h3>
+        <div class="arch-subtitle">14 COMPONENTS</div>
+        <ul class="file-list">
+          <li><span class="file-name">SessionView.tsx</span><span class="file-desc">Mode branch: remote vs in-person</span></li>
+          <li><span class="file-name">PersonPanel.tsx</span><span class="file-desc">Per-person panel (extracted)</span></li>
+          <li><span class="file-name">MessageCard.tsx</span><span class="file-desc">Backlit glow + NVC reveal</span></li>
+          <li><span class="file-name">TheMelt.tsx</span><span class="file-desc">Dissolve -> crystallize animation</span></li>
+          <li><span class="file-name">SignalRail.tsx</span><span class="file-desc">Temperature timeline</span></li>
+          <li><span class="file-name">AudioWaveformOrb.tsx</span><span class="file-desc">Real-time SVG waveform</span></li>
+          <li><span class="file-name">VoiceInput.tsx</span><span class="file-desc">Web Speech push-to-talk</span></li>
+          <li><span class="file-name">OnboardingFlow.tsx</span><span class="file-desc">3-step guided setup</span></li>
+          <li><span class="file-name">XRayView.tsx</span><span class="file-desc">In-person orchestrator</span></li>
+          <li><span class="file-name">XRayScoreboard.tsx</span><span class="file-desc">Two-column issue board</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card" style="animation-delay: 0.3s">
+        <h3>Hooks</h3>
+        <div class="arch-subtitle">4 CUSTOM HOOKS</div>
+        <ul class="file-list">
+          <li><span class="file-name">useSession.ts</span><span class="file-desc">Session state + Realtime subscription</span></li>
+          <li><span class="file-name">useMessages.ts</span><span class="file-desc">Message state + Realtime</span></li>
+          <li><span class="file-name">useIssues.ts</span><span class="file-desc">Issues Realtime for in-person mode</span></li>
+          <li><span class="file-name">useAudioAnalyser.ts</span><span class="file-desc">Mic -> AudioContext -> waveform data at 60fps</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card" style="animation-delay: 0.4s">
+        <h3>Core Library</h3>
+        <div class="arch-subtitle">THE BRAIN</div>
+        <ul class="file-list">
+          <li><span class="file-name">prompts.ts</span><span class="file-desc">NVC system prompt + issue analysis (core IP)</span></li>
+          <li><span class="file-name">opus.ts</span><span class="file-desc">Claude API wrapper</span></li>
+          <li><span class="file-name">temperature.ts</span><span class="file-desc">Color + glow class mapping</span></li>
+          <li><span class="file-name">room-code.ts</span><span class="file-desc">6-char code generator</span></li>
+          <li><span class="file-name">supabase.ts</span><span class="file-desc">Client setup</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card" style="animation-delay: 0.5s; grid-column: 1 / -1;">
+        <h3>Data Flow</h3>
+        <div class="arch-subtitle">MEDIATION PIPELINE</div>
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ember-400); line-height: 2; padding: 12px 0;">
+          <span style="color: var(--ember-heading);">User types/speaks</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--accent);">POST /api/messages</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--ember-heading);">Insert to Supabase</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--hot);">Fire-and-forget POST /api/mediate</span>
+          <br>
+          <span style="color: var(--hot);">Claude Opus analyzes</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--accent);">PATCH Supabase row with NVC</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--cool);">Realtime UPDATE event</span>
+          <span style="color: var(--ember-muted);"> -> </span>
+          <span style="color: var(--ember-heading);">UI re-renders with The Melt</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PRS -->
+  <div class="section" id="prs">
+    <div class="section-label">PULL REQUESTS</div>
+    <h2>11 PRs, All Merged</h2>
+
+    <div class="pr-list">
+      <div class="pr-card" style="animation-delay: 0.05s">
+        <div class="pr-number">01</div>
+        <div class="pr-body">
+          <div class="pr-title">Foundation: Scaffold, Schema, Realtime, Lobby, Split-Screen</div>
+          <div class="pr-desc">Next.js 16, Supabase schema, API routes, Realtime hooks, MessageCard</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.1s">
+        <div class="pr-number">02</div>
+        <div class="pr-body">
+          <div class="pr-title">Opus Engine: Dual-Lens NVC Prompt + Mediation Pipeline</div>
+          <div class="pr-desc">Core IP: NVC system prompt, /api/mediate endpoint, temperature colors, fire-and-forget</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.15s">
+        <div class="pr-number">03</div>
+        <div class="pr-body">
+          <div class="pr-title">The Melt: Dissolve Animation + Signal Rail</div>
+          <div class="pr-desc">3-phase animation, Knuth hash particles, temperature timeline with glow</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.2s">
+        <div class="pr-number">04</div>
+        <div class="pr-body">
+          <div class="pr-title">Meta: Interactive Artifacts for Judges</div>
+          <div class="pr-desc">Blueprint, pipeline architecture, hackathon north star — interactive HTML in-repo</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.25s">
+        <div class="pr-number">05</div>
+        <div class="pr-body">
+          <div class="pr-title">Voice + Flow: Web Speech API + Session Lifecycle</div>
+          <div class="pr-desc">Push-to-talk voice input, session summary, end session flow</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.3s">
+        <div class="pr-number">06</div>
+        <div class="pr-body">
+          <div class="pr-title">Polish: Error Hardening, Mobile, Landing Page</div>
+          <div class="pr-desc">PersonPanel extraction, env validation, mediation error UI, race fix, responsive</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.35s">
+        <div class="pr-number">07</div>
+        <div class="pr-body">
+          <div class="pr-title">Ship: README + Stage Mode Vision</div>
+          <div class="pr-desc">Comprehensive README for judges, Stage Mode expansion documented in BUILDING.md</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.4s">
+        <div class="pr-number">08</div>
+        <div class="pr-body">
+          <div class="pr-title">Ship: MIT License</div>
+          <div class="pr-desc">LICENSE file + pipeline status update</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.45s">
+        <div class="pr-number">09</div>
+        <div class="pr-body">
+          <div class="pr-title">Ship: BUILDING.md Build Journal</div>
+          <div class="pr-desc">Complete build journal documenting every stage decision</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.5s">
+        <div class="pr-number">10</div>
+        <div class="pr-body">
+          <div class="pr-title">Ship: Claude Opus 4.6 Upgrade</div>
+          <div class="pr-desc">Upgraded all mediation analysis to Opus 4.6</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+      <div class="pr-card" style="animation-delay: 0.55s">
+        <div class="pr-number">11</div>
+        <div class="pr-body">
+          <div class="pr-title">Ship: Ember Design System + In-Person Mode</div>
+          <div class="pr-desc">Full design system (warm tokens, serif, backlit glow, orb waveforms) + in-person mode (onboarding, X-Ray, issues)</div>
+        </div>
+        <div class="pr-merged">MERGED</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: EMBER -->
+  <div class="section" id="ember">
+    <div class="section-label">DESIGN LANGUAGE</div>
+    <h2>Ember</h2>
+    <p style="color: var(--ember-muted); font-style: italic; font-family: var(--font-serif); margin-bottom: 32px;">Light = Data. Glow color and intensity encode emotional temperature.</p>
+
+    <div class="section-label">COLOR TOKENS</div>
+    <div class="color-grid">
+      <div class="swatch" style="background: #0f0b08;"><span class="swatch-name" style="color: #7a6c58;">ember-dark</span><span class="swatch-value" style="color: #4a3d2e;">#0f0b08</span></div>
+      <div class="swatch" style="background: #1a1410;"><span class="swatch-name" style="color: #7a6c58;">ember-surface</span><span class="swatch-value" style="color: #4a3d2e;">#1a1410</span></div>
+      <div class="swatch" style="background: #261e16;"><span class="swatch-name" style="color: #a89582;">ember-elevated</span><span class="swatch-value" style="color: #7a6c58;">#261e16</span></div>
+      <div class="swatch" style="background: #3a2e22;"><span class="swatch-name" style="color: #c9b9a3;">ember-border</span><span class="swatch-value" style="color: #7a6c58;">#3a2e22</span></div>
+      <div class="swatch" style="background: #7a6c58;"><span class="swatch-name" style="color: #ebe1d4;">ember-muted</span><span class="swatch-value" style="color: #c9b9a3;">#7a6c58</span></div>
+      <div class="swatch" style="background: #c9b9a3;"><span class="swatch-name" style="color: #1a1410;">ember-text</span><span class="swatch-value" style="color: #3a2e22;">#c9b9a3</span></div>
+      <div class="swatch" style="background: #ebe1d4;"><span class="swatch-name" style="color: #1a1410;">ember-heading</span><span class="swatch-value" style="color: #3a2e22;">#ebe1d4</span></div>
+    </div>
+
+    <div class="section-label hot">TEMPERATURE SYSTEM</div>
+    <div class="color-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="swatch" style="background: #c45c3c; height: 60px;"><span class="swatch-name" style="color: #ebe1d4;">hot</span><span class="swatch-value" style="color: rgba(235,225,212,0.7);">0.8 - 1.0</span></div>
+      <div class="swatch" style="background: #d4a040; height: 60px;"><span class="swatch-name" style="color: #0f0b08;">warm</span><span class="swatch-value" style="color: rgba(15,11,8,0.6);">0.5 - 0.7</span></div>
+      <div class="swatch" style="background: #6aab8e; height: 60px;"><span class="swatch-name" style="color: #0f0b08;">cool</span><span class="swatch-value" style="color: rgba(15,11,8,0.6);">0.2 - 0.4</span></div>
+      <div class="swatch" style="background: #ebe1d4; height: 60px;"><span class="swatch-name" style="color: #1a1410;">neutral</span><span class="swatch-value" style="color: rgba(26,20,16,0.5);">0.0 - 0.1</span></div>
+    </div>
+
+    <div class="section-label">BACKLIT GLOW</div>
+    <p style="color: var(--ember-muted); font-size: 13px; margin-bottom: 16px;">Glow radiates outward from the border, away from content. Intensity = emotional charge.</p>
+    <div class="glow-demo">
+      <div class="glow-card hot">
+        <div class="glow-label">HOT -- 0.9</div>
+        <p>"You never listen to me! Every time I try to explain, you just shut me down."</p>
+      </div>
+      <div class="glow-card warm">
+        <div class="glow-label">WARM -- 0.6</div>
+        <p>"I feel like we keep having the same argument and nothing changes."</p>
+      </div>
+      <div class="glow-card cool">
+        <div class="glow-label">COOL -- 0.3</div>
+        <p>"I hear what you're saying. I think we both want the same thing, just differently."</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 36px;">
+      <div class="section-label">TYPOGRAPHY</div>
+      <div class="type-showcase">
+        <div class="type-sample">
+          <div class="type-label">Headings -- Source Serif 4, 300, -0.02em</div>
+          <div class="type-demo-serif" style="font-size: 36px;">See the conversation you're actually having</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-label">Body -- Source Sans 3, 400</div>
+          <div class="type-demo-sans" style="font-size: 15px;">Parallax uses Claude Opus to analyze each message through the lens of Nonviolent Communication, surfacing the subtext, blind spots, and unmet needs beneath the words.</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-label">Labels -- IBM Plex Mono, 500, uppercase, tracking-wider</div>
+          <div class="type-demo-mono" style="font-size: 11px;">Emotional Temperature -- 0.72 -- Beneath the Surface</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: ASSESSMENT -->
+  <div class="section" id="assessment">
+    <div class="section-label cool">ASSESSMENT</div>
+    <h2>Senior Dev Review</h2>
+    <span id="assess-progress" class="label" style="font-family: var(--font-mono); font-size: 11px; color: var(--ember-muted);">0 of 6 addressed</span>
+
+    <div class="wins-section" style="margin-top: 24px;">
+      <div class="section-label" style="margin-bottom: 12px;">WHAT WE DID RIGHT</div>
+      <div class="win-card"><div class="win-title">Fire-and-forget mediation pipeline</div><p>Not streaming. Supabase Realtime handles reactivity. Simpler, more resilient, easier to debug.</p></div>
+      <div class="win-card"><div class="win-title">Review-first at Stage 6+8</div><p>Running code-reviewer + code-simplifier BEFORE writing polish code meant the task list came from real findings, not guesswork.</p></div>
+      <div class="win-card"><div class="win-title">Ember design system as a late-stage addition</div><p>Building the design system at Stage 10 (not Stage 3) meant it was informed by real UI patterns, not speculative tokens.</p></div>
+      <div class="win-card"><div class="win-title">PersonPanel extraction</div><p>328 -> 204 lines. Clean separation of concerns. Uses preJoinContent slot pattern for A/B states.</p></div>
+      <div class="win-card"><div class="win-title">The NVC dual-lens prompt</div><p>Classic Rosenberg + Parallax's "Beneath the Surface" lens. The prompt IS the product. This is the core IP.</p></div>
+    </div>
+
+    <div style="margin-bottom: 36px;">
+      <div class="section-label hot" style="margin-bottom: 12px;">WHAT NEEDS FIXING</div>
+
+      <div class="assessment-item" id="assess-fix-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+          <span class="assess-label">Parallax is 7 commits behind main on stage-10 branch</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge high">HIGH</span>
+          <p class="assess-desc">The stage-10-opus-upgrade branch has a merge conflict backlog. Before hackathon submission, this needs to land on main.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In ~/Development/id8/products/parallax, merge the parallax/stage-10-opus-upgrade branch into main. Resolve any conflicts favoring the stage-10 branch (it has the latest Ember design system + in-person mode). Then push main and verify the Vercel deploy succeeds.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+          <span class="assess-label">No test coverage</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge medium">MEDIUM</span>
+          <p class="assess-desc">Zero tests. Acceptable for a hackathon sprint, but the NVC prompt parsing and temperature mapping are fragile enough to warrant at least unit tests.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In ~/Development/id8/products/parallax, add Vitest with basic unit tests for: (1) parseNvcAnalysis() in lib/ — test with valid JSON, malformed JSON, and missing fields. (2) temperature.ts — test color/glow class mapping for all temperature ranges. (3) room-code.ts — test uniqueness and format. Don't test components yet, just the pure functions.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+          <span class="assess-label">In-person mode is unverified</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge medium">MEDIUM</span>
+          <p class="assess-desc">In-person mode (onboarding, X-Ray, issue extraction) was built but may not have been fully end-to-end tested on the deployed Vercel instance.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In ~/Development/id8/products/parallax, verify in-person mode works end-to-end: (1) Start a new in-person session, (2) Complete the 3-step onboarding, (3) Submit at least 2 messages and verify NVC analysis appears, (4) Check the X-Ray Scoreboard shows extracted issues. Test on the deployed Vercel URL, not localhost.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label" style="margin-bottom: 12px;">HIGH-IMPACT NEXT STEPS</div>
+
+      <div class="assessment-item" id="assess-next-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-1">
+          <span class="assess-label">Record the demo video</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge high">HIGH</span>
+          <p class="assess-desc">90-second screen recording of full Remote Mode flow. This is what judges will actually watch. Show the Melt animation, NVC analysis reveal, voice input, and session summary.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">Eddie records manually: Start a Remote Mode session between two tabs. Have Person A send a charged message. Wait for The Melt to dissolve and NVC to crystallize. Show the temperature glow. Switch to Person B's voice input. Send a response. Show the Signal Rail building. End session, show summary. Keep under 90 seconds.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-2">
+          <span class="assess-label">Merge stage-10 to main and deploy</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge high">HIGH</span>
+          <p class="assess-desc">Everything on stage-10 needs to be the production build for judges. Merge, push, verify Vercel deploy.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In ~/Development/id8/products/parallax on the parallax/stage-10-opus-upgrade branch, create a PR to main titled "Stage 10: Ship — Ember design system + In-person mode". Include full description of Ember, in-person mode, Opus 4.6 upgrade. Merge via regular merge (not squash). Verify Vercel auto-deploys.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-3">
+          <span class="assess-label">Submit to hackathon</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge high">HIGH</span>
+          <p class="assess-desc">Submit before Feb 16. Include: GitHub repo, live URL, demo video, README link.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">Submit Parallax to the Claude Code Hackathon. Repo: github.com/eddiebelaval/parallax. Live URL: parallax-ebon-three.vercel.app. Include BUILDING.md link for judges who want the build story. Highlight: NVC dual-lens prompt (core IP), Ember design system (Light = Data), two modes (Remote + In-Person).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── EMBEDDED DATA ─── -->
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "parallax-day-one",
+  "project": "parallax",
+  "generated": "2026-02-11T04:45:00Z",
+  "sections": [
+    { "id": "journey", "title": "The Journey", "type": "tab" },
+    { "id": "architecture", "title": "Architecture", "type": "tab" },
+    { "id": "prs", "title": "Pull Requests", "type": "tab" },
+    { "id": "ember", "title": "Ember Design", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ],
+  "stats": {
+    "commits": 68,
+    "prs_merged": 11,
+    "gates_passed": 13,
+    "stages_built": 7,
+    "modes_shipped": 2,
+    "design_systems": 1
+  },
+  "assessment": {
+    "wins": [
+      "Fire-and-forget mediation pipeline",
+      "Review-first at Stage 6+8",
+      "Ember as late-stage informed design system",
+      "PersonPanel extraction (328->204)",
+      "NVC dual-lens prompt as core IP"
+    ],
+    "fixes": [
+      { "id": "fix-1", "title": "Stage-10 branch 7 commits behind main", "severity": "HIGH" },
+      { "id": "fix-2", "title": "No test coverage", "severity": "MEDIUM" },
+      { "id": "fix-3", "title": "In-person mode unverified E2E", "severity": "MEDIUM" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "Record demo video", "impact": "Judges evaluate this, not code" },
+      { "id": "next-2", "title": "Merge stage-10 to main", "impact": "Production must reflect latest" },
+      { "id": "next-3", "title": "Submit to hackathon", "impact": "Ship deadline Feb 16" }
+    ]
+  }
+}
+</script>
+
+<script>
+  // ─── Tab Navigation ───
+  var navButtons = document.querySelectorAll('.nav button');
+  var sections = document.querySelectorAll('.section');
+
+  navButtons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      navButtons.forEach(function(b) { b.classList.remove('active'); });
+      sections.forEach(function(s) { s.classList.remove('active'); });
+      btn.classList.add('active');
+      var target = document.getElementById(btn.dataset.tab);
+      target.classList.add('active');
+      staggerReveal(target);
+    });
+  });
+
+  function staggerReveal(container) {
+    var items = container.querySelectorAll('.stage, .arch-card, .pr-card, .assessment-item');
+    items.forEach(function(item, i) {
+      item.style.opacity = '0';
+      item.style.animation = 'none';
+      void item.offsetWidth;
+      item.style.animation = 'fadeSlideUp 0.5s ease ' + (0.05 + i * 0.06) + 's both';
+    });
+  }
+
+  // ─── Stat Counter Animation ───
+  function animateCounters() {
+    document.querySelectorAll('.stat-value[data-count]').forEach(function(el, i) {
+      var target = parseInt(el.dataset.count);
+      var duration = 600;
+      var delay = i * 120;
+
+      setTimeout(function() {
+        var start = performance.now();
+        function update(now) {
+          var elapsed = now - start;
+          var progress = Math.min(elapsed / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(target * eased);
+          if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+      }, delay + 500);
+    });
+  }
+  animateCounters();
+
+  // ─── Assessment Checkboxes ───
+  var ASSESS_KEY = 'visualize-assess-parallax-day-one';
+
+  document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+      state[this.dataset.key] = this.checked;
+      localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+
+      var item = this.closest('.assessment-item');
+      if (this.checked) { item.classList.add('completed'); }
+      else { item.classList.remove('completed'); }
+
+      document.querySelectorAll('.assess-checkbox[data-key="' + this.dataset.key + '"]').forEach(function(sibling) {
+        if (sibling !== cb) {
+          sibling.checked = cb.checked;
+          var sibItem = sibling.closest('.assessment-item');
+          if (cb.checked) { sibItem.classList.add('completed'); }
+          else { sibItem.classList.remove('completed'); }
+        }
+      }.bind(this));
+
+      updateAssessProgress();
+    });
+  });
+
+  window.addEventListener('load', function() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    Object.keys(state).forEach(function(key) {
+      document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+        cb.checked = state[key];
+        if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+      });
+    });
+    updateAssessProgress();
+  });
+
+  function updateAssessProgress() {
+    var total = document.querySelectorAll('.assessment-item').length;
+    var done = document.querySelectorAll('.assessment-item.completed').length;
+    var counter = document.getElementById('assess-progress');
+    if (counter) {
+      counter.textContent = done + ' of ' + total + ' addressed';
+      counter.style.color = done === total ? 'var(--cool)' : 'var(--ember-muted)';
+    }
+  }
+
+  // ─── Copy Buttons ───
+  document.querySelectorAll('.copy-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var text = this.parentElement.querySelector('.prompt-text').textContent;
+      navigator.clipboard.writeText(text);
+      this.textContent = 'COPIED';
+      var b = this;
+      setTimeout(function() { b.textContent = 'COPY'; }, 1500);
+    });
+  });
+
+  // Initial stagger for journey tab
+  staggerReveal(document.getElementById('journey'));
+</script>
+
+</body>
+</html>
