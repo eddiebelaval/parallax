@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAudioAnalyser } from "@/hooks/useAudioAnalyser";
+import { useSyntheticWaveform } from "@/hooks/useSyntheticWaveform";
 import { AudioWaveformOrb } from "./AudioWaveformOrb";
 import type { MessageSender } from "@/types/database";
 
@@ -17,7 +18,8 @@ interface OrbStripProps {
  *
  * Uses a single mic analyser (same-device mode = one mic) and routes
  * the waveform data to whichever person's turn it is. The inactive
- * speaker shows the idle animation. Claude's orb is always present.
+ * speaker shows the idle animation. Claude's orb uses a synthetic
+ * multi-harmonic waveform during NVC analysis.
  */
 export function OrbStrip({
   personAName,
@@ -26,6 +28,7 @@ export function OrbStrip({
   isAnalyzing,
 }: OrbStripProps) {
   const analyser = useAudioAnalyser();
+  const claude = useSyntheticWaveform(isAnalyzing);
 
   // Request mic access once on mount — user can deny and orbs fall back to idle
   useEffect(() => {
@@ -51,9 +54,9 @@ export function OrbStrip({
       <AudioWaveformOrb
         name="Claude"
         role="claude"
-        waveform={null}
-        energy={isAnalyzing ? 0.4 : 0}
-        active={isAnalyzing}
+        waveform={claude.waveform}
+        energy={claude.energy}
+        active={claude.active}
         size={52}
       />
       <AudioWaveformOrb
