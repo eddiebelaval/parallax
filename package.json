@@ -18,6 +18,7 @@
     "@anthropic-ai/sdk": "^0.74.0",
     "@remotion/cli": "^4.0.421",
     "@remotion/player": "^4.0.421",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "next": "16.1.6",
     "react": "19.2.3",

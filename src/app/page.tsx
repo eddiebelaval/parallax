@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useNarrationController } from "@/hooks/useNarrationController";
+import { useAuth } from "@/hooks/useAuth";
 import { HelloButton } from "@/components/landing/HelloButton";
 import { NarrationStage } from "@/components/landing/NarrationStage";
 import { NarrationControls } from "@/components/landing/NarrationControls";
@@ -55,6 +57,7 @@ function NarrationSection({
 
 export default function Home() {
   const narration = useNarrationController();
+  const { user } = useAuth();
   const isComplete = narration.phase === "complete";
   const isNarrating = narration.phase === "narrating";
   const isIdle = narration.phase === "idle";
@@ -381,6 +384,53 @@ export default function Home() {
                   </ul>
                 </div>
               </div>
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── Intelligence Network ─── */}
+        <NarrationSection
+          id="intelligence-network"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="px-6 py-16 sm:py-24">
+            <div className="max-w-2xl mx-auto">
+              <p className="section-indicator mb-6">Intelligence Network</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl leading-[1.15] mb-4">
+                Teach Parallax how you communicate
+              </h2>
+              <p className="text-muted text-sm leading-relaxed max-w-xl mb-8">
+                Complete a 10-minute conversational interview. Parallax extracts your
+                communication patterns — attachment style, conflict mode, emotional
+                regulation — and uses them to deliver sharper, more personalized
+                analysis in every session.
+              </p>
+
+              <Link
+                href={user ? "/interview" : "/auth"}
+                className="inline-block px-6 py-3 border border-accent text-accent font-mono text-sm uppercase tracking-wider hover:bg-accent/10 transition-colors mb-8"
+              >
+                Build Your Profile
+              </Link>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {["9 Signal Types", "4-Phase Interview", "Session Enrichment"].map((pill) => (
+                  <span
+                    key={pill}
+                    className="px-3 py-1 border border-border text-ember-500 font-mono text-[10px] uppercase tracking-wider"
+                  >
+                    {pill}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-ember-600 font-mono text-[10px] uppercase tracking-widest">
+                Free. Private. Encrypted.
+              </p>
             </div>
           </div>
         </NarrationSection>

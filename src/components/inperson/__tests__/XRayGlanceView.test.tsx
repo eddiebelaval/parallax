@@ -74,6 +74,8 @@ const mockSession: Session = {
   room_code: 'XYZ789',
   person_a_name: 'Alice',
   person_b_name: 'Bob',
+  person_a_user_id: null,
+  person_b_user_id: null,
   status: 'active',
   mode: 'in_person',
   context_mode: 'intimate',

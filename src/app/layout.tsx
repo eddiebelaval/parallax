@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Cormorant_Garamond, Raleway, IBM_Plex_Mono } from "next/font/google";
+import { useAuth } from "@/hooks/useAuth";
+import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
@@ -80,6 +83,42 @@ function ThemeToggle() {
   );
 }
 
+function AuthSlot() {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!user) {
+    return (
+      <Link
+        href="/auth"
+        className="font-mono text-xs text-muted hover:text-foreground transition-colors"
+      >
+        Sign In
+      </Link>
+    );
+  }
+
+  const initial = (user.user_metadata?.display_name?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
+
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        href="/home"
+        className="w-7 h-7 rounded-full bg-accent/20 border border-accent/40 text-accent flex items-center justify-center font-mono text-xs"
+      >
+        {initial}
+      </Link>
+      <button
+        onClick={() => signOut()}
+        className="font-mono text-xs text-muted hover:text-foreground transition-colors"
+      >
+        Sign Out
+      </button>
+    </div>
+  );
+}
+
 function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isSessionPage = pathname?.startsWith("/session/");
@@ -121,7 +160,8 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
             </button>
           )}
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-3">
+          <AuthSlot />
           <ThemeToggle />
         </div>
       </header>

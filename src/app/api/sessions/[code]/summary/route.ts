@@ -121,6 +121,10 @@ export async function POST(
       conversationHistory,
       v3Context.length > 0 ? v3Context : undefined,
       onboarding?.sessionGoals,
+      {
+        personA: !!session.person_a_user_id,
+        personB: !!session.person_b_user_id,
+      },
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Claude API error'

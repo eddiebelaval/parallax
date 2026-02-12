@@ -38,6 +38,7 @@ export async function mediateMessage(
   conversationHistory: ConversationEntry[],
   contextMode: ContextMode = 'intimate',
   sessionContext?: { goals?: string[]; contextSummary?: string },
+  intelligenceContext?: string,
 ): Promise<string> {
   const userPrompt = buildMediationPrompt(
     conversationHistory,
@@ -45,7 +46,10 @@ export async function mediateMessage(
     otherPersonName,
   )
 
-  const systemPrompt = buildConflictIntelligencePrompt(contextMode, sessionContext)
+  let systemPrompt = buildConflictIntelligencePrompt(contextMode, sessionContext)
+  if (intelligenceContext) {
+    systemPrompt += intelligenceContext
+  }
   const maxTokens = getMaxTokensForMode(contextMode)
 
   const response = await getClient().messages.create({
@@ -127,6 +131,7 @@ export async function summarizeSession(
   conversationHistory: ConversationEntry[],
   v3Context?: V3MessageContext[],
   sessionGoals?: string[],
+  hasProfiles?: { personA: boolean; personB: boolean },
 ): Promise<string> {
   const transcript = conversationHistory
     .map((m) => `[${m.sender}]: ${m.content}`)
@@ -176,10 +181,16 @@ In your summary, note which goals were addressed and which remain open.`
 FULL CONVERSATION:
 ${transcript}${v3Section}${goalsSection}`
 
+  let systemPrompt = SESSION_SUMMARY_PROMPT
+  const neitherHasProfile = !hasProfiles?.personA && !hasProfiles?.personB
+  if (neitherHasProfile) {
+    systemPrompt += `\n\nAfter the JSON object, on a new line, add a key "profileSuggestion" with a brief, warm sentence: if either participant wants Parallax to understand their communication style in future sessions, they can build a free profile through the Intelligence Network. Keep it to one sentence — an invitation, not a pitch.`
+  }
+
   const response = await getClient().messages.create({
     model: 'claude-opus-4-6',
     max_tokens: 2048,
-    system: SESSION_SUMMARY_PROMPT,
+    system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })
 

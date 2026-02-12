@@ -8,7 +8,7 @@ export async function POST(
 ) {
   const { code } = await params
   const body = await request.json()
-  const { name, side } = body as { name: string; side: 'a' | 'b' }
+  const { name, side, user_id } = body as { name: string; side: 'a' | 'b'; user_id?: string }
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -39,10 +39,13 @@ export async function POST(
   const otherField = side === 'a' ? 'person_b_name' : 'person_a_name'
   const bothPresent = session[otherField] !== null
 
+  const userIdField = side === 'a' ? 'person_a_user_id' : 'person_b_user_id'
+
   const { data, error } = await supabase
     .from('sessions')
     .update({
       [field]: name.trim(),
+      ...(user_id ? { [userIdField]: user_id } : {}),
       ...(bothPresent ? { status: 'active' as const } : {}),
     })
     .eq('id', session.id)
