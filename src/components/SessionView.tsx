@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { SessionSummary } from "./SessionSummary";
 import { XRayGlanceView } from "./inperson/XRayGlanceView";
 import { RemoteView } from "./RemoteView";
+import { SoloView } from "./SoloView";
 import { useSession } from "@/hooks/useSession";
 
 interface SessionViewProps {
@@ -63,9 +64,10 @@ function SideChooser({
  * Routing logic:
  * 1. Loading → spinner
  * 2. Completed → SessionSummary
- * 3. In-person → XRayGlanceView
- * 4. Remote with localSide → RemoteView
- * 5. Remote without localSide → SideChooser
+ * 3. Solo → SoloView
+ * 4. In-person → XRayGlanceView
+ * 5. Remote with localSide → RemoteView
+ * 6. Remote without localSide → SideChooser
  */
 export function SessionView({ roomCode }: SessionViewProps) {
   const { session, loading: sessionLoading } = useSession(roomCode);
@@ -107,7 +109,12 @@ export function SessionView({ roomCode }: SessionViewProps) {
     );
   }
 
-  // 3. In-person mode — delegate to XRayGlanceView
+  // 3. Solo mode — delegate to SoloView (skip SideChooser entirely)
+  if (session?.mode === "solo") {
+    return <SoloView session={session} roomCode={roomCode} />;
+  }
+
+  // 4. In-person mode — delegate to XRayGlanceView
   if (session?.mode === "in_person") {
     return (
       <XRayGlanceView
@@ -117,7 +124,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
     );
   }
 
-  // 4. Remote mode with localSide → RemoteView
+  // 5. Remote mode with localSide → RemoteView
   if (localSide && session) {
     return (
       <RemoteView
@@ -128,7 +135,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
     );
   }
 
-  // 5. Remote mode without localSide (direct URL visit) → SideChooser
+  // 6. Remote mode without localSide (direct URL visit) → SideChooser
   return (
     <SideChooser
       roomCode={roomCode}

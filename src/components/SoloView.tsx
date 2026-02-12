@@ -1,0 +1,155 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { ParallaxPresence } from "@/components/inperson/ParallaxPresence";
+import { ActiveSpeakerBar } from "@/components/inperson/ActiveSpeakerBar";
+import { useSoloChat } from "@/hooks/useSoloChat";
+import { useParallaxVoice } from "@/hooks/useParallaxVoice";
+import { useAuth } from "@/hooks/useAuth";
+import type { Session } from "@/types/database";
+
+interface SoloViewProps {
+  session: Session;
+  roomCode: string;
+}
+
+function SoloMessageBubble({
+  sender,
+  content,
+}: {
+  sender: "person_a" | "mediator";
+  content: string;
+}) {
+  const isParallax = sender === "mediator";
+
+  return (
+    <div
+      className={`px-4 py-3 border-l-2 ${
+        isParallax
+          ? "border-l-temp-cool bg-temp-cool/5"
+          : "border-l-accent bg-accent/5"
+      }`}
+    >
+      <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">
+        {isParallax ? "Parallax" : "You"}
+      </p>
+      <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
+        {content}
+      </p>
+    </div>
+  );
+}
+
+export function SoloView({ session, roomCode }: SoloViewProps) {
+  const { user } = useAuth();
+  const userId = user?.id || session.person_a_user_id || undefined;
+  const { messages, loading, error, initialLoading, sendMessage, sendGreeting } =
+    useSoloChat(session.id, userId);
+  const { speak, isSpeaking, waveform, energy } = useParallaxVoice();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const greetingTriggered = useRef(false);
+  const lastSpokenRef = useRef<string | null>(null);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Send greeting once when messages load and none exist
+  useEffect(() => {
+    if (initialLoading || greetingTriggered.current) return;
+    if (messages.length === 0) {
+      greetingTriggered.current = true;
+      sendGreeting();
+    } else {
+      greetingTriggered.current = true;
+    }
+  }, [initialLoading, messages.length, sendGreeting]);
+
+  // Auto-speak Parallax responses
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (
+      lastMsg.sender === "mediator" &&
+      lastMsg.id !== lastSpokenRef.current
+    ) {
+      lastSpokenRef.current = lastMsg.id;
+      speak(lastMsg.content);
+    }
+  }, [messages, speak]);
+
+  function handleSend(content: string) {
+    sendMessage(content);
+  }
+
+  return (
+    <div className="flex-1 flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+        <span className="font-mono text-xs tracking-wider text-foreground">
+          {roomCode}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-temp-cool">
+          Solo
+        </span>
+      </div>
+
+      {/* Parallax Presence Orb */}
+      <ParallaxPresence
+        isAnalyzing={loading}
+        isSpeaking={isSpeaking}
+        voiceWaveform={waveform}
+        voiceEnergy={energy}
+      />
+
+      {/* Message Thread */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+      >
+        {initialLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-2 h-2 rounded-full bg-temp-cool animate-pulse" />
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <SoloMessageBubble
+            key={msg.id}
+            sender={msg.sender}
+            content={msg.content}
+          />
+        ))}
+
+        {loading && messages.length > 0 && messages[messages.length - 1]?.sender === "person_a" && (
+          <div className="px-4 py-3 border-l-2 border-l-temp-cool bg-temp-cool/5">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">
+              Parallax
+            </p>
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-temp-cool animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-temp-cool animate-pulse delay-75" />
+              <span className="w-1.5 h-1.5 rounded-full bg-temp-cool animate-pulse delay-150" />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="px-4 py-2 border border-accent/30 bg-accent/5 rounded">
+            <p className="font-mono text-xs text-accent">{error}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Input Bar */}
+      <ActiveSpeakerBar
+        activeSpeakerName="You"
+        onSend={handleSend}
+        disabled={loading}
+      />
+    </div>
+  );
+}

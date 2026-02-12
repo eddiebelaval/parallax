@@ -71,10 +71,33 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
   const [error, setError] = useState('')
   const [creating, setCreating] = useState<SessionMode | null>(null)
   const [pendingMode, setPendingMode] = useState<SessionMode | null>(null)
+  const [soloLoading, setSoloLoading] = useState(false)
 
   function handleModeSelect(mode: SessionMode) {
     setPendingMode(mode)
     setError('')
+  }
+
+  async function handleSoloStart() {
+    setSoloLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'solo', ...(user?.id ? { user_id: user.id } : {}) }),
+      })
+      if (!res.ok) {
+        setError('Failed to create session')
+        return
+      }
+      const session = await res.json()
+      router.push(`/session/${session.room_code}`)
+    } catch {
+      setError('Failed to create session')
+    } finally {
+      setSoloLoading(false)
+    }
   }
 
   async function handleContextSelect(contextMode: ContextMode) {
@@ -142,7 +165,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
 
         {/* Path 1: Start a Session */}
         <p className="section-indicator mb-6">Start a Session</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <ModeCard
             title="In-Person"
             description="Same device, shared screen"
@@ -154,7 +177,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
             ]}
             onClick={() => handleModeSelect('in_person')}
             loading={creating === 'in_person'}
-            disabled={creating !== null}
+            disabled={creating !== null || soloLoading}
             accent="orange"
           />
           <ModeCard
@@ -168,7 +191,21 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
             ]}
             onClick={() => handleModeSelect('remote')}
             loading={creating === 'remote'}
-            disabled={creating !== null}
+            disabled={creating !== null || soloLoading}
+            accent="teal"
+          />
+          <ModeCard
+            title="Solo"
+            description="Just you and Parallax"
+            features={[
+              '1:1 conversation -- no second person needed',
+              'Parallax learns your communication style',
+              'Builds your profile for future sessions',
+              'Your advocate in two-person conversations',
+            ]}
+            onClick={handleSoloStart}
+            loading={soloLoading}
+            disabled={creating !== null || soloLoading}
             accent="teal"
           />
         </div>

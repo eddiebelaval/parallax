@@ -96,10 +96,10 @@ export function SessionHistory({ sessions, userId }: SessionHistoryProps) {
             <div className="flex items-center gap-3">
               <span className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[session.status]}`} />
               <span className="text-[var(--ember-text)] text-sm">
-                {labelA} & {labelB}
+                {session.mode === 'solo' ? 'You & Parallax' : `${labelA} & ${labelB}`}
               </span>
               <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
-                {session.mode === 'in_person' ? 'In-Person' : 'Remote'}
+                {session.mode === 'solo' ? 'Solo' : session.mode === 'in_person' ? 'In-Person' : 'Remote'}
               </span>
             </div>
           </button>

@@ -32,6 +32,13 @@ export async function POST(request: Request) {
     }
   }
 
+  // Solo mode: 1:1 with Parallax — auth optional (enables profile building)
+  if (mode === 'solo') {
+    insertData.mode = 'solo'
+    insertData.status = 'active'
+    insertData.onboarding_step = 'complete'
+  }
+
   // V3: Context mode — validated, defaults to 'intimate'
   if (context_mode && VALID_CONTEXT_MODES.includes(context_mode)) {
     insertData.context_mode = context_mode

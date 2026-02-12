@@ -1,5 +1,5 @@
 export type SessionStatus = 'waiting' | 'active' | 'completed'
-export type SessionMode = 'remote' | 'in_person'
+export type SessionMode = 'remote' | 'in_person' | 'solo'
 export type OnboardingStep = 'introductions' | 'set_stage' | 'set_goals' | 'complete'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
 export type IssueStatus = 'unaddressed' | 'well_addressed' | 'poorly_addressed' | 'deferred'
