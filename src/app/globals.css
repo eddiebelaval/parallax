@@ -112,6 +112,197 @@
   --success: var(--ember-teal);
 }
 
+/* ─── Parallax Aura System ─── */
+/* Teal radial glow = Parallax's presence.
+   Narration: fixed top, glow cascades down, opaque backdrop behind text.
+   Chat: fixed bottom, slides up from below. */
+
+@keyframes aura-enter {
+  from {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes aura-exit {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+}
+
+/* Organic breathing — opacity + subtle scale */
+@keyframes aura-breathe {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  33% {
+    opacity: 0.92;
+    transform: scale(1.01, 0.99);
+  }
+  66% {
+    opacity: 0.96;
+    transform: scale(0.99, 1.01);
+  }
+}
+
+/* Slow wave motion for the glow layers */
+@keyframes aura-wave {
+  0%, 100% {
+    transform: translateX(0) scaleX(1);
+  }
+  25% {
+    transform: translateX(-1.5%) scaleX(1.02);
+  }
+  50% {
+    transform: translateX(1%) scaleX(0.98);
+  }
+  75% {
+    transform: translateX(0.5%) scaleX(1.01);
+  }
+}
+
+/* Intensity pulse for the inner glow */
+@keyframes aura-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* Chat: slides up from bottom */
+@keyframes aura-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Narration aura: fixed top ── */
+.parallax-aura {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  pointer-events: none;
+  will-change: opacity, transform;
+  transform-origin: top center;
+}
+
+/* ── Chat aura: fixed bottom ── */
+.parallax-aura--bottom {
+  top: auto;
+  bottom: 0;
+  transform-origin: bottom center;
+}
+
+.parallax-aura--entering {
+  animation: aura-enter 800ms ease-out forwards;
+}
+
+.parallax-aura--exiting {
+  animation: aura-exit 600ms ease-in forwards;
+}
+
+.parallax-aura--breathing {
+  animation: aura-breathe 6s ease-in-out infinite;
+}
+
+.parallax-aura--chat-enter {
+  animation: aura-slide-up 500ms ease-out forwards;
+}
+
+/* Dim page content beneath the aura during narration/chat */
+.content-dimmed {
+  filter: brightness(0.92);
+  transition: filter 600ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parallax-aura--breathing {
+    animation: none;
+  }
+  .parallax-aura--entering,
+  .parallax-aura--exiting,
+  .parallax-aura--chat-enter {
+    animation-duration: 0ms;
+  }
+}
+
+/* Frosted glass card surface */
+.glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 190, 175, 0.3);
+}
+
+/* ─── Narration Animations ─── */
+
+@keyframes narration-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes narration-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.narration-enter {
+  animation: narration-fade-in 0.5s ease-out forwards;
+}
+
+.narration-exit {
+  animation: narration-fade-out 0.4s ease-in forwards;
+}
+
+/* Pre-reveal state for narrated sections */
+.section-hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.section-hidden.section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Typewriter cursor blink */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typewriter-cursor {
+  animation: cursor-blink 0.8s ease-in-out infinite;
+}
+
 /* ─── Tailwind v4 Theme Integration ─── */
 
 @theme inline {
@@ -149,12 +340,67 @@
   --font-mono: var(--font-ibm-plex-mono), ui-monospace, "Cascadia Code", monospace;
 }
 
+/* Real CSS variables for hand-written rules (Tailwind @theme inline doesn't create these) */
+body {
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-source-sans), -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "Cascadia Code", monospace;
+}
+
 /* ─── Base Styles ─── */
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(50vw 60vh at 50% 0%, rgba(212, 160, 64, 0.12) 0%, transparent 100%),
+    radial-gradient(45vw 50vh at 50% 100%, rgba(106, 171, 142, 0.07) 0%, transparent 100%),
+    radial-gradient(30vw 35vh at 15% 45%, rgba(212, 160, 64, 0.04) 0%, transparent 100%),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  position: relative;
+}
+
+.light body {
+  background:
+    radial-gradient(50vw 60vh at 50% 0%, rgba(180, 130, 60, 0.07) 0%, transparent 100%),
+    radial-gradient(45vw 50vh at 50% 100%, rgba(80, 140, 120, 0.05) 0%, transparent 100%),
+    radial-gradient(30vw 35vh at 85% 45%, rgba(180, 130, 60, 0.03) 0%, transparent 100%),
+    var(--background);
+}
+
+/* ─── Dot Grid Texture ─── */
+/* Subtle dot pattern across the page, fading to near-invisible in the center
+   so the reader's eye is drawn to the content column. */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, var(--ember-muted) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: 14px 14px;
+  opacity: 0.18;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0,0,0,0.8) 0%,
+    rgba(0,0,0,0.4) 12%,
+    rgba(0,0,0,0.02) 30%,
+    rgba(0,0,0,0.02) 70%,
+    rgba(0,0,0,0.4) 88%,
+    rgba(0,0,0,0.8) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0,0,0,0.8) 0%,
+    rgba(0,0,0,0.4) 12%,
+    rgba(0,0,0,0.02) 30%,
+    rgba(0,0,0,0.02) 70%,
+    rgba(0,0,0,0.4) 88%,
+    rgba(0,0,0,0.8) 100%
+  );
 }
 
 /* Ember headings: Source Serif 4, weight 400 (light), tight tracking */
@@ -162,6 +408,34 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   font-weight: 400;
   letter-spacing: -0.02em;
+}
+
+/* ─── Global Rounded Corners ─── */
+/* Organic, warm feel — everything gets soft edges */
+
+*,
+*::before,
+*::after {
+  border-radius: inherit;
+}
+
+div, section, article, aside, main, nav, header, footer,
+button, input, textarea, select,
+img, svg, video,
+[class*="border"] {
+  border-radius: 0.75rem;
+}
+
+/* Tighter radius for small inline elements */
+span[class*="border"],
+span[class*="px-"],
+li {
+  border-radius: 0.5rem;
+}
+
+/* Full round for elements that should stay circular */
+[class*="rounded-full"] {
+  border-radius: 9999px !important;
 }
 
 /* Section indicator pattern: accent dot + uppercase mono label */
@@ -541,4 +815,381 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes micLivePulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* ─── Hero Preview: Looping Melt Animation ─── */
+/* 6-second loop: raw fades in (0-1s), holds (1-2.5s), fades out (2.5-3s),
+   NVC fades in (3-4s), holds (4-5.5s), fades out (5.5-6s) */
+
+@keyframes hero-raw-cycle {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  40% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes hero-nvc-cycle {
+  0% { opacity: 0; }
+  50% { opacity: 0; }
+  55% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes hero-temp-fill {
+  0% { width: 0%; background: var(--temp-cool); }
+  25% { width: 72%; background: var(--temp-warm); }
+  50% { width: 72%; background: var(--temp-warm); }
+  55% { width: 15%; background: var(--temp-cool); }
+  90% { width: 15%; background: var(--temp-cool); }
+  100% { width: 0%; background: var(--temp-cool); }
+}
+
+.hero-preview-raw {
+  animation: hero-raw-cycle 6s ease-in-out infinite;
+}
+
+.hero-preview-nvc {
+  animation: hero-nvc-cycle 6s ease-in-out infinite;
+}
+
+.hero-preview-temp-bar {
+  animation: hero-temp-fill 6s ease-in-out infinite;
+}
+
+.hero-preview-temp-value {
+  animation: hero-raw-cycle 6s ease-in-out infinite;
+}
+
+/* ─── LensGrid: Active Lens Glow ─── */
+
+@keyframes lens-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 160, 64, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(212, 160, 64, 0.15); }
+}
+
+.lens-glow {
+  animation: lens-glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Talk to Parallax: Teal Glow ─── */
+
+.talk-to-parallax-glow {
+  box-shadow: 0 0 20px rgba(106, 171, 142, 0.15), 0 0 40px rgba(106, 171, 142, 0.08);
+}
+
+/* ─── Cursor Spotlight: Global Teal Sheen ─── */
+/* When CursorSpotlight sets data-spotlight-active + --spot-x/--spot-y
+   on an element, this pseudo-element draws a radial teal glow
+   chasing the cursor. */
+
+[data-spotlight-active] {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-spotlight-active]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  background: radial-gradient(
+    circle 150px at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(106, 171, 142, 0.12) 0%,
+    rgba(106, 171, 142, 0.04) 40%,
+    transparent 100%
+  );
+  transition: opacity 0.3s ease-out;
+}
+
+/* Stronger sheen on buttons and links */
+button[data-spotlight-active]::after,
+a[data-spotlight-active]::after {
+  background: radial-gradient(
+    circle 120px at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(106, 171, 142, 0.18) 0%,
+    rgba(106, 171, 142, 0.06) 40%,
+    transparent 100%
+  );
+}
+
+/* Don't spotlight elements that already have custom glow behavior */
+.hello-ring-glow[data-spotlight-active]::after,
+.parallax-aura[data-spotlight-active]::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-spotlight-active]::after {
+    display: none;
+  }
+}
+
+/* ─── Hello Button: Pulsing Entry ─── */
+
+/* Rotating conic glow — teal halo that spins slowly */
+@keyframes hello-ring-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hello-ring-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.6; }
+}
+
+/* ═══════════════════════════════════════════════
+   LIQUID GLASS MATERIAL — iOS 26-inspired
+   5 layers: backdrop blur, bevel, fresnel, specular, chromatic
+   ═══════════════════════════════════════════════ */
+
+.liquid-glass {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  contain: layout style paint;
+}
+
+/* ── Layer 1: Backdrop blur + tinted fill + bevel shadows ── */
+.liquid-glass__bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  backdrop-filter: blur(40px) saturate(180%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(110%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  /* Multi-layer bevel: top-left catch + bottom-right counter-light + depth */
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.25),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.06),
+    inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.08),
+    inset -4px -4px 10px rgba(255, 255, 255, 0.03),
+    inset 0 0 20px rgba(255, 255, 255, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(255, 255, 255, 0.15);
+  /* Gradient border for edge definition */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: box-shadow 0.3s, border-color 0.3s, backdrop-filter 0.3s;
+}
+
+.liquid-glass:hover .liquid-glass__bg {
+  backdrop-filter: blur(48px) saturate(200%) brightness(115%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(115%);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3),
+    inset 8px 8px 16px rgba(255, 255, 255, 0.08),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.1),
+    inset -6px -6px 12px rgba(255, 255, 255, 0.04),
+    inset 0 0 24px rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* ── Layer 2: Fresnel rim — edges brighter than center ── */
+.liquid-glass__fresnel {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 50%,
+    transparent 45%,
+    rgba(255, 255, 255, 0.06) 65%,
+    rgba(255, 255, 255, 0.15) 85%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* ── Layer 3: Mouse-tracking specular (set via inline style in React) ── */
+.liquid-glass__specular {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* ── Layer 4: Chromatic aberration — red/blue shifted border copies ── */
+.liquid-glass__chromatic-r,
+.liquid-glass__chromatic-b {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.liquid-glass__chromatic-r {
+  border: 1px solid rgba(255, 100, 80, 0.08);
+  transform: translate(0.6px, 0);
+}
+
+.liquid-glass__chromatic-b {
+  border: 1px solid rgba(80, 100, 255, 0.08);
+  transform: translate(-0.6px, 0);
+}
+
+/* ── Size variants ── */
+
+/* Large: the full-screen Listen button */
+.liquid-glass--lg .liquid-glass__fresnel {
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 50%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 60%,
+    rgba(255, 255, 255, 0.18) 82%,
+    rgba(255, 255, 255, 0.28) 100%
+  );
+}
+
+.liquid-glass--lg .liquid-glass__chromatic-r {
+  border-width: 1.5px;
+  border-color: rgba(255, 100, 80, 0.1);
+  transform: translate(1px, 0);
+}
+
+.liquid-glass--lg .liquid-glass__chromatic-b {
+  border-width: 1.5px;
+  border-color: rgba(80, 100, 255, 0.1);
+  transform: translate(-1px, 0);
+}
+
+/* Small: the header pill */
+.liquid-glass--sm .liquid-glass__bg {
+  backdrop-filter: blur(24px) saturate(160%) brightness(108%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(108%);
+}
+
+/* ── Light mode adaptation ── */
+
+.light .liquid-glass__bg {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.6),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.15),
+    inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.3),
+    inset -4px -4px 10px rgba(255, 255, 255, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.light .liquid-glass:hover .liquid-glass__bg {
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+    inset 8px 8px 16px rgba(255, 255, 255, 0.2),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.35),
+    inset -6px -6px 12px rgba(255, 255, 255, 0.12),
+    inset 0 0 24px rgba(255, 255, 255, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.light .liquid-glass__fresnel {
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 50%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.2) 65%,
+    rgba(255, 255, 255, 0.45) 85%,
+    rgba(255, 255, 255, 0.65) 100%
+  );
+}
+
+.light .liquid-glass__chromatic-r {
+  border-color: rgba(255, 100, 80, 0.12);
+}
+
+.light .liquid-glass__chromatic-b {
+  border-color: rgba(80, 100, 255, 0.12);
+}
+
+.hello-ring-glow {
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(106, 171, 142, 0.2) 60deg,
+    transparent 120deg,
+    rgba(106, 171, 142, 0.15) 200deg,
+    transparent 280deg,
+    rgba(106, 171, 142, 0.1) 340deg,
+    transparent 360deg
+  );
+  filter: blur(16px);
+  animation:
+    hello-ring-rotate 8s linear infinite,
+    hello-ring-pulse 3s ease-in-out infinite;
+}
+
+/* Ring border breathes in sync with text */
+@keyframes hello-ring-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.45;
+  }
+}
+
+.hello-ring-breathe {
+  animation: hello-ring-breathe 3s ease-in-out infinite;
+}
+
+/* Text gentle pulse — opacity + tiny scale */
+@keyframes hello-text-breathe {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.hello-text-breathe {
+  animation: hello-text-breathe 3s ease-in-out infinite;
+}
+
+/* "Click to begin" fades in and out */
+@keyframes hello-hint-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.hello-hint-pulse {
+  animation: hello-hint-pulse 2.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hello-ring-glow,
+  .hello-ring-breathe,
+  .hello-text-breathe,
+  .hello-hint-pulse {
+    animation: none;
+  }
 }
