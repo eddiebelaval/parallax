@@ -308,6 +308,8 @@ The User Intelligence Layer is what transforms Parallax from "NVC wrapper" to "m
 
 ## V3: Conflict Intelligence Engine
 
+> **Status:** Design document. The 14-lens analysis engine and 6 context modes are **fully implemented** in `src/lib/prompts.ts` and the `/api/mediate` pipeline. The context-mode-specific lens activation is production-ready.
+
 ### Why 14 Lenses?
 
 NVC alone has blind spots. Marshall Rosenberg's framework is extraordinary for surfacing feelings and needs, but it was never designed to detect:
@@ -355,6 +357,8 @@ Not every lens is relevant to every conflict. A workplace dispute needs SCARF an
 ---
 
 ## V4: Strategy Arena -- Backtesting for Conflict Resolution
+
+> **Status:** Design document + framework code. The arena runner, evaluator, and 90 scenarios exist in `src/lib/arena/`. The Compare/Diagnose/Refine AI-assisted feedback loop is implemented. Not yet connected to CI or the production UI — file-based storage via `arena/store.ts`.
 
 ### The Insight
 
