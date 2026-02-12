@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Cormorant_Garamond, Raleway, IBM_Plex_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
@@ -80,6 +81,8 @@ function ThemeToggle() {
 }
 
 function LayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isSessionPage = pathname?.startsWith("/session/");
   const [narrationPhase, setNarrationPhase] = useState<NarrationPhase>("complete");
 
   // Listen for narration phase changes from page.tsx
@@ -102,12 +105,12 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg tracking-widest uppercase text-accent" style={{ fontFamily: 'var(--font-bitcount)' }}>
+          <a href="/" className="text-lg tracking-widest uppercase text-accent hover:text-foreground transition-colors" style={{ fontFamily: 'var(--font-bitcount)' }}>
             Parallax
-          </span>
+          </a>
         </div>
         <div className="flex justify-center">
-          {narrationPhase === "complete" && (
+          {narrationPhase === "complete" && !isSessionPage && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("parallax-replay-narration"))}
               className="liquid-glass liquid-glass--sm rounded-full font-serif text-sm text-foreground/80 hover:text-foreground transition-colors"

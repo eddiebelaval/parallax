@@ -56,6 +56,57 @@ Keep it to 2-3 sentences total.`,
   }
 }
 
+/**
+ * Remote conversational onboarding prompts.
+ *
+ * Unlike the legacy remote flow (which required both people to join + NameEntry forms),
+ * these prompts let Parallax greet each person individually, extract their name from
+ * natural conversation, and gather context before the session begins.
+ */
+
+export function buildGreetingAPrompt(
+  contextMode: ContextMode,
+): { system: string; user: string } {
+  return {
+    system: CONDUCTOR_PERSONA,
+    user: `You're opening a ${contextMode.replace(/_/g, ' ')} session. One person just arrived — you don't know their name yet. The other person hasn't joined.
+
+Welcome them warmly. Introduce yourself as Parallax — you help people in conflict understand each other. Ask for their first name and what's going on. Keep it to 2-3 natural sentences.`,
+  }
+}
+
+export function buildProcessAPrompt(
+  personAMessage: string,
+  roomCode: string,
+): { system: string; user: string } {
+  return {
+    system: `${CONDUCTOR_PERSONA}
+
+IMPORTANT: Your response must be a JSON object with this exact shape:
+{
+  "message": "Your spoken message to Person A (2-4 sentences)",
+  "name": "extracted first name"
+}
+
+Extract their first name from what they said. If you can't find a name, use "Friend" as fallback.`,
+    user: `A person just said: "${personAMessage}"
+
+Extract their first name. Acknowledge what they shared (1-2 sentences, show you heard the essence). Then tell them to share this room code with the other person: ${roomCode}. Let them know you'll talk to the other person when they arrive.`,
+  }
+}
+
+export function buildGreetingBPrompt(
+  personAName: string,
+  contextMode: ContextMode,
+): { system: string; user: string } {
+  return {
+    system: CONDUCTOR_PERSONA,
+    user: `A second person just joined a ${contextMode.replace(/_/g, ' ')} session. ${personAName} is already here and has shared their perspective. You don't know this new person's name yet.
+
+Welcome them warmly. Ask for their first name. Let them know ${personAName} shared first, and you'd like to hear their perspective before you bring both sides together. Do NOT reveal what ${personAName} said. Keep it to 2-3 sentences.`,
+  }
+}
+
 export function buildSynthesisPrompt(
   personAName: string,
   personBName: string,
@@ -69,6 +120,7 @@ export function buildSynthesisPrompt(
 IMPORTANT: Your response must be a JSON object with this exact shape:
 {
   "message": "Your spoken message to both people (3-5 sentences)",
+  "name": "Person B's extracted first name",
   "goals": ["goal 1", "goal 2", "goal 3"],
   "contextSummary": "A 1-2 sentence synthesis of both perspectives for internal use"
 }
@@ -78,6 +130,8 @@ The "message" should:
 2. Propose 2-3 concrete goals for this session (what they'll try to accomplish together)
 3. Transition to open conversation — invite them to begin
 
+The "name" should be Person B's first name extracted from their message. If not found, use "Friend".
+
 The "goals" should be specific and actionable (e.g., "Understand what each person needs around household responsibilities" not "Communicate better").
 
 The "contextSummary" is internal context for the analysis engine — concise and factual.`,
@@ -86,10 +140,41 @@ The "contextSummary" is internal context for the analysis engine — concise and
 ${personAName}'s perspective:
 "${personAContext}"
 
-${personBName}'s perspective:
+Person B's perspective (name not yet extracted):
 "${personBContext}"
 
-Synthesize what you've heard. Find the thread connecting their experiences. Propose session goals and open the floor for conversation.`,
+Synthesize what you've heard. Extract Person B's first name from their message. Find the thread connecting their experiences. Propose session goals and open the floor for conversation.`,
+  }
+}
+
+export function buildCoachingPrompt(
+  personName: string,
+  otherName: string,
+  conversationHistory: string,
+  latestAnalysisSummary: string,
+): { system: string; user: string } {
+  return {
+    system: `${CONDUCTOR_PERSONA}
+
+You are now in PRIVATE COACHING mode. This conversation is visible ONLY to ${personName}. ${otherName} cannot see any of this.
+
+YOUR ROLE:
+- Help ${personName} understand what ${otherName} might be experiencing
+- Point out patterns they might not see (blind spots, defensiveness, assumptions)
+- If they ask "what should I say?", help them think about their NEEDS, not just words
+- Reference specific things from the conversation
+- Be warm but honest — if they're being unfair, say so gently
+- 2-4 sentences per response unless they need more
+- Never write their response for them — coach, don't script
+
+VOICE: Same Parallax, but more candid. No jargon. No framework names.
+
+CONVERSATION SO FAR:
+${conversationHistory}
+
+LATEST EMOTIONAL STATE:
+${latestAnalysisSummary}`,
+    user: '', // Will be set by the API route with the coaching history
   }
 }
 

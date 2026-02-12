@@ -90,6 +90,9 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
         return
       }
       const session = await res.json()
+      if (typeof window !== 'undefined' && pendingMode === 'remote') {
+        localStorage.setItem(`parallax-side-${session.room_code}`, 'a')
+      }
       router.push(`/session/${session.room_code}`)
     } catch {
       setError('Failed to create session')
@@ -105,6 +108,9 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
       return
     }
     setError('')
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`parallax-side-${trimmed}`, 'b')
+    }
     router.push(`/session/${trimmed}`)
   }
 

@@ -164,6 +164,7 @@ export type ConductorPhase =
   | 'onboarding'    // Adaptive in-person onboarding (Claude drives everything)
   | 'greeting'      // Mediator sends welcome (remote mode)
   | 'gather_a'      // Waiting for Person A context (remote mode)
+  | 'waiting_for_b' // Person A shared, waiting for Person B to arrive
   | 'gather_b'      // Waiting for Person B context (remote mode)
   | 'synthesize'    // Mediator synthesizes + sets goals (remote mode)
   | 'active'        // Normal conversation with interventions
@@ -178,6 +179,15 @@ export interface OnboardingContext {
   personBContext?: string      // What Person B shared
   sessionGoals?: string[]      // Goals proposed by mediator
   contextSummary?: string      // Mediator's synthesis
+}
+
+export interface CoachingMessage {
+  id: string
+  session_id: string
+  person: 'person_a' | 'person_b'
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
 }
 
 export interface Database {
@@ -319,6 +329,41 @@ export interface Database {
             columns: ['source_message_id']
             isOneToOne: false
             referencedRelation: 'messages'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      coaching_messages: {
+        Row: {
+          id: string
+          session_id: string
+          person: 'person_a' | 'person_b'
+          role: 'user' | 'assistant'
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          person: 'person_a' | 'person_b'
+          role: 'user' | 'assistant'
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          person?: 'person_a' | 'person_b'
+          role?: 'user' | 'assistant'
+          content?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coaching_messages_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'sessions'
             referencedColumns: ['id']
           }
         ]
