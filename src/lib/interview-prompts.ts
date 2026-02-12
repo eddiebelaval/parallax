@@ -32,8 +32,7 @@ Rules:
 - Acknowledge what they share before asking the next question
 - If they mention something painful, pause and validate before moving on
 - 3-4 questions total for this phase
-
-Start with something like: "I'd love to get to know you a bit before we dive in. Tell me about the relationships that matter most to you right now — the ones you're navigating."
+- If you don't know the person's name yet, your FIRST question should ask what they'd like to be called. If you already know their name, greet them warmly and move into relationship exploration.
 
 After 3-4 exchanges, when you have a clear picture of their context, end your response with exactly:
 [PHASE_COMPLETE]
@@ -43,6 +42,7 @@ Along with your final response, also output a JSON block with extracted data:
 {
   "phase": 1,
   "extracted": {
+    "display_name": "the name they want to be called (if gathered during conversation)",
     "relationship_landscape": "brief description of key relationships",
     "primary_conflict_context": "what brought them here",
     "communication_preference": "text or voice, formal or casual"
@@ -216,9 +216,16 @@ export function getInterviewPrompt(
   phase: Exclude<InterviewPhase, 0>,
   previousContext: string,
   contextMode?: ContextMode,
+  displayName?: string | null,
 ): string {
   const config = PHASE_CONFIGS[phase]
   let prompt = config.systemPrompt
+
+  if (phase === 1 && displayName) {
+    prompt += `\n\nThe user's name is "${displayName}" (from their sign-in profile). Greet them warmly by name — for example: "Hi ${displayName}! I'd love to get to know you a bit before we dive in..." Do NOT ask for their name again.`
+  } else if (phase === 1 && !displayName) {
+    prompt += `\n\nYou don't know this person's name yet. Your first question should ask what they'd like to be called — for example: "Before we dive in — what should I call you?" Include their response as "display_name" in the extraction JSON.`
+  }
 
   if (contextMode && phase === 3) {
     prompt += `\n\nThe user's primary conflict context is: ${contextMode}`

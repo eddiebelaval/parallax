@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useInterview } from '@/hooks/useInterview'
+import { supabase } from '@/lib/supabase'
 import { TOTAL_PHASES, getPhaseConfig } from '@/lib/interview-prompts'
 import type { InterviewPhase } from '@/types/database'
 
@@ -13,6 +14,22 @@ export default function InterviewPage() {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // undefined = not yet fetched, null = no name, string = has name
+  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined)
+
+  // Fetch display_name from user_profiles
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('user_profiles')
+      .select('display_name')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => {
+        setDisplayName(data?.display_name ?? null)
+      })
+  }, [user])
 
   const {
     phase,
@@ -25,6 +42,7 @@ export default function InterviewPage() {
   } = useInterview({
     userId: user?.id ?? '',
     contextMode: undefined,
+    displayName,
   })
 
   // Redirect if not authenticated
@@ -34,13 +52,13 @@ export default function InterviewPage() {
     }
   }, [authLoading, user, router])
 
-  // Auto-start interview on mount
+  // Auto-start interview once user and displayName are resolved
   useEffect(() => {
-    if (user && messages.length === 0) {
+    if (user && displayName !== undefined && messages.length === 0) {
       startInterview()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, displayName])
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -61,7 +79,7 @@ export default function InterviewPage() {
     setInput('')
   }
 
-  if (authLoading) {
+  if (authLoading || displayName === undefined) {
     return (
       <div className="min-h-[calc(100vh-65px)] flex items-center justify-center">
         <div className="text-muted font-mono text-sm">Loading...</div>
@@ -90,13 +108,13 @@ export default function InterviewPage() {
           </p>
           <div className="flex gap-3 justify-center">
             <button
-              onClick={() => router.push('/profile')}
+              onClick={() => router.push('/home')}
               className="border border-border rounded-lg px-6 py-3 text-sm font-mono text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
             >
               View Profile
             </button>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/home')}
               className="bg-accent text-[var(--ember-dark)] rounded-lg px-6 py-3 text-sm font-mono uppercase tracking-wider hover:opacity-90 transition-opacity"
             >
               Start Session

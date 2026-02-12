@@ -25,6 +25,7 @@ interface InterviewRequestBody {
   message: string
   conversation_history: Array<{ role: 'user' | 'assistant'; content: string }>
   context_mode?: ContextMode
+  display_name?: string | null
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -32,7 +33,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (rateLimited) return rateLimited
 
   const body = await request.json() as InterviewRequestBody
-  const { user_id, phase, message, conversation_history, context_mode } = body
+  const { user_id, phase, message, conversation_history, context_mode, display_name } = body
 
   if (!user_id || !phase || !message) {
     return NextResponse.json(
@@ -59,7 +60,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const rawResponses = (profile?.raw_responses as unknown[]) ?? []
   const previousContext = rawResponses.map((r) => JSON.stringify(r)).join('\n')
 
-  const systemPrompt = getInterviewPrompt(phase, previousContext, context_mode)
+  const systemPrompt = getInterviewPrompt(phase, previousContext, context_mode, display_name)
 
   const messages: Anthropic.MessageParam[] = [
     ...(conversation_history ?? []).map((h) => ({
@@ -111,14 +112,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       signalsExtracted = signals.length
 
+      // Build profile update
+      const profileUpdate: Record<string, unknown> = {
+        raw_responses: [...rawResponses, extraction],
+        interview_phase: interviewDone ? 4 : phase,
+        interview_completed: interviewDone,
+        interview_completed_at: interviewDone ? new Date().toISOString() : undefined,
+      }
+
+      // Save display_name from Phase 1 extraction (conversational name gathering)
+      if (phase === 1 && extraction.extracted?.display_name) {
+        profileUpdate.display_name = extraction.extracted.display_name
+      }
+
       await supabase
         .from('user_profiles')
-        .update({
-          raw_responses: [...rawResponses, extraction],
-          interview_phase: interviewDone ? 4 : phase,
-          interview_completed: interviewDone,
-          interview_completed_at: interviewDone ? new Date().toISOString() : undefined,
-        })
+        .update(profileUpdate)
         .eq('user_id', user_id)
     }
   }

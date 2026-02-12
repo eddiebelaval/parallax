@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isValidRoomCode } from '@/lib/room-code'
 import { ContextModePicker } from '@/components/ContextModePicker'
+import { useAuth } from '@/hooks/useAuth'
 import type { SessionMode, ContextMode } from '@/types/database'
 
 const SHOW_EXPLORER = process.env.NEXT_PUBLIC_SHOW_EXPLORER !== 'false'
@@ -65,6 +66,7 @@ interface TheDoorProps {
 
 export function TheDoor({ onTalkToParallax }: TheDoorProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
   const [creating, setCreating] = useState<SessionMode | null>(null)
@@ -83,7 +85,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: pendingMode, context_mode: contextMode }),
+        body: JSON.stringify({ mode: pendingMode, context_mode: contextMode, ...(user?.id ? { user_id: user.id } : {}) }),
       })
       if (!res.ok) {
         setError('Failed to create session')

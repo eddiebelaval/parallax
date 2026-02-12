@@ -11,9 +11,10 @@ interface InterviewMessage {
 interface UseInterviewOptions {
   userId: string
   contextMode?: string
+  displayName?: string | null
 }
 
-export function useInterview({ userId, contextMode }: UseInterviewOptions) {
+export function useInterview({ userId, contextMode, displayName }: UseInterviewOptions) {
   const [phase, setPhase] = useState<InterviewPhase>(1)
   const [messages, setMessages] = useState<InterviewMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -37,6 +38,7 @@ export function useInterview({ userId, contextMode }: UseInterviewOptions) {
           message: content,
           conversation_history: messages,
           context_mode: contextMode,
+          display_name: displayName,
         }),
       })
 
@@ -71,7 +73,7 @@ export function useInterview({ userId, contextMode }: UseInterviewOptions) {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, phase, messages, isLoading, isComplete, contextMode])
+  }, [userId, phase, messages, isLoading, isComplete, contextMode, displayName])
 
   const startInterview = useCallback(async () => {
     setPhase(1)
@@ -89,6 +91,7 @@ export function useInterview({ userId, contextMode }: UseInterviewOptions) {
           message: 'Hello, I\'d like to start my profile interview.',
           conversation_history: [],
           context_mode: contextMode,
+          display_name: displayName,
         }),
       })
 
@@ -101,7 +104,7 @@ export function useInterview({ userId, contextMode }: UseInterviewOptions) {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, contextMode])
+  }, [userId, contextMode, displayName])
 
   return {
     phase,

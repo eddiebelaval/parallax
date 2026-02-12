@@ -12,10 +12,14 @@ const VALID_CONTEXT_MODES = [
 export async function POST(request: Request) {
   const supabase = createServerClient()
   const body = await request.json()
-  const { person_a_name, mode, context_mode } = body
+  const { person_a_name, mode, context_mode, user_id } = body
 
   const insertData: Record<string, unknown> = {
     person_a_name: person_a_name || null,
+  }
+
+  if (user_id) {
+    insertData.person_a_user_id = user_id
   }
 
   // In-person mode: skip form onboarding, conductor drives everything

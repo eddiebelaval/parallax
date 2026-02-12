@@ -203,7 +203,7 @@ export default function ProfilePage() {
           Retake Interview
         </button>
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/home')}
           className="border border-border rounded-lg px-5 py-2.5 text-xs font-mono text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
         >
           Start Session
