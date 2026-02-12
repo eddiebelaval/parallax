@@ -732,11 +732,11 @@ Additional fixes:
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Supabase migration applied | Pending | SQL written, needs `supabase db push` or dashboard apply |
+| ~~Supabase migration applied~~ | **Done** | Applied both migrations (messages UPDATE RLS + Intelligence Network) |
 | Email Auth enabled | Pending | Toggle in Supabase dashboard |
 | Voice input in interview | Enhancement | Text works; voice input infra exists but isn't wired to interview page |
-| Auth state in nav | Enhancement | Show user email + sign out in header when logged in |
-| "Enrich Profile" CTA | Enhancement | Landing page and post-session prompts to complete interview |
+| ~~Auth state in nav~~ | **Done** | AuthSlot in header: sign in link → user initial circle + sign out |
+| ~~"Enrich Profile" CTA~~ | **Done** | Landing page Intelligence Network section + session summary profile suggestion |
 | Profile evolution | V3 | Post-session observation extraction, confidence reinforcement/decay |
 | Progressive disclosure | V3 | Context injection that deepens with conversation length and intensity |
 | Blind analysis first | V3 | Analyze without profile, then with — prevents tunnel vision |
@@ -746,6 +746,94 @@ Additional fixes:
 Interactive architecture artifact: `artifacts/parallax/parallax-intelligence-network.html`
 
 7-tab visualization covering: Vision, Interview Flow, Privacy Wall, Cross-Party Flow, Three Modes, Security, and Assessment. The Assessment tab includes 8 actionable items with copy-paste Claude Code prompts and localStorage-persistent checkboxes.
+
+---
+
+## Intelligence Network: UI Integration & Persona Architecture
+
+**Date:** 2026-02-12
+**Branch:** `parallax/intelligence-network`
+
+### The Problem
+
+PR #27 built the entire Intelligence Network backend — auth, interview, signal extraction, context injection, profile dashboard. But the pages were **invisible islands.** `/auth`, `/interview`, and `/profile` existed but were unreachable from the main UI. The header had no auth awareness. Session creation was fully anonymous and never linked `user_id` to sessions, so `context-injector.ts` never fired because `person_a_user_id` / `person_b_user_id` were always `null`.
+
+Separately, Parallax's personality was fragile — identity, voice rules, and Intelligence Network pitch content were scattered across inline TypeScript strings in `knowledge-base.ts`. Any personality change required editing code, not docs.
+
+### What Was Built
+
+**Two things in one commit: full UI wiring + persona architecture refactor.**
+
+#### UI Integration (8 touchpoints, ~115 lines across 8 files)
+
+| # | Change | Files |
+|---|--------|-------|
+| 1 | **Auth-aware header** | `layout.tsx` — `AuthSlot` component: sign in link (logged out), user initial circle + sign out (logged in), nothing while loading |
+| 2 | **Smart post-auth routing** | `auth/page.tsx` — Already authenticated? Redirect to `/profile` or `/interview` based on `interview_completed`. Sign-up → `/interview`. Sign-in → checks profile. |
+| 3 | **Session create accepts user_id** | `api/sessions/route.ts` — Optional `user_id` in body → sets `person_a_user_id` |
+| 4 | **Session join accepts user_id** | `api/sessions/[code]/join/route.ts` — Optional `user_id` → sets `person_a_user_id` or `person_b_user_id` based on side |
+| 5 | **Hook plumbing** | `useSession.ts` — `createSession(name?, userId?)` and `joinSession(name, side, userId?)` |
+| 6 | **TheDoor passes user_id** | `TheDoor.tsx` — Imports `useAuth`, passes `user?.id` in session creation |
+| 7 | **SessionView passes user_id** | `SessionView.tsx` — Passes `user?.id` through `handleNameA` and `handleNameB` |
+| 8 | **Landing page discovery** | `page.tsx` — Intelligence Network section with auth-aware CTA, feature pills, privacy subtext |
+
+**The key design decision: pull-based, not push-based.** Auth is entirely optional. Users experience Parallax freely — start sessions, talk, get analysis. The Intelligence Network is discovered organically through the landing page section and session summary suggestions. Nobody hits a wall. The motivation to sign up comes from wanting deeper personalization, not from being locked out.
+
+#### Persona Architecture Refactor
+
+Replaced inline TypeScript personality strings with structured markdown files:
+
+| File | Purpose |
+|------|---------|
+| `docs/parallax/soul.md` | Identity, origin, philosophy — who Parallax IS |
+| `docs/parallax/voice.md` | Tone rules, first-person mandate, mode-specific adjustments |
+| `docs/parallax/intelligence.md` | How to naturally pitch the Intelligence Network in conversation |
+| `docs/parallax/boundaries.md` | What she cannot do, what she is not, privacy commitments |
+| `docs/parallax/knowledge-map.md` | 18-row topic table mapping every topic to source file and mode |
+
+`knowledge-base.ts` was rewritten as a **pure loader** — zero inline persona strings. Three-layer prompt assembly:
+
+```
+[shared persona: docs/parallax/*.md]     ← WHO she is (both modes)
+[mode framing: one-line constant]         ← CONTEXT for this mode
+[mode knowledge: docs/explorer/ or guide/] ← WHAT she knows
+```
+
+Module-level lazy caching (`_personaCache`, `_explorerCache`, `_guideCache`) ensures `fs.readFileSync` calls only happen once per process, not once per API request.
+
+#### Additional Improvements
+
+| Item | What Changed |
+|------|-------------|
+| **Explorer docs rename** | `docs/explorer/voice.md` → `architecture.md` (via `git mv`). Content was always architecture, not voice. |
+| **FAQ expansion** | 4 new entries in `docs/guide/faq.md`: profile, interview, signals, privacy |
+| **Session summary awareness** | `summarizeSession()` now accepts `hasProfiles` — when neither participant has a profile, the summary gently mentions the Intelligence Network. One sentence, an invitation, not a pitch. |
+| **Auth callback route** | `src/app/auth/callback/route.ts` for OAuth redirect handling |
+| **Home dashboard** | `src/app/home/page.tsx` with `ProfileSummary` and `SessionHistory` components |
+
+### Architecture Decisions
+
+1. **Optional user_id everywhere.** Every `user_id` parameter is optional — `user_id?: string`. When absent, the session works exactly as V1. When present, `context-injector.ts` can find and inject behavioral signals. Zero behavioral change for anonymous users.
+
+2. **Auth redirect chain.** `/auth` → check if already authenticated → if so, check `interview_completed` → route to `/profile` or `/interview`. This prevents authenticated users from seeing the auth form and always lands them at the most useful next step.
+
+3. **Markdown over TypeScript for personality.** Parallax's identity should be iterable by editing prose, not code. The OpenClaw/HYDRA pattern (soul.md, voice.md) works. `knowledge-base.ts` becomes infrastructure, not content.
+
+4. **Module-level caching.** `readDirMarkdown()` runs `fs.readFileSync` synchronously. Without caching, every `/api/converse` call re-reads the entire `docs/parallax/` directory. With lazy caching, the first call populates the cache and all subsequent calls return instantly.
+
+5. **Knowledge map as documentation.** `knowledge-map.md` is both human-readable documentation AND a reference for maintaining the knowledge base. When adding a new doc, update one table row — not multiple TypeScript imports.
+
+### Visualizations
+
+- **Persona Architecture:** `artifacts/parallax/parallax-persona-architecture.html` — 6-tab interactive visualization covering prompt assembly, file map, Explorer vs Guide comparison, before/after refactor, and assessment with actionable prompts.
+- **Intelligence Network (backend):** `artifacts/parallax/parallax-intelligence-network.html` — 7-tab visualization covering interview flow, privacy wall, cross-party signal injection, and security model.
+
+### Verification
+
+- `npm run build` — production build succeeds (clean)
+- 31 files changed, +998/-192 lines
+- Anonymous session flow unaffected — no `user_id` required anywhere
+- Supabase migrations applied (messages UPDATE RLS + Intelligence Network tables)
 
 ---
 
