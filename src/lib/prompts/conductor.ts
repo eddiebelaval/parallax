@@ -95,6 +95,33 @@ Extract their first name. Acknowledge what they shared (1-2 sentences, show you 
   }
 }
 
+export function buildWaitingChatPrompt(
+  personAName: string,
+  personAContext: string,
+  conversationHistory: string,
+  latestMessage: string,
+): { system: string; user: string } {
+  return {
+    system: CONDUCTOR_PERSONA,
+    user: `You're waiting for a second person to join. ${personAName} has already shared their perspective and is still here chatting with you.
+
+Context ${personAName} shared earlier: "${personAContext}"
+
+Conversation so far:
+${conversationHistory}
+
+${personAName} just said: "${latestMessage}"
+
+Respond naturally. You can:
+- Acknowledge what they said
+- Ask clarifying questions about the situation
+- Offer a warm observation about what you're hearing
+- Reassure them if they seem nervous
+
+Do NOT change the topic to "waiting" — just be present with them. Stay in character. 2-3 sentences.`,
+  }
+}
+
 export function buildGreetingBPrompt(
   personAName: string,
   contextMode: ContextMode,

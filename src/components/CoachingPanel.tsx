@@ -9,6 +9,8 @@ interface CoachingPanelProps {
   error: string | null;
   onSend: (content: string) => void;
   onClose: () => void;
+  /** Hide the built-in text input (when using external ActiveSpeakerBar instead) */
+  hideInput?: boolean;
 }
 
 export function CoachingPanel({
@@ -17,6 +19,7 @@ export function CoachingPanel({
   error,
   onSend,
   onClose,
+  hideInput = false,
 }: CoachingPanelProps) {
   const [value, setValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -95,27 +98,29 @@ export function CoachingPanel({
         )}
       </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-border">
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            placeholder="Ask Parallax anything..."
-            disabled={loading}
-            className="flex-1 bg-transparent text-foreground text-sm placeholder:text-ember-600 focus:outline-none disabled:opacity-40"
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={loading || !value.trim()}
-            className="px-4 min-h-[44px] font-mono text-xs uppercase tracking-wider text-success hover:text-success/80 transition-colors disabled:opacity-40"
-          >
-            Send
-          </button>
+      {/* Input — hidden when external ActiveSpeakerBar is used */}
+      {!hideInput && (
+        <div className="px-4 py-3 border-t border-border">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="Ask Parallax anything..."
+              disabled={loading}
+              className="flex-1 bg-transparent text-foreground text-sm placeholder:text-ember-600 focus:outline-none disabled:opacity-40"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !value.trim()}
+              className="px-4 min-h-[44px] font-mono text-xs uppercase tracking-wider text-success hover:text-success/80 transition-colors disabled:opacity-40"
+            >
+              Send
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

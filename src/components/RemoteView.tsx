@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { ParallaxPresence } from "./inperson/ParallaxPresence";
 import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
@@ -9,6 +10,7 @@ import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
+import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type {
   Session,
@@ -25,9 +27,9 @@ function getEffectiveTurn(
   switch (conductorPhase) {
     case "greeting":
     case "synthesize":
-    case "waiting_for_b":
       return "mediator";
     case "gather_a":
+    case "waiting_for_b":
       return "person_a";
     case "gather_b":
       return "person_b";
@@ -69,6 +71,7 @@ export function RemoteView({
   } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
+  const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
@@ -80,9 +83,12 @@ export function RemoteView({
   const [conductorLoading, setConductorLoading] = useState(false);
   const [mediationError, setMediationError] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
+  const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const conductorFired = useRef(false);
+  const lastSpokenRef = useRef<string | null>(null);
+  const lastSpokenCoachRef = useRef<string | null>(null);
 
   // Derived state
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
@@ -130,6 +136,28 @@ export function RemoteView({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
+
+  // Speak new mediator messages via TTS
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const latest = messages[messages.length - 1];
+    if (latest.sender !== "mediator") return;
+    if (lastSpokenRef.current === latest.id) return;
+
+    lastSpokenRef.current = latest.id;
+    speak(latest.content);
+  }, [messages, speak]);
+
+  // Speak new coaching responses via TTS
+  useEffect(() => {
+    if (coaching.messages.length === 0) return;
+    const latest = coaching.messages[coaching.messages.length - 1];
+    if (latest.role !== "assistant") return;
+    if (lastSpokenCoachRef.current === latest.id) return;
+
+    lastSpokenCoachRef.current = latest.id;
+    speak(latest.content);
+  }, [coaching.messages, speak]);
 
   // Clear analyzing state when analysis arrives via Realtime
   useEffect(() => {
@@ -296,10 +324,11 @@ export function RemoteView({
       const sent = await sendMessage(localPerson, content);
       if (!sent) return;
 
-      // During onboarding, call conductor instead of mediate
+      // During onboarding or waiting, call conductor instead of mediate
       if (
         conductorPhase === "gather_a" ||
-        conductorPhase === "gather_b"
+        conductorPhase === "gather_b" ||
+        conductorPhase === "waiting_for_b"
       ) {
         triggerConductor(sent.id);
       } else {
@@ -361,20 +390,6 @@ export function RemoteView({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {/* Coaching button — visible during active phase */}
-          {isActive && (
-            <button
-              onClick={() => coaching.setIsOpen(!coaching.isOpen)}
-              className={`flex items-center gap-2 px-3 py-1.5 border font-mono text-[10px] uppercase tracking-wider transition-all rounded-sm ${
-                coaching.isOpen
-                  ? "border-success text-success bg-success/10"
-                  : "border-success/30 text-success hover:bg-success/10"
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-success" />
-              {coaching.isOpen ? "Close coach" : "Private coach"}
-            </button>
-          )}
           {isActive && (
             <button
               onClick={endSession}
@@ -385,6 +400,16 @@ export function RemoteView({
             </button>
           )}
         </div>
+      </div>
+
+      {/* ParallaxPresence orb */}
+      <div className="flex-shrink-0 border-b border-border">
+        <ParallaxPresence
+          isAnalyzing={!!analyzingMessageId || conductorLoading}
+          isSpeaking={isSpeaking}
+          voiceWaveform={voiceWaveform}
+          voiceEnergy={voiceEnergy}
+        />
       </div>
 
       {/* Main content: messages + sidebar */}
@@ -469,23 +494,53 @@ export function RemoteView({
             </div>
           )}
 
-          {/* Coaching panel (slides up above input) */}
-          {coaching.isOpen && (
-            <CoachingPanel
-              messages={coaching.messages}
-              loading={coaching.loading}
-              error={coaching.error}
-              onSend={coaching.sendMessage}
-              onClose={() => coaching.setIsOpen(false)}
-            />
-          )}
-
-          {/* Input bar — same ActiveSpeakerBar as in-person */}
+          {/* Tabbed input area */}
           <div className="flex-shrink-0">
+            {/* Folder tabs — visible when coaching is available */}
+            {(isActive || conductorPhase === "waiting_for_b") && (
+              <div className="flex items-end px-4 gap-2">
+                <button
+                  onClick={() => setInputTab("conversation")}
+                  className={`px-4 py-1.5 font-mono text-[10px] uppercase tracking-wider rounded-t-md border border-b-0 transition-colors ${
+                    inputTab === "conversation"
+                      ? "bg-surface border-border text-foreground"
+                      : "bg-transparent border-transparent text-ember-600 hover:text-foreground"
+                  }`}
+                >
+                  Conversation
+                </button>
+                <button
+                  onClick={() => setInputTab("coaching")}
+                  className={`flex items-center gap-2 px-4 py-1.5 font-mono text-[10px] uppercase tracking-wider rounded-t-md border border-b-0 transition-colors ${
+                    inputTab === "coaching"
+                      ? "bg-surface border-success/40 text-success"
+                      : "bg-transparent border-transparent text-ember-600 hover:text-success"
+                  }`}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Private coach
+                </button>
+              </div>
+            )}
+
+            {/* Tab content */}
+            {inputTab === "coaching" && (isActive || conductorPhase === "waiting_for_b") && (
+              <CoachingPanel
+                messages={coaching.messages}
+                loading={coaching.loading}
+                error={coaching.error}
+                onSend={coaching.sendMessage}
+                onClose={() => setInputTab("conversation")}
+                hideInput
+              />
+            )}
             <ActiveSpeakerBar
-              activeSpeakerName={activeSpeaker}
-              onSend={handleSend}
-              disabled={!isMyTurn || conductorLoading}
+              activeSpeakerName={inputTab === "coaching" ? localName : activeSpeaker}
+              onSend={inputTab === "coaching" ? coaching.sendMessage : handleSend}
+              disabled={inputTab === "coaching" ? coaching.loading : (!isMyTurn || conductorLoading)}
             />
           </div>
         </div>

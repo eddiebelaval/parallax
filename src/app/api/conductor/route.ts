@@ -7,6 +7,7 @@ import {
   buildGreetingPrompt,
   buildGreetingAPrompt,
   buildProcessAPrompt,
+  buildWaitingChatPrompt,
   buildGreetingBPrompt,
   buildSynthesisPrompt,
   buildInterventionPrompt,
@@ -300,6 +301,47 @@ export async function POST(request: Request) {
         .eq('id', session_id)
 
       return NextResponse.json({ phase: 'waiting_for_b', message: acknowledgment, name: extractedName })
+    }
+
+    // Phase: waiting_for_b -> Person A is chatting while waiting for B
+    if (phase === 'waiting_for_b') {
+      // Fetch conversation history for context
+      const { data: allMessages } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', session_id)
+        .order('created_at', { ascending: true })
+
+      const nameMap: Record<string, string> = {
+        person_a: personAName,
+        mediator: 'Parallax',
+      }
+      const history = (allMessages || [])
+        .map((m: Message) => `${nameMap[m.sender] || m.sender}: ${m.content}`)
+        .join('\n')
+
+      const { system, user } = buildWaitingChatPrompt(
+        personAName,
+        onboarding.personAContext || '',
+        history,
+        msg.content,
+      )
+
+      let responseText: string
+      try {
+        responseText = await conductorMessage(system, user)
+      } catch {
+        return NextResponse.json({ phase: 'waiting_for_b', error: 'Waiting chat failed' })
+      }
+
+      // Insert mediator response — phase stays at waiting_for_b
+      await supabase.from('messages').insert({
+        session_id,
+        sender: 'mediator',
+        content: responseText,
+      })
+
+      return NextResponse.json({ phase: 'waiting_for_b', message: responseText })
     }
 
     // Phase: gather_b -> Person B just shared context (with name extraction via synthesis)

@@ -7,6 +7,10 @@ interface ParallaxPresenceProps {
   isAnalyzing: boolean;
   isSpeaking: boolean;
   statusLabel?: string;
+  /** Real waveform data from useParallaxVoice — used when speaking */
+  voiceWaveform?: Float32Array | null;
+  /** Real energy level from useParallaxVoice — used when speaking */
+  voiceEnergy?: number;
 }
 
 /**
@@ -61,9 +65,14 @@ export function ParallaxPresence({
   isAnalyzing,
   isSpeaking,
   statusLabel,
+  voiceWaveform,
+  voiceEnergy,
 }: ParallaxPresenceProps) {
   const isActive = isAnalyzing || isSpeaking;
-  const { waveform, energy } = useSyntheticWaveform(isActive);
+  // Use real voice waveform when speaking, synthetic when just analyzing
+  const synthetic = useSyntheticWaveform(isActive && !isSpeaking);
+  const waveform = isSpeaking && voiceWaveform ? voiceWaveform : synthetic.waveform;
+  const energy = isSpeaking && voiceEnergy != null ? voiceEnergy : synthetic.energy;
 
   const effectiveLabel = useMemo(() => {
     if (statusLabel) return statusLabel;
