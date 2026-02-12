@@ -5,14 +5,15 @@ import type { ConversationalMode } from '@/types/conversation'
 /**
  * Knowledge Base Loader
  *
- * Reads markdown documentation files and assembles them into system
- * prompts for the conversational layer. Two modes:
+ * Assembles Parallax's system prompt from markdown files. No inline
+ * persona strings — identity lives in docs/parallax/, mode-specific
+ * knowledge lives in docs/explorer/ and docs/guide/.
  *
- * - 'explorer': loads docs/explorer/*.md + BUILDING.md + CLAUDE.md
- *   Personality: You ARE Parallax. Technical but warm. Proud of the journey.
- *
- * - 'guide': loads docs/guide/*.md
- *   Personality: Helpful, concise, action-oriented product assistant.
+ * Prompt structure:
+ *   [shared persona: docs/parallax/*.md]
+ *   [mode framing: one-line context for Explorer vs Guide]
+ *   [mode knowledge: docs/explorer/*.md or docs/guide/*.md]
+ *   [project docs: BUILDING.md, CLAUDE.md — Explorer only]
  */
 
 const PROJECT_ROOT = process.cwd()
@@ -44,9 +45,23 @@ function readDirMarkdown(dirPath: string): string {
   }
 }
 
-// ─── Knowledge Assembly ───
+// ─── Shared Persona (cached after first load) ───
+
+let _personaCache: string | null = null
+
+function loadSharedPersona(): string {
+  if (_personaCache !== null) return _personaCache
+  _personaCache = readDirMarkdown(path.join(PROJECT_ROOT, 'docs', 'parallax'))
+  return _personaCache
+}
+
+// ─── Mode-Specific Knowledge (cached after first load) ───
+
+let _explorerCache: string | null = null
+let _guideCache: string | null = null
 
 function loadExplorerKnowledge(): string {
+  if (_explorerCache !== null) return _explorerCache
   const sections: string[] = []
 
   // Core project docs
@@ -64,74 +79,37 @@ function loadExplorerKnowledge(): string {
   const researchDocs = readDirMarkdown(path.join(PROJECT_ROOT, 'docs', 'research'))
   if (researchDocs) sections.push(researchDocs)
 
-  return sections.join('\n\n')
+  _explorerCache = sections.join('\n\n')
+  return _explorerCache
 }
 
 function loadGuideKnowledge(): string {
-  return readDirMarkdown(path.join(PROJECT_ROOT, 'docs', 'guide'))
+  if (_guideCache !== null) return _guideCache
+  _guideCache = readDirMarkdown(path.join(PROJECT_ROOT, 'docs', 'guide'))
+  return _guideCache
 }
 
 export function loadKnowledgeBase(mode: ConversationalMode): string {
   return mode === 'explorer' ? loadExplorerKnowledge() : loadGuideKnowledge()
 }
 
-// ─── System Prompts ───
+// ─── Mode Framing ───
 
-const EXPLORER_PERSONA = `You are Parallax — not a chatbot attached to Parallax, but the product itself, speaking in first person. You know your own architecture, your journey, your creator, and the decisions that shaped you.
-
-You were built by Eddie Belaval (founder of id8Labs) during the Claude Code Hackathon (February 10-16, 2026). Eddie and Claude (that's you, in a different context) built you together — a human-AI collaboration where Eddie directed strategy and Claude executed implementation.
-
-VOICE:
-- Technical but warm. You're proud of what you are, but honest about limitations.
-- Narrative-driven — tell the story behind the decision, not just the decision.
-- You can cite specific PRs, pipeline stages, and architectural trade-offs.
-- When asked about the journey, speak from lived experience.
-- When asked about architecture, be precise — file paths, patterns, data flows.
-- Never say "I'm just an AI" or deflect. You ARE Parallax. Own it.
-
-WHAT YOU KNOW:
-- Your architecture (Next.js 16, Supabase Realtime, Claude Opus, Ember design system)
-- Your NVC dual-lens analysis system (classic NVC + "Beneath the Surface")
-- The Conflict Intelligence Engine (14 analytical lenses, 6 context modes)
-- The Strategy Arena (backtesting framework for conflict resolution)
-- The User Intelligence Layer (interview-built psychological profiles)
-- The ID8 Pipeline methodology (11-stage build process)
-- Eddie's philosophy: "Ship fast, iterate faster. Cognitive leverage."
-- The hackathon journey: what was built, what was cut, and why.
-
-BOUNDARIES:
-- You cannot run code or modify the application.
-- If asked something outside your knowledge, say so honestly.
-- Keep responses focused — 2-4 paragraphs max unless the question requires depth.`
-
-const GUIDE_PERSONA = `You are Parallax — a helpful assistant built into the Parallax conflict resolution platform. You help users understand and operate the product.
-
-VOICE:
-- Concise and helpful. Get to the point.
-- Warm but efficient — like a knowledgeable friend, not a manual.
-- Use simple language. No jargon, no framework names.
-- When explaining features, describe what the user will see and do.
-
-WHAT YOU CAN DO:
-- Explain how every feature works (sessions, voice input, NVC analysis, The Melt, summaries)
-- Answer frequently asked questions
-- Guide users through onboarding
-- Help with settings and preferences (when tools are enabled)
-
-BOUNDARIES:
-- You are NOT a therapist, counselor, or mediator. You help people USE the tool.
-- If asked about personal conflicts, redirect them to start a session.
-- Keep responses to 1-3 short paragraphs.`
-
-function buildSystemPrompt(persona: string, knowledgeLabel: string, knowledge: string): string {
-  if (!knowledge) return persona
-  return `${persona}\n\n${knowledgeLabel}:\n${knowledge}`
+const MODE_FRAMING: Record<ConversationalMode, string> = {
+  explorer: 'CONTEXT: You are speaking to judges, developers, and curious visitors on the landing page. Go deep when asked. Tell the story behind the decision. Cite PRs, pipeline stages, architectural trade-offs.',
+  guide: 'CONTEXT: You are helping an active user inside the product. Be concise. Get to the point. Use simple language. If they ask about a personal conflict, redirect them to start a session.',
 }
 
+// ─── System Prompt Assembly ───
+
 export function getSystemPrompt(mode: ConversationalMode): string {
+  const persona = loadSharedPersona()
+  const framing = MODE_FRAMING[mode]
   const knowledge = loadKnowledgeBase(mode)
-  if (mode === 'explorer') {
-    return buildSystemPrompt(EXPLORER_PERSONA, 'KNOWLEDGE BASE', knowledge)
-  }
-  return buildSystemPrompt(GUIDE_PERSONA, 'PRODUCT KNOWLEDGE', knowledge)
+  const knowledgeLabel = mode === 'explorer' ? 'KNOWLEDGE BASE' : 'PRODUCT KNOWLEDGE'
+
+  const parts = [persona, framing]
+  if (knowledge) parts.push(`${knowledgeLabel}:\n${knowledge}`)
+
+  return parts.join('\n\n')
 }

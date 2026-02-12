@@ -9,6 +9,7 @@ import { SessionSummary } from "./SessionSummary";
 import { XRayGlanceView } from "./inperson/XRayGlanceView";
 import { useSession } from "@/hooks/useSession";
 import { useMessages } from "@/hooks/useMessages";
+import { useAuth } from "@/hooks/useAuth";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type { ContextMode, ConductorPhase, OnboardingContext, MessageSender } from "@/types/database";
 
@@ -46,6 +47,7 @@ interface SessionViewProps {
 export function SessionView({ roomCode }: SessionViewProps) {
   const { session, loading: sessionLoading, createSession, joinSession, advanceOnboarding, refreshSession } = useSession(roomCode);
   const { messages, sendMessage, currentTurn } = useMessages(session?.id);
+  const { user } = useAuth();
 
   // Track which side the local user has claimed (for same-device split-screen)
   const [localSideA, setLocalSideA] = useState<string | null>(null);
@@ -120,19 +122,19 @@ export function SessionView({ roomCode }: SessionViewProps) {
 
   const handleNameA = useCallback(async (name: string) => {
     if (!session) {
-      const created = await createSession(name);
+      const created = await createSession(name, user?.id);
       if (created) setLocalSideA(name);
     } else {
-      const joined = await joinSession(name, 'a');
+      const joined = await joinSession(name, 'a', user?.id);
       if (joined) setLocalSideA(name);
     }
-  }, [session, createSession, joinSession]);
+  }, [session, createSession, joinSession, user?.id]);
 
   const handleNameB = useCallback(async (name: string) => {
     if (!session) return;
-    const joined = await joinSession(name, 'b');
+    const joined = await joinSession(name, 'b', user?.id);
     if (joined) setLocalSideB(name);
-  }, [session, joinSession]);
+  }, [session, joinSession, user?.id]);
 
   // Trigger NVC mediation for a message (fire-and-forget — result arrives via Realtime UPDATE)
   const triggerMediation = useCallback(async (messageId: string) => {

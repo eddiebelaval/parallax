@@ -27,5 +27,17 @@ Create a remote session from the landing page. You'll get a 6-character room cod
 ## Can more than two people use Parallax?
 Currently, Parallax is designed for two-person conflicts. The NVC analysis, split-screen layout, and X-Ray Scoreboard are all built around a two-person dynamic. Multi-party mediation is a future possibility.
 
+## What is my profile?
+Your profile is part of the Intelligence Network — a behavioral map of how you communicate. It's built from a 10-minute conversational interview where Parallax asks about your communication patterns, conflict tendencies, and relationship dynamics. The result is a set of 9 behavioral signals (like attachment style, conflict mode, and emotional regulation patterns) that make future sessions more personalized.
+
+## How do I build a profile?
+Sign up for a free account, then complete the interview. It takes about 10 minutes — Parallax asks you questions conversationally, not through a form. Once complete, your signals are automatically used to enrich any session you join. You can view your full profile at /profile.
+
+## What are behavioral signals?
+Signals are the patterns Parallax extracts from your interview: attachment style, conflict mode, Gottman risk factors, SCARF sensitivities, drama triangle tendencies, emotional regulation patterns, values, CBT patterns, and narrative themes. Each signal has a confidence score. They help Parallax understand not just what you said, but why you communicate the way you do.
+
+## Is my profile data private?
+Yes. Your profile is encrypted at rest and protected by row-level security — only you can see your raw data. When your signals are used in a session, they're anonymized and consent-gated. You choose per-session whether to share signals, and you can revoke consent at any time. Parallax never sells data or trains on your profile.
+
 ## What does "fire-and-forget" mean in the architecture?
 When you send a message, the app doesn't wait for Claude to finish analyzing it before letting you continue. The message is saved immediately, the analysis runs in the background, and the result appears via real-time subscription when it's ready. This means the conversation feels natural — you never stare at a loading spinner.

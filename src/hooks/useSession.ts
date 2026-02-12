@@ -60,12 +60,12 @@ export function useSession(roomCode: string) {
   }, [roomCode])
 
   // Create a new session
-  const createSession = useCallback(async (personAName?: string) => {
+  const createSession = useCallback(async (personAName?: string, userId?: string) => {
     setError(null)
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ person_a_name: personAName }),
+      body: JSON.stringify({ person_a_name: personAName, ...(userId ? { user_id: userId } : {}) }),
     })
     if (!res.ok) {
       const data = await res.json()
@@ -78,12 +78,12 @@ export function useSession(roomCode: string) {
   }, [])
 
   // Join a session as person A or B
-  const joinSession = useCallback(async (name: string, side: 'a' | 'b') => {
+  const joinSession = useCallback(async (name: string, side: 'a' | 'b', userId?: string) => {
     setError(null)
     const res = await fetch(`/api/sessions/${roomCode}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, side }),
+      body: JSON.stringify({ name, side, ...(userId ? { user_id: userId } : {}) }),
     })
     if (!res.ok) {
       const data = await res.json()
