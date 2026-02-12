@@ -524,6 +524,133 @@ The Strategy Arena (`src/lib/arena/`) is Parallax's empirical validation system.
 
 ---
 
+## Stage 7: Test Coverage — Full Stack
+
+**Date:** 2026-02-11
+**Gate:** "Are the tests green and covering critical paths?"
+
+### Context
+
+Before this stage, Parallax had **86 unit tests across 6 suites** — all pure function tests covering room codes, temperature mapping, NVC parsing, context modes, arena evaluation, and conflict analysis parsing. Zero integration, component, hook, or E2E tests existed. The entire API layer, all React components, every Realtime subscription hook, and the Playwright browser layer were untested.
+
+This stage filled every gap. We went from 86 tests to **426 Vitest tests across 41 suites + 49 Playwright E2E specs** — covering all 18 identified integration gaps from the Stage 9 audit.
+
+### What We Built
+
+**Phase 0: Infrastructure**
+
+| File | Purpose |
+|------|---------|
+| `vitest.config.ts` | Updated: happy-dom environment, setupFiles, coverage config, .test.tsx include |
+| `playwright.config.ts` | New: 5 browser projects (chromium, firefox, webkit, mobile-chrome, mobile-safari) |
+| `src/__tests__/helpers/setup.ts` | Global setup: Supabase mock, DOM cleanup, Web Audio/Speech/MediaStream polyfills, fetch stub |
+| `src/__tests__/helpers/fixtures.ts` | Type-safe factories: `makeSession()`, `makeMessage()`, `makeIssue()`, `makeNvcAnalysis()`, etc. |
+| `src/__tests__/helpers/mock-supabase.ts` | Chainable Supabase mock with configurable responses per table |
+| `src/__tests__/helpers/mock-claude.ts` | Anthropic SDK mock with `setClaudeResponse()`/`setClaudeError()` helpers |
+
+**Phase 1: Unit Tests (5 files, 68 tests)**
+
+| File | Tests | What It Covers |
+|------|-------|----------------|
+| `src/lib/__tests__/rate-limit.test.ts` | 8 | Token bucket rate limiter: allow/block, window expiry, IP isolation |
+| `src/lib/__tests__/interventions.test.ts` | 12 | Escalation detection, de-escalation patterns, intervention triggers |
+| `src/lib/__tests__/prompts-conductor.test.ts` | 21 | Adaptive conductor prompt: greeting/context/synthesis/active phases, name extraction |
+| `src/lib/__tests__/prompts-issue-analysis.test.ts` | 13 | Issue extraction prompt: system prompt structure, context injection, persona grounding |
+| `src/lib/__tests__/opus.test.ts` | 14 | Claude API wrapper: mediateMessage, conductorMessage, analyzeIssues, summarizeSession |
+
+**Phase 2: API Route Integration Tests (10 files, 91 tests)**
+
+| File | Tests | What It Covers |
+|------|-------|----------------|
+| `src/app/api/__tests__/health.test.ts` | 3 | Health endpoint: 200 response, status field |
+| `src/app/api/__tests__/sessions.test.ts` | 8 | Session CRUD: create, get, missing fields, DB errors |
+| `src/app/api/__tests__/sessions-code.test.ts` | 3 | Session lookup by room code |
+| `src/app/api/__tests__/sessions-join.test.ts` | 10 | Join flow: valid join, already full, not found, person_b slot |
+| `src/app/api/__tests__/sessions-end.test.ts` | 5 | End session: status update, already ended, not found |
+| `src/app/api/__tests__/messages.test.ts` | 6 | Message creation: valid send, missing fields, DB insert |
+| `src/app/api/__tests__/mediate.test.ts` | 10 | NVC mediation: Claude call, temperature extraction, analysis patch |
+| `src/app/api/__tests__/issues-analyze.test.ts` | 10 | Issue extraction: grading, multi-issue parsing, error handling |
+| `src/app/api/__tests__/sessions-summary.test.ts` | 9 | Summary generation: V3 lens insights, resolution trajectory |
+| `src/app/api/__tests__/conductor.test.ts` | 27 | Conductor system: all 4 phases, name extraction, context mode selection, interventions |
+
+**Phase 3: Hook Tests (6 files, 56 tests)**
+
+| File | Tests | What It Covers |
+|------|-------|----------------|
+| `src/hooks/__tests__/useSession.test.ts` | 12 | Session state: create, join, Realtime updates, cleanup |
+| `src/hooks/__tests__/useMessages.test.ts` | 13 | Messages: fetch, Realtime INSERT/UPDATE, dedup, sendMessage, currentTurn |
+| `src/hooks/__tests__/useIssues.test.ts` | 11 | Issues: fetch, Realtime subscription, analyzeIssue trigger |
+| `src/hooks/__tests__/useAudioAnalyser.test.ts` | 8 | Web Audio: start/stop, waveform data, mic denied state |
+| `src/hooks/__tests__/useSyntheticWaveform.test.ts` | 5 | Synthetic waveform: idle animation, energy mapping |
+| `src/hooks/__tests__/useParallaxVoice.test.ts` | 7 | TTS: speak mediator messages, queue management, cancel |
+
+**Phase 4: Component Tests (14 files, 125 tests)**
+
+| File | Tests | What It Covers |
+|------|-------|----------------|
+| `src/components/__tests__/TheMelt.test.tsx` | 14 | Core animation: dissolve/crystallize states, temperature-driven glow |
+| `src/components/__tests__/MessageCard.test.tsx` | 17 | Backlit glow, NVC reveal toggle, sender display, temperature badge |
+| `src/components/__tests__/LensBar.test.tsx` | 8 | Multi-lens display: active lens highlight, lens count |
+| `src/components/__tests__/VoiceInput.test.tsx` | 10 | Voice: hold-to-speak, SpeechRecognition lifecycle, Chrome-only message |
+| `src/components/__tests__/ContextModePicker.test.tsx` | 10 | 6 context modes: selection, lens stack display, active state |
+| `src/components/__tests__/SignalRail.test.tsx` | 6 | Temperature timeline: glow intensity, message count |
+| `src/components/__tests__/OrbStrip.test.tsx` | 3 | Three orbs: person A, Parallax, person B |
+| `src/components/__tests__/AudioWaveformOrb.test.tsx` | 7 | SVG waveform: idle animation, active state, role colors |
+| `src/components/__tests__/SessionSummary.test.tsx` | 6 | End-of-session: lens insights, resolution trajectory, message count |
+| `src/components/__tests__/SessionView.test.tsx` | 8 | Mode branch: remote vs in-person routing |
+| `src/components/__tests__/PersonPanel.test.tsx` | 11 | Remote mode: name display, message area, input |
+| `src/components/inperson/__tests__/XRayGlanceView.test.tsx` | 8 | Three-column layout: signal rails, message center, speaker bar |
+| `src/components/inperson/__tests__/IssueCard.test.tsx` | 8 | Issue card: status color, grade badge, expand/collapse |
+| `src/components/inperson/__tests__/ActiveSpeakerBar.test.tsx` | 9 | Turn indicator: voice/text input, send handler, disabled state |
+
+**Phase 5: E2E Tests (6 files, 49 specs)**
+
+| File | Specs | What It Covers |
+|------|-------|----------------|
+| `e2e/remote-session.spec.ts` | 19 | Full remote flow: create, join, message, NVC, summary, room codes |
+| `e2e/in-person-session.spec.ts` | 10 | In-person: onboarding, X-Ray Glance, voice input, issue tracking |
+| `e2e/context-modes.spec.ts` | 6 | All 6 context modes: lens stack activation, mode switching |
+| `e2e/error-handling.spec.ts` | 6 | Error states: network failure, invalid codes, rate limiting |
+| `e2e/state-persistence.spec.ts` | 6 | Session persistence: reload, Realtime reconnect, message ordering |
+| `e2e/accessibility.spec.ts` | 8 | axe-core scans, keyboard navigation, ARIA labels, focus management |
+
+### Architecture Decisions
+
+1. **happy-dom over jsdom.** happy-dom is ~3x faster for Vitest and supports enough of the DOM API for RTL component tests. We don't need full browser fidelity — that's what Playwright handles.
+
+2. **Class-based SpeechRecognition polyfill.** The standard `vi.fn()` mock gets wiped by `vi.restoreAllMocks()` between tests. By using a real ES6 class with `vi.fn()` only on individual methods, the constructor survives mock restoration while method-level spying still works. The class tracks instances via a static array for test assertions.
+
+3. **`(supabase as any).from` pattern for query chain mocks.** Supabase's chainable query builder (`from().select().eq().order()`) has deeply nested generic types that fight with Vitest's mock types. Rather than wrestling with 4 levels of `vi.mocked<>` generics, we cast to `any` at the assignment point. Pragmatic for test code — the runtime behavior is what matters.
+
+4. **E2E excluded from tsconfig.** Playwright specs use `page.route()` mock data with intentionally loose types (null fields, partial objects). Including them in the main Next.js type check creates false positives. Playwright has its own tsconfig via `@playwright/test`.
+
+5. **Parallel agent execution.** Four specialized agents (unit+hooks, API routes, components, E2E) wrote tests simultaneously via TeamCreate. Each agent had access to the shared helpers and could work independently. This cut wall-clock time significantly — ~340 tests were written concurrently.
+
+6. **All API mocked, zero real calls.** Every test mocks Supabase and Claude at the module boundary. E2E tests intercept at the network layer via `page.route()`. No test hits a real database or AI API — safe to run in CI without env vars.
+
+### Test Summary
+
+| Category | Files | Tests |
+|----------|-------|-------|
+| Existing (pre-Stage 7) | 6 | 86 |
+| Unit (Phase 1) | 5 | 68 |
+| API Routes (Phase 2) | 10 | 91 |
+| Hooks (Phase 3) | 6 | 56 |
+| Components (Phase 4) | 14 | 125 |
+| **Vitest Total** | **41** | **426** |
+| E2E — Playwright (Phase 5) | 6 | 49 |
+| **Grand Total** | **47** | **475** |
+
+### Verification
+
+- **426 Vitest tests across 41 suites** — all passing (`npx vitest run`)
+- **49 Playwright E2E specs across 6 files** — ready for `npx playwright test`
+- `npx tsc --noEmit` — zero type errors
+- All tests fully mocked — no Supabase or Claude API calls
+- Test scripts added to package.json: `test:run`, `test:coverage`, `test:e2e`, `test:e2e:ui`, `test:all`
+
+---
+
 ## Conversational Layer: Parallax Speaks
 
 **Date:** 2026-02-11
