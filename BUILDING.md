@@ -453,7 +453,7 @@ A complete reimagining of the in-person mode. The old flow used form-based onboa
 | `ActionPanel.tsx` | Issue tracking panel per person (replaces XRayScoreboard) |
 | `IssueDrawer.tsx` | Overlay drawer with full issue board |
 | `ActiveSpeakerBar.tsx` | Turn indicator + voice/text input |
-| `useParallaxVoice.ts` | Web Speech API TTS for mediator messages |
+| `useParallaxVoice.ts` | ElevenLabs TTS (Ava voice, Turbo v2.5) with browser SpeechSynthesis fallback |
 
 ### Key Decisions
 
@@ -595,3 +595,204 @@ A judge lands on Parallax. Below the product explanation, they see: **"This prod
 Then they start a session. The "?" button now opens the Guide. They type: "Turn off the temperature display." A teal pill appears: "Updated show_temperature." The setting changes. The product just responded to a natural language command.
 
 That's the conversational layer. The product has a voice.
+
+---
+
+## ElevenLabs Voice Integration
+
+**Date:** 2026-02-11
+**Branch:** `parallax/self-narrating-landing`
+
+### Why
+
+Browser `SpeechSynthesis` was the right V1 choice — zero cost, zero latency, works offline. But the voices are robotic concatenative synthesis, they vary wildly across OS/browser, and they undermine the "warm mediator" personality Parallax needs. For the hackathon demo and the self-narrating landing page, voice quality is a core differentiator.
+
+### What Changed
+
+Replaced browser TTS with **ElevenLabs Turbo v2.5** using the **Ava** voice (`gJx1vCzNCD1EQHT212Ls`) — warm, grounding, and natural.
+
+| File | Change |
+|------|--------|
+| `src/app/api/tts/route.ts` | New server-side proxy to ElevenLabs. Rate-limited. Keeps API key secure. Returns `audio/mpeg` binary. |
+| `src/hooks/useParallaxVoice.ts` | Rewritten. Calls `/api/tts`, plays audio via `HTMLAudioElement`. Same interface: `speak()`, `speakChunked()`, `isSpeaking`, `cancel()`. |
+
+### Architecture Decisions
+
+1. **Server-side proxy, not client-direct.** The ElevenLabs API key stays on the server. The client sends text to `/api/tts`, receives audio bytes back. Zero credential exposure.
+
+2. **Graceful fallback to browser TTS.** If ElevenLabs fails (network error, API quota, key misconfigured), the hook silently falls back to `SpeechSynthesis`. The narration and mediator voice never break — they just sound worse.
+
+3. **Turbo v2.5 model for latency.** The in-person X-Ray Glance View speaks mediator insights live during conversation. Sub-300ms generation time keeps the flow natural. The higher-quality Multilingual v2 model adds 500ms+ — unacceptable for real-time.
+
+4. **Blob URL lifecycle management.** Each TTS call creates a `URL.createObjectURL()` for the audio blob. The hook revokes these on every new play, cancel, and audio end to prevent memory leaks.
+
+### Environment Variables
+
+```
+ELEVENLABS_API_KEY=     # Your ElevenLabs API key
+ELEVENLABS_VOICE_ID=    # Voice ID (Ava: gJx1vCzNCD1EQHT212Ls)
+```
+
+---
+
+## Self-Narrating Landing Page
+
+**Date:** 2026-02-11
+**Branch:** `parallax/self-narrating-landing`
+
+### The Vision
+
+What if the product could introduce itself? Not a video. Not a wall of text. Parallax — the AI that helps people in conflict — speaks her own landing page. A visitor clicks "Listen," and Parallax narrates each section as it reveals, ending with an invitation to start a session or ask her anything.
+
+This is the culmination of everything built so far: the conflict intelligence engine, the conversational layer, the ElevenLabs voice, and the Ember design system — all fused into a single experience designed to make a judge say "I've never seen a product do this before."
+
+### What Was Built
+
+#### 1. The Listen Button (Liquid Glass Material)
+
+The entry point is a single word: **"Listen."** The button uses a 5-layer glass material system inspired by iOS 26 liquid glass:
+
+| Layer | Effect |
+|-------|--------|
+| `liquid-glass__bg` | Backdrop blur (40px) + saturate + brightness, multi-layer inset bevel shadows |
+| `liquid-glass__fresnel` | Radial gradient — bright rim, transparent center (Fresnel effect) |
+| `liquid-glass__specular` | Mouse-tracking highlight (radial gradient follows cursor, mix-blend-mode: overlay) |
+| `liquid-glass__chromatic-r/b` | Red and blue offset borders — chromatic aberration at 0.6px shift |
+| Brand accent | Teal glow pool with screen blend, tracks cursor position |
+
+Plus: rotating halo glow, breathing ring border, and breathing text animation. Used at full size for the entry button and at `--sm` size for the header replay pill.
+
+#### 2. Narration Engine (useNarrationController)
+
+A state machine that orchestrates the entire narration flow:
+
+```
+idle → narrating → complete → chat
+         ↓              ↓
+    (replay loops    (enter chat
+     back here)       with Parallax)
+```
+
+**State machine phases:**
+- **idle** — Listen button visible, header hidden
+- **narrating** — Parallax speaks, sections reveal one by one, aura active
+- **complete** — All sections visible, header appears with mini Listen pill
+- **chat** — GlowChatInterface streams conversation with Explorer
+
+**Components in the narration pipeline:**
+- `NarrationStage` — typewriter text display with fade transitions
+- `NarrationControls` — skip-to-end + mute toggle
+- `ParallaxAura` — full-viewport gradient backdrop during narration
+- `useTypewriter` — character-level typewriter at 30ms/char
+
+#### 3. Dynamic Narration (Opus-Powered)
+
+Every narration is unique. This is where we pushed the boundaries of what Opus can do.
+
+**Three layers of dynamism:**
+
+| Layer | What Changes | How |
+|-------|-------------|-----|
+| Greeting | Time-of-day, day-of-week, replay count | `getIntroPrompt(replayCount)` generates a fresh Claude prompt |
+| Body (5 sections) | Same talking points, completely fresh language | `buildFullNarrationPrompt()` — one API call returns JSON for all sections |
+| Easter egg | 3rd replay | Claude opens with a joke about the visitor coming back |
+
+**Architecture decision — parallel generation:** The greeting (step 0) and the full body text generation run as two parallel API calls. By the time the greeting finishes speaking (~8-12 seconds via ElevenLabs TTS), the body text is already waiting in a ref. Zero added latency.
+
+**The `what-you-see` step stays static** — it's locked to the 18-second MeltDemo Remotion composition. Every other section can vary freely because they only need to hit mandatory talking points, not sync to animation frames.
+
+**Graceful degradation:** If the generation call fails or times out (8s), the controller silently falls back to handcrafted static text. The narration never breaks.
+
+**Time-aware prompts:**
+```
+Morning → "Be bright and energized"
+Afternoon → "Be warm and focused"
+Evening → "Be calm and reflective"
+Night → "Acknowledge they're burning the midnight oil"
+Friday → "It's Friday — almost there"
+Sunday → "A good day for reflection"
+```
+
+#### 4. Visual Redesign
+
+**New components from the plan:**
+
+| Component | Purpose |
+|-----------|---------|
+| `HeroPreview` | CSS-animated Melt loop showing raw text dissolving into NVC translation |
+| `LensGrid` | Interactive 14-lens visualization, auto-cycles 6 context modes every 3s, hover to lock |
+| `ContextModeCards` | 6 relationship context cards grouped by personal/professional/formal |
+| `ModePreview` | SVG wireframe previews of in-person (3-column) and remote (split-screen) UIs |
+| `MeltDemoPlayer` | Remotion `<Player>` with 18-second Melt composition — typewriter, dissolve, analysis crystallize |
+| `CursorSpotlight` | Viewport-wide teal glow that follows cursor with interactive element detection |
+
+**Typography:** Cormorant Garamond (serif headings, 400 weight) + Raleway (sans body) + Bitcount (wordmark) + IBM Plex Mono (labels). The Cormorant Garamond + Raleway pairing was chosen from a 10-option font comparison tool — it balances editorial warmth with readability.
+
+**Ambient gradient:** Three radial gradients on body background — warm amber halo at top (12% opacity), teal at bottom (7%), and an asymmetric off-center accent (4%). Uses viewport-relative sizing (`vw`/`vh`) so the halos scale with screen size.
+
+**Day/night theme:** Full light mode with `.light` class on `<html>`. Blocking inline script prevents flash of wrong theme. CursorSpotlight adapts opacity per theme.
+
+#### 5. GlowChatInterface
+
+After narration completes, clicking "Talk to Parallax" enters chat mode. The aura slides up to reveal a streaming chat interface with:
+
+- **AudioWaveformOrb** for Parallax (teal, synthetic energy when speaking/loading) and User (warm, real mic waveform via Web Audio API)
+- **Mic toggle** with three visual states (active/inactive/denied)
+- Streaming responses from the Explorer conversational layer
+- Teal-accented input with glassmorphic styling
+
+### Architecture Decisions
+
+1. **CustomEvent bridge for layout ↔ page communication.** The narration phase lives in `page.tsx` but the header lives in `layout.tsx`. They communicate via `window.dispatchEvent(new CustomEvent('parallax-narration-phase'))`. The alternative — lifting state to layout via context — would require making the layout a client component AND adding a provider, which is heavier than needed for two event types (phase sync + replay trigger).
+
+2. **Refs over state for narration internals.** `abortRef`, `mutedRef`, `replayCountRef`, `generatedTextRef` are all refs, not useState. These values are consumed inside async loops where stale closures would give wrong values. Refs provide stable `.current` access without triggering re-renders.
+
+3. **Structured JSON generation with validation.** The `generateFullNarration()` function asks Opus to return JSON with specific keys. It validates every key exists and is a string before accepting. Robust JSON extraction handles code fences, leading text, and malformed responses — any issue falls back to static text.
+
+4. **Replay counter in ref, increment in replayNarration only.** The first `startNarration()` call (from Listen) is count 0 — "fresh visit." Only `replayNarration()` increments. This ensures the counter accurately reflects replays, not total plays.
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `src/components/landing/HelloButton.tsx` | 5-layer liquid glass Listen button |
+| `src/components/landing/HeroPreview.tsx` | CSS Melt loop in hero |
+| `src/components/landing/LensGrid.tsx` | Interactive 14-lens visualization |
+| `src/components/landing/ContextModeCards.tsx` | 6 context mode cards |
+| `src/components/landing/ModePreview.tsx` | SVG wireframe mode previews |
+| `src/components/landing/MeltDemoPlayer.tsx` | Remotion Player wrapper |
+| `src/components/landing/ParallaxAura.tsx` | Full-viewport narration backdrop |
+| `src/components/landing/NarrationStage.tsx` | Typewriter display |
+| `src/components/landing/NarrationControls.tsx` | Skip + mute controls |
+| `src/components/landing/GlowChatInterface.tsx` | Streaming chat with voice orbs |
+| `src/components/landing/TheDoor.tsx` | Session creation CTA |
+| `src/components/CursorSpotlight.tsx` | Cursor-following teal glow |
+| `src/hooks/useNarrationController.ts` | Narration state machine |
+| `src/hooks/useTypewriter.ts` | Character-level typewriter |
+| `src/lib/narration-script.ts` | Script + dynamic generation prompts |
+| `src/remotion/MeltDemo.tsx` | 18-second Melt composition |
+| `src/remotion/Root.tsx` | Remotion entry point |
+| `src/fonts/BitcountPropSingle.ttf` | Bitcount wordmark font |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/page.tsx` | Complete rewrite — 7 narration-aware sections with `data-narration-id` |
+| `src/app/layout.tsx` | 3-column header grid, theme toggle, mini Listen pill, narration phase bridge |
+| `src/app/globals.css` | Liquid glass system, ambient gradient, dot-grid texture, section animations, cursor spotlight |
+| `src/app/api/converse/route.ts` | Updated for narration generation support |
+| `src/hooks/useParallaxVoice.ts` | Fixed `Float32Array<ArrayBuffer>` generic for TypeScript 5.x |
+| `package.json` | Added remotion, @remotion/player, @remotion/cli |
+
+### The Demo Moment
+
+A judge opens Parallax. The screen is dark — warm chocolate, subtle dot-grid texture. A single glass button pulses in the center: **"Listen."** The button catches light like a lens.
+
+They click. The button fades. Parallax says "Hello" — her voice warm (ElevenLabs Ava), the text typing itself character by character. She introduces herself, then walks the judge through the product. Each section reveals as she speaks — the problem (stat cards), how it works (the LensGrid lights up), the Melt demo (raw words dissolve into analysis), the context modes, the two session types.
+
+When she finishes, the header slides in with a mini Listen pill. A "Talk to Parallax" button glows. They can replay the narration (it's different every time), start a session, or chat with Parallax directly.
+
+If they replay three times, Parallax opens with a joke about them coming back. If it's midnight, she acknowledges they're burning the midnight oil. If it's Monday morning, she's bright and energized.
+
+The product introduces itself. Differently. Every time.

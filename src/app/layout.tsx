@@ -1,21 +1,28 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Source_Serif_4, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
-import { ConversationalProvider, useConversationalPanel } from "@/contexts/ConversationalContext";
-import { ConversationalPanel } from "@/components/ConversationalPanel";
-import type { ConversationalMode } from "@/types/conversation";
+import { useState, useEffect } from "react";
+import { Cormorant_Garamond, Raleway, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { CursorSpotlight } from "@/components/CursorSpotlight";
+import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
-const sourceSerif = Source_Serif_4({
+const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const raleway = Raleway({
+  variable: "--font-source-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
-  subsets: ["latin"],
+const bitcount = localFont({
+  src: "../fonts/BitcountPropSingle.ttf",
+  variable: "--font-bitcount",
   display: "swap",
 });
 
@@ -26,49 +33,97 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-function LayoutShell({ children }: { children: React.ReactNode }) {
-  const { isOpen, mode, openPanel, closePanel } = useConversationalPanel();
-  const pathname = usePathname();
+function ThemeToggle() {
+  const [isLight, setIsLight] = useState(true);
 
-  // Route-aware default mode: Guide inside sessions, Explorer everywhere else
-  const defaultMode: ConversationalMode = pathname.startsWith("/session/")
-    ? "guide"
-    : "explorer";
+  useEffect(() => {
+    setIsLight(document.documentElement.classList.contains("light"));
+  }, []);
 
-  const buttonLabel =
-    defaultMode === "guide" ? "Get help with your session" : "Talk to Parallax";
+  function toggle() {
+    const next = !isLight;
+    setIsLight(next);
+    if (next) {
+      document.documentElement.classList.add("light");
+      localStorage.setItem("parallax-theme", "light");
+    } else {
+      document.documentElement.classList.remove("light");
+      localStorage.setItem("parallax-theme", "dark");
+    }
+  }
 
   return (
-    <>
-      <div className="min-h-screen flex flex-col">
-        <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-sm tracking-widest uppercase text-accent">
-              Parallax
-            </span>
-          </div>
-        </header>
-        <main className="flex-1">{children}</main>
-      </div>
-
-      {/* Conversational Layer — fixed "?" trigger button */}
-      {!isOpen && (
-        <button
-          onClick={() => openPanel(defaultMode)}
-          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center font-mono text-lg text-muted hover:text-accent hover:border-accent transition-all"
-          aria-label={buttonLabel}
-        >
-          ?
-        </button>
+    <button
+      onClick={toggle}
+      aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
+      className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
+    >
+      {isLight ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
       )}
+    </button>
+  );
+}
 
-      {/* Conversational Panel */}
-      <ConversationalPanel
-        mode={mode}
-        isOpen={isOpen}
-        onClose={closePanel}
-      />
-    </>
+function LayoutShell({ children }: { children: React.ReactNode }) {
+  const [narrationPhase, setNarrationPhase] = useState<NarrationPhase>("complete");
+
+  // Listen for narration phase changes from page.tsx
+  useEffect(() => {
+    function handlePhase(e: Event) {
+      const phase = (e as CustomEvent<NarrationPhase>).detail;
+      setNarrationPhase(phase);
+    }
+    window.addEventListener("parallax-narration-phase", handlePhase);
+    return () => window.removeEventListener("parallax-narration-phase", handlePhase);
+  }, []);
+
+  const isLandingNarrating = narrationPhase === "idle" || narrationPhase === "narrating" || narrationPhase === "chat";
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header
+        className={`border-b border-border px-6 py-4 grid grid-cols-3 items-center transition-opacity duration-500 ${
+          isLandingNarrating ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-lg tracking-widest uppercase text-accent" style={{ fontFamily: 'var(--font-bitcount)' }}>
+            Parallax
+          </span>
+        </div>
+        <div className="flex justify-center">
+          {narrationPhase === "complete" && (
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("parallax-replay-narration"))}
+              className="liquid-glass liquid-glass--sm rounded-full font-serif text-sm text-foreground/80 hover:text-foreground transition-colors"
+            >
+              <span className="liquid-glass__bg" />
+              <span className="liquid-glass__fresnel" />
+              <span className="relative z-10 px-5 py-1.5">Listen</span>
+            </button>
+          )}
+        </div>
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
+      </header>
+      <main className="flex-1">{children}</main>
+    </div>
   );
 }
 
@@ -96,11 +151,10 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${sourceSerif.variable} ${sourceSans.variable} ${ibmPlexMono.variable} antialiased`}
+        className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
-        <ConversationalProvider>
-          <LayoutShell>{children}</LayoutShell>
-        </ConversationalProvider>
+        <CursorSpotlight />
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   );

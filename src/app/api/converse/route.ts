@@ -43,21 +43,21 @@ function buildMessages(
  * Handles both Explorer and Guide conversations. The mode determines
  * which knowledge base, system prompt, and tools are used.
  *
- * Explorer: read-only, no tools
+ * Explorer: read-only, no tools. Supports streaming (stream: true).
  * Guide: has tools (update_setting, get_settings) — handles the
  *   tool_use loop internally and returns final text + tool results
  *
- * Body: { mode: 'explorer' | 'guide', message: string, history: ConversationMessage[] }
+ * Body: { mode: 'explorer' | 'guide', message: string, history: ConversationMessage[], stream?: boolean }
  */
 export async function POST(request: Request) {
-  let body: { mode?: string; message?: string; history?: ConversationMessage[] }
+  let body: { mode?: string; message?: string; history?: ConversationMessage[]; stream?: boolean }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { mode, message, history = [] } = body
+  const { mode, message, history = [], stream: shouldStream = false } = body
 
   if (!mode || !VALID_MODES.includes(mode as ConversationalMode)) {
     return NextResponse.json(
@@ -76,6 +76,50 @@ export async function POST(request: Request) {
     const client = getClient()
     const systemPrompt = getSystemPrompt(conversationalMode)
     const messages = buildMessages(history, message.trim())
+
+    // Streaming mode — Explorer only, no tools
+    if (shouldStream && conversationalMode === 'explorer') {
+      const stream = client.messages.stream({
+        model: 'claude-opus-4-6',
+        max_tokens: MAX_TOKENS[conversationalMode],
+        system: systemPrompt,
+        messages,
+      })
+
+      const encoder = new TextEncoder()
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const event of stream) {
+              if (
+                event.type === 'content_block_delta' &&
+                event.delta.type === 'text_delta'
+              ) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`),
+                )
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+            controller.close()
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Stream error'
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`),
+            )
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      })
+    }
 
     // Guide mode gets tools; Explorer mode is read-only
     const tools = conversationalMode === 'guide' ? GUIDE_TOOLS : undefined
