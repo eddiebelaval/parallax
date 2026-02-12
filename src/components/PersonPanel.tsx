@@ -28,6 +28,7 @@ interface PersonPanelProps {
   mediationError: string | null;
   preJoinContent: ReactNode;
   className?: string;
+  lensCount?: number;
 }
 
 export function PersonPanel({
@@ -48,6 +49,7 @@ export function PersonPanel({
   mediationError,
   preJoinContent,
   className,
+  lensCount,
 }: PersonPanelProps) {
   return (
     <div className={`flex flex-col min-h-[50vh] md:min-h-0 ${className ?? ""}`}>
@@ -88,6 +90,7 @@ export function PersonPanel({
             personAName={personAName}
             personBName={personBName}
             analyzingMessageId={analyzingMessageId}
+            lensCount={lensCount}
           />
           {mediationError && (
             <div className="px-4 py-1.5 border-t border-border">
