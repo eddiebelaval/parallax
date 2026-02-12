@@ -189,6 +189,8 @@ export interface Database {
           room_code: string
           person_a_name: string | null
           person_b_name: string | null
+          person_a_user_id: string | null
+          person_b_user_id: string | null
           status: SessionStatus
           mode: SessionMode
           context_mode: ContextMode
@@ -202,6 +204,8 @@ export interface Database {
           room_code?: string
           person_a_name?: string | null
           person_b_name?: string | null
+          person_a_user_id?: string | null
+          person_b_user_id?: string | null
           status?: SessionStatus
           mode?: SessionMode
           context_mode?: ContextMode
@@ -215,6 +219,8 @@ export interface Database {
           room_code?: string
           person_a_name?: string | null
           person_b_name?: string | null
+          person_a_user_id?: string | null
+          person_b_user_id?: string | null
           status?: SessionStatus
           mode?: SessionMode
           context_mode?: ContextMode
@@ -323,6 +329,135 @@ export interface Database {
           }
         ]
       }
+      user_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          display_name: string | null
+          interview_completed: boolean
+          interview_phase: number
+          interview_started_at: string | null
+          interview_completed_at: string | null
+          raw_responses: unknown[]
+          primary_context_mode: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          display_name?: string | null
+          interview_completed?: boolean
+          interview_phase?: number
+          interview_started_at?: string | null
+          interview_completed_at?: string | null
+          raw_responses?: unknown[]
+          primary_context_mode?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          display_name?: string | null
+          interview_completed?: boolean
+          interview_phase?: number
+          interview_started_at?: string | null
+          interview_completed_at?: string | null
+          raw_responses?: unknown[]
+          primary_context_mode?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      behavioral_signals: {
+        Row: {
+          id: string
+          user_id: string
+          signal_type: string
+          signal_value: Record<string, unknown>
+          confidence: number
+          source: string
+          extracted_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          signal_type: string
+          signal_value: Record<string, unknown>
+          confidence?: number
+          source?: string
+          extracted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          signal_type?: string
+          signal_value?: Record<string, unknown>
+          confidence?: number
+          source?: string
+          extracted_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      signal_consent: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          consent_level: string
+          granted_at: string
+          revoked_at: string | null
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          consent_level?: string
+          granted_at?: string
+          revoked_at?: string | null
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          consent_level?: string
+          granted_at?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
+      signal_access_log: {
+        Row: {
+          id: string
+          signal_owner_id: string
+          accessor_session_id: string
+          signal_type: string
+          consent_level: string
+          accessed_at: string
+        }
+        Insert: {
+          id?: string
+          signal_owner_id: string
+          accessor_session_id: string
+          signal_type: string
+          consent_level: string
+          accessed_at?: string
+        }
+        Update: {
+          id?: string
+          signal_owner_id?: string
+          accessor_session_id?: string
+          signal_type?: string
+          consent_level?: string
+          accessed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -334,6 +469,118 @@ export interface Database {
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
+}
+
+// ────────────────────────────────────────────────
+// Intelligence Network types
+// ────────────────────────────────────────────────
+
+export type SignalType =
+  | 'attachment_style'
+  | 'conflict_mode'
+  | 'gottman_risk'
+  | 'regulation_pattern'
+  | 'scarf_sensitivity'
+  | 'drama_triangle'
+  | 'values'
+  | 'cbt_patterns'
+  | 'narrative_themes'
+
+export type ConsentLevel = 'self_only' | 'anonymous_signals'
+
+export type InterviewPhase = 0 | 1 | 2 | 3 | 4
+
+export interface AttachmentSignal {
+  primary: 'secure' | 'anxious' | 'avoidant' | 'disorganized'
+  secondary?: 'secure' | 'anxious' | 'avoidant' | 'disorganized'
+  confidence: number
+}
+
+export interface ConflictModeSignal {
+  primary: 'competing' | 'collaborating' | 'compromising' | 'avoiding' | 'accommodating'
+  secondary?: 'competing' | 'collaborating' | 'compromising' | 'avoiding' | 'accommodating'
+  assertiveness: number
+  cooperativeness: number
+}
+
+export interface GottmanRiskSignal {
+  horsemen: Array<'criticism' | 'contempt' | 'defensiveness' | 'stonewalling'>
+  repairCapacity: number
+}
+
+export interface RegulationSignal {
+  style: 'regulated' | 'dysregulated' | 'over_regulated'
+  floodingOnset: string
+  triggerSensitivity: number
+}
+
+export interface ScarfSignal {
+  primaryDomain: 'status' | 'certainty' | 'autonomy' | 'relatedness' | 'fairness'
+  sensitivities: Record<string, number>
+}
+
+export interface DramaTriangleSignal {
+  defaultRole: 'persecutor' | 'victim' | 'rescuer' | null
+  rescuerTrapRisk: number
+}
+
+export interface ValuesSignal {
+  core: string[]
+  communication: string[]
+  unmetNeeds: string[]
+}
+
+export type SignalValue =
+  | AttachmentSignal
+  | ConflictModeSignal
+  | GottmanRiskSignal
+  | RegulationSignal
+  | ScarfSignal
+  | DramaTriangleSignal
+  | ValuesSignal
+  | Record<string, unknown>
+
+export interface UserProfile {
+  id: string
+  user_id: string
+  display_name: string | null
+  interview_completed: boolean
+  interview_phase: InterviewPhase
+  interview_started_at: string | null
+  interview_completed_at: string | null
+  raw_responses: unknown[]
+  primary_context_mode: ContextMode
+  created_at: string
+  updated_at: string
+}
+
+export interface BehavioralSignal {
+  id: string
+  user_id: string
+  signal_type: SignalType
+  signal_value: SignalValue
+  confidence: number
+  source: 'interview' | 'session_observation' | 'self_update'
+  extracted_at: string
+  updated_at: string
+}
+
+export interface SignalConsent {
+  id: string
+  session_id: string
+  user_id: string
+  consent_level: ConsentLevel
+  granted_at: string
+  revoked_at: string | null
+}
+
+export interface SignalAccessLog {
+  id: string
+  signal_owner_id: string
+  accessor_session_id: string
+  signal_type: string
+  consent_level: ConsentLevel
+  accessed_at: string
 }
 
 // Convenience types

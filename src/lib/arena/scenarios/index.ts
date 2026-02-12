@@ -1,53 +1,33 @@
 import type { ContextMode } from '@/types/database'
 import type { Scenario } from '../types'
 import { FAMILY_SCENARIOS } from './family'
+import { INTIMATE_SCENARIOS } from './intimate'
+import { PROFESSIONAL_PEER_SCENARIOS } from './professional-peer'
+import { PROFESSIONAL_HIERARCHICAL_SCENARIOS } from './professional-hierarchical'
+import { TRANSACTIONAL_SCENARIOS } from './transactional'
+import { CIVIL_STRUCTURAL_SCENARIOS } from './civil-structural'
 
 /**
  * Registry mapping context modes to their arena scenario sets.
  *
- * Family is the pilot category (15 scenarios, fully authored).
- * Other categories are stubbed for post-hackathon expansion —
- * each would follow the same sub-type structure with 15 scenarios.
+ * 90 total scenarios across 6 context modes (15 each).
+ * Each mode has 5 sub-types with 3 scenarios per sub-type.
+ *
+ * Coverage:
+ *   - Family: parent-adult child, siblings, in-laws, blended family, generational
+ *   - Intimate: jealousy/trust, household labor, intimacy mismatch, long-distance, co-parenting
+ *   - Professional Peer: co-founder, credit/blame, workload, communication styles, remote friction
+ *   - Professional Hierarchical: performance review, promotion bypass, micromanagement, ethics, mentorship
+ *   - Transactional: service failures, scope creep, payment disputes, contracts, neighbor boundaries
+ *   - Civil/Structural: HOA, landlord-tenant, school board, resource allocation, institutional discrimination
  */
 export const ARENA_SCENARIOS: Record<ContextMode, Scenario[]> = {
   family: FAMILY_SCENARIOS,
-
-  // TODO: 15 scenarios post-hackathon
-  // Sub-types: jealousy/trust, household labor, intimacy mismatch,
-  // long-distance strain, co-parenting disagreement
-  // Key lenses: Gottman (Four Horsemen peak here), Attachment (secure base),
-  // Drama Triangle (pursuer-distancer), CBT (mind-reading, catastrophizing)
-  intimate: [],
-
-  // TODO: 15 scenarios post-hackathon
-  // Sub-types: co-founder disputes, credit/blame, workload imbalance,
-  // communication styles, remote vs in-office friction
-  // Key lenses: SCARF (status/fairness threats), Jehn's (task vs relationship),
-  // TKI (competing vs collaborating), Psych Safety (fear of speaking up)
-  professional_peer: [],
-
-  // TODO: 15 scenarios post-hackathon
-  // Sub-types: performance review disagreements, promotion bypasses,
-  // micromanagement, whistleblowing, mentorship boundary violations
-  // Key lenses: Power (structural asymmetry), Org Justice (procedural fairness),
-  // Psych Safety (retaliation fear), SCARF (autonomy/status threats)
-  professional_hierarchical: [],
-
-  // TODO: 15 scenarios post-hackathon
-  // Sub-types: service failures, scope creep, payment disputes,
-  // contract misunderstandings, neighbor boundary issues
-  // Key lenses: IBR (interests vs positions), TKI (negotiation modes),
-  // CBT (catastrophizing, all-or-nothing), SCARF (fairness)
-  transactional: [],
-
-  // TODO: 15 scenarios post-hackathon
-  // Sub-types: HOA disputes, landlord-tenant conflicts,
-  // school board disagreements, community resource allocation,
-  // institutional discrimination claims
-  // Key lenses: Power (structural/institutional), Narrative (community stories),
-  // Org Justice (systemic fairness), Restorative (community repair),
-  // IBR (collective interests)
-  civil_structural: [],
+  intimate: INTIMATE_SCENARIOS,
+  professional_peer: PROFESSIONAL_PEER_SCENARIOS,
+  professional_hierarchical: PROFESSIONAL_HIERARCHICAL_SCENARIOS,
+  transactional: TRANSACTIONAL_SCENARIOS,
+  civil_structural: CIVIL_STRUCTURAL_SCENARIOS,
 }
 
 export function getScenariosForMode(mode: ContextMode): Scenario[] {
@@ -64,4 +44,10 @@ export function getScenarioById(id: string): Scenario | undefined {
 
 export function getAllScenarios(): Scenario[] {
   return Object.values(ARENA_SCENARIOS).flat()
+}
+
+export function getScenarioCount(): Record<ContextMode, number> {
+  return Object.fromEntries(
+    Object.entries(ARENA_SCENARIOS).map(([mode, scenarios]) => [mode, scenarios.length]),
+  ) as Record<ContextMode, number>
 }

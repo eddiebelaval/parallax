@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { mediateMessage } from '@/lib/opus'
 import { parseConflictAnalysis } from '@/lib/prompts/index'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
+import { buildIntelligenceContext, buildIntelligencePromptSection } from '@/lib/context-injector'
 import type { Message, ContextMode, OnboardingContext } from '@/types/database'
 
 /**
@@ -55,10 +56,10 @@ export async function POST(request: Request) {
     )
   }
 
-  // Fetch session for participant names + context mode
+  // Fetch session for participant names + context mode + user IDs
   const { data: session } = await supabase
     .from('sessions')
-    .select('person_a_name, person_b_name, context_mode, onboarding_context')
+    .select('person_a_name, person_b_name, person_a_user_id, person_b_user_id, context_mode, onboarding_context')
     .eq('id', session_id)
     .single()
 
@@ -87,6 +88,21 @@ export async function POST(request: Request) {
     nameMap,
   )
 
+  // Build intelligence context from user profiles (if available)
+  const speakerUserId = targetMessage.sender === 'person_a'
+    ? session?.person_a_user_id
+    : session?.person_b_user_id
+  const otherUserId = targetMessage.sender === 'person_a'
+    ? session?.person_b_user_id
+    : session?.person_a_user_id
+
+  const intelligenceContext = await buildIntelligenceContext(
+    session_id,
+    speakerUserId ?? null,
+    otherUserId ?? null,
+  )
+  const intelligenceSection = buildIntelligencePromptSection(intelligenceContext)
+
   // Call Claude for Conflict Intelligence analysis
   let rawText: string
   try {
@@ -102,6 +118,7 @@ export async function POST(request: Request) {
         goals: onboarding.sessionGoals,
         contextSummary: onboarding.contextSummary,
       } : undefined,
+      intelligenceSection || undefined,
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Claude API error'

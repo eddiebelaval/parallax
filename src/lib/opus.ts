@@ -38,6 +38,7 @@ export async function mediateMessage(
   conversationHistory: ConversationEntry[],
   contextMode: ContextMode = 'intimate',
   sessionContext?: { goals?: string[]; contextSummary?: string },
+  intelligenceContext?: string,
 ): Promise<string> {
   const userPrompt = buildMediationPrompt(
     conversationHistory,
@@ -45,7 +46,10 @@ export async function mediateMessage(
     otherPersonName,
   )
 
-  const systemPrompt = buildConflictIntelligencePrompt(contextMode, sessionContext)
+  let systemPrompt = buildConflictIntelligencePrompt(contextMode, sessionContext)
+  if (intelligenceContext) {
+    systemPrompt += intelligenceContext
+  }
   const maxTokens = getMaxTokensForMode(contextMode)
 
   const response = await getClient().messages.create({
