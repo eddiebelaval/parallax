@@ -734,7 +734,7 @@ Additional fixes:
 |------|--------|-------|
 | ~~Supabase migration applied~~ | **Done** | Applied both migrations (messages UPDATE RLS + Intelligence Network) |
 | Email Auth enabled | Pending | Toggle in Supabase dashboard |
-| Voice input in interview | Enhancement | Text works; voice input infra exists but isn't wired to interview page |
+| ~~Voice input in interview~~ | **Done** | Rebuilt interview page with ActiveSpeakerBar (voice + text), ParallaxPresence orb, typewriter reveals, TTS |
 | ~~Auth state in nav~~ | **Done** | AuthSlot in header: sign in link → user initial circle + sign out |
 | ~~"Enrich Profile" CTA~~ | **Done** | Landing page Intelligence Network section + session summary profile suggestion |
 | Profile evolution | V3 | Post-session observation extraction, confidence reinforcement/decay |
@@ -1364,3 +1364,58 @@ Production URL: https://parallax-ebon-three.vercel.app
 | Total files changed (cumulative) | 14+ |
 | Net lines added | ~1,500+ |
 | Open PRs remaining | 0 |
+
+---
+
+## Interview Page: Conversational Rebuild
+
+**Date:** 2026-02-12
+**Branch:** `parallax/interview-conversational-rebuild`
+
+### The Problem
+
+The interview page was the first surface built — before the Ember design language, before voice, before the Parallax orb existed. Every other surface (in-person X-Ray Glance, remote sessions, the self-narrating landing page) uses the full conversational toolkit: orbs, push-to-talk voice, backlit glow, typewriter reveals, and TTS. The interview page was a generic form-style chat: text input, speech bubbles, a progress bar. It was like walking from a candlelit room into a fluorescent office.
+
+### What Changed
+
+Complete UI rewrite of `src/app/interview/page.tsx`. Zero new files, zero new dependencies, zero API changes. Pure composition of existing infrastructure.
+
+| Before | After |
+|--------|-------|
+| Progress bar (4-segment color bars) | Minimal monospace phase indicator |
+| Speech bubbles (rounded, right/left aligned) | Backlit glow messages (cool for Parallax, warm for user) |
+| Text input + Send button | ActiveSpeakerBar (tap-to-talk voice primary, text fallback) |
+| No voice output | ElevenLabs TTS via useParallaxVoice |
+| Static message display | Typewriter character reveal on latest assistant message |
+| No visual AI presence | ParallaxPresence orb (thinking/speaking/idle states) |
+| SVG checkmark on completion | Breathing orb + teal signal count |
+
+### Hook Coordination
+
+The core challenge was coordinating three async systems (typewriter, TTS, API loading) without race conditions:
+
+1. **New message detection** — Composite key (`${messages.length}-${content}`) prevents missed triggers during phase resets where message array length changes
+2. **Turn-taking gate** — `isBusy = isLoading || typewriter.isTyping || voice.isSpeaking` disables input during all three states, creating natural conversation rhythm
+3. **Phase transitions** — Cancel voice + typewriter, null the tracking ref, fade opacity to 0 for 150ms, let the new phase opening re-trigger both systems
+4. **Send handler** — Cancels in-progress typewriter/TTS before sending, so the user can interrupt Parallax mid-response
+
+### Polish Pass
+
+Code review caught a critical dependency array bug: `voice` and `typewriter` objects (from hooks) are recreated every render. Including them in the phase transition effect's dep array caused React to re-run the effect every render, and the cleanup function would cancel the 150ms opacity transition timer — leaving messages permanently invisible. Fixed by removing unstable objects from dep arrays (the individual functions like `voice.cancel` are useCallback-stable).
+
+### Components Reused (Zero New Infrastructure)
+
+| Component/Hook | Source | Role |
+|----------------|--------|------|
+| `ParallaxPresence` | `inperson/ParallaxPresence.tsx` | Teal orb with thinking/speaking/idle states |
+| `ActiveSpeakerBar` | `inperson/ActiveSpeakerBar.tsx` | Voice + text input with mode toggle |
+| `useParallaxVoice` | `hooks/useParallaxVoice.ts` | ElevenLabs TTS with browser fallback |
+| `useTypewriter` | `hooks/useTypewriter.ts` | Character-by-character reveal at 30ms/char |
+| Backlit CSS classes | `globals.css` | `.backlit .backlit-cool`, `.backlit .backlit-warm` |
+| `cursor-blink` keyframe | `globals.css` | Blinking cursor during typewriter |
+
+### Verification
+
+- `npm run build` — production build succeeds (clean)
+- 1 file modified: `src/app/interview/page.tsx` (141 insertions, 110 deletions)
+- Net change: 232 lines → 262 lines (30 lines added, mostly hook coordination)
