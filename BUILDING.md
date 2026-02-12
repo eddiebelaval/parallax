@@ -453,7 +453,7 @@ A complete reimagining of the in-person mode. The old flow used form-based onboa
 | `ActionPanel.tsx` | Issue tracking panel per person (replaces XRayScoreboard) |
 | `IssueDrawer.tsx` | Overlay drawer with full issue board |
 | `ActiveSpeakerBar.tsx` | Turn indicator + voice/text input |
-| `useParallaxVoice.ts` | Web Speech API TTS for mediator messages |
+| `useParallaxVoice.ts` | ElevenLabs TTS (Ava voice, Turbo v2.5) with browser SpeechSynthesis fallback |
 
 ### Key Decisions
 
@@ -595,3 +595,40 @@ A judge lands on Parallax. Below the product explanation, they see: **"This prod
 Then they start a session. The "?" button now opens the Guide. They type: "Turn off the temperature display." A teal pill appears: "Updated show_temperature." The setting changes. The product just responded to a natural language command.
 
 That's the conversational layer. The product has a voice.
+
+---
+
+## ElevenLabs Voice Integration
+
+**Date:** 2026-02-11
+**Branch:** `parallax/self-narrating-landing`
+
+### Why
+
+Browser `SpeechSynthesis` was the right V1 choice — zero cost, zero latency, works offline. But the voices are robotic concatenative synthesis, they vary wildly across OS/browser, and they undermine the "warm mediator" personality Parallax needs. For the hackathon demo and the self-narrating landing page, voice quality is a core differentiator.
+
+### What Changed
+
+Replaced browser TTS with **ElevenLabs Turbo v2.5** using the **Ava** voice (`gJx1vCzNCD1EQHT212Ls`) — warm, grounding, and natural.
+
+| File | Change |
+|------|--------|
+| `src/app/api/tts/route.ts` | New server-side proxy to ElevenLabs. Rate-limited. Keeps API key secure. Returns `audio/mpeg` binary. |
+| `src/hooks/useParallaxVoice.ts` | Rewritten. Calls `/api/tts`, plays audio via `HTMLAudioElement`. Same interface: `speak()`, `speakChunked()`, `isSpeaking`, `cancel()`. |
+
+### Architecture Decisions
+
+1. **Server-side proxy, not client-direct.** The ElevenLabs API key stays on the server. The client sends text to `/api/tts`, receives audio bytes back. Zero credential exposure.
+
+2. **Graceful fallback to browser TTS.** If ElevenLabs fails (network error, API quota, key misconfigured), the hook silently falls back to `SpeechSynthesis`. The narration and mediator voice never break — they just sound worse.
+
+3. **Turbo v2.5 model for latency.** The in-person X-Ray Glance View speaks mediator insights live during conversation. Sub-300ms generation time keeps the flow natural. The higher-quality Multilingual v2 model adds 500ms+ — unacceptable for real-time.
+
+4. **Blob URL lifecycle management.** Each TTS call creates a `URL.createObjectURL()` for the audio blob. The hook revokes these on every new play, cancel, and audio end to prevent memory leaks.
+
+### Environment Variables
+
+```
+ELEVENLABS_API_KEY=     # Your ElevenLabs API key
+ELEVENLABS_VOICE_ID=    # Voice ID (Ava: gJx1vCzNCD1EQHT212Ls)
+```
