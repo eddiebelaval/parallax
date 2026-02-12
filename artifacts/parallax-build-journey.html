@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Build Journey</title>
+<style>
+:root {
+  --base-primary: #020202;
+  --base-secondary: #101010;
+  --base-card: #1f1d1c;
+  --text-primary: #eeeeee;
+  --text-secondary: #a49d9a;
+  --text-muted: #5c5855;
+  --border-subtle: #2e2c2b;
+  --border-visible: #3d3a39;
+  --accent: #ef6f2e;
+  --amber: #f59e0b;
+  --teal: #4ecdc4;
+  --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--base-primary); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; line-height: 1.6; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 36px; }
+.header { padding: 80px 0 40px; text-align: center; opacity: 0; animation: fadeSlideUp 0.7s ease forwards 0.15s; }
+.header h1 { font-family: var(--font-sans); font-size: 48px; font-weight: 400; letter-spacing: -2px; line-height: 1.0; margin-bottom: 12px; }
+.header .subtitle { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; }
+.live-indicator { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 4px 12px; border: 1px solid var(--border-subtle); border-radius: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; }
+.live-dot.live { background: var(--teal); animation: pulse 3s ease-in-out infinite; }
+.live-dot.cached { background: var(--amber); }
+.live-dot.offline { background: #c45c3c; }
+.stats-bar { display: flex; justify-content: center; gap: 40px; padding: 32px 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); margin-bottom: 32px; opacity: 0; animation: fadeSlideUp 0.7s ease forwards 0.3s; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-value { font-family: var(--font-sans); font-size: 36px; font-weight: 400; letter-spacing: -1.5px; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-top: 4px; }
+.tab-nav { display: flex; gap: 8px; margin-bottom: 40px; position: sticky; top: 0; z-index: 100; background: var(--base-primary); padding: 12px 0; border-bottom: 1px solid var(--border-subtle); opacity: 0; animation: fadeSlideUp 0.7s ease forwards 0.4s; flex-wrap: wrap; }
+.tab-btn { background: transparent; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 16px; cursor: pointer; transition: all 0.15s ease; }
+.tab-btn:hover { border-color: var(--border-visible); color: var(--text-primary); }
+.tab-btn.active { background: var(--accent); border-color: var(--accent); color: #020202; }
+.tab-content { display: none; padding-bottom: 80px; }
+.tab-content.active { display: block; }
+.section-dot { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.section-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 3s ease-in-out infinite; }
+.section-dot span { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); }
+.loading-state { text-align: center; padding: 80px 0; color: var(--text-muted); }
+.loading-state .spinner { width: 24px; height: 24px; border: 2px solid var(--border-subtle); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+
+/* PR Cards */
+.pr-list { display: flex; flex-direction: column; gap: 12px; }
+.pr-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 24px; cursor: pointer; transition: all 0.2s ease; }
+.pr-card:hover { border-color: var(--border-visible); transform: translateY(-2px); }
+.pr-card.expanded { border-color: var(--border-visible); }
+.pr-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pr-number { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); min-width: 36px; }
+.pr-state { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 10px; }
+.pr-state.merged { background: #4ecdc420; color: var(--teal); }
+.pr-state.open { background: #ef6f2e20; color: var(--accent); }
+.pr-title { font-family: var(--font-sans); font-size: 16px; font-weight: 400; letter-spacing: -0.3px; flex: 1; min-width: 200px; }
+.pr-date { font-size: 11px; color: var(--text-muted); }
+.pr-stats { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: var(--text-muted); }
+.pr-stats .additions { color: var(--teal); }
+.pr-stats .deletions { color: #c45c3c; }
+.pr-body-preview { margin-top: 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.pr-expand-hint { margin-top: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+.pr-card:hover .pr-expand-hint { color: var(--text-secondary); }
+.pr-body-full { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle); }
+.pr-card.expanded .pr-body-full { display: block; }
+.pr-card.expanded .pr-expand-hint { display: none; }
+.pr-comments { margin-top: 20px; }
+.pr-comment { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+.pr-comment-author { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.pr-comment-body { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+/* Stage Cards */
+.stages-grid { display: grid; gap: 20px; }
+.stage-phase-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 32px 0 12px; }
+.stage-phase-label:first-child { margin-top: 0; }
+.phase-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.stage-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px; transition: all 0.2s ease; cursor: pointer; position: relative; overflow: hidden; }
+.stage-card:hover { border-color: var(--border-visible); }
+.stage-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+.stage-card.planning::after { background: var(--text-secondary); }
+.stage-card.building::after { background: var(--accent); }
+.stage-card.quality::after { background: var(--teal); }
+.stage-card.launch::after { background: var(--amber); }
+.stage-card.completed { border-color: var(--border-visible); }
+.stage-card.not-started { opacity: 0.5; }
+.stage-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.stage-num { font-family: var(--font-mono); font-size: 24px; color: var(--text-muted); }
+.stage-card.completed .stage-num { color: var(--text-primary); }
+.stage-name { font-family: var(--font-sans); font-size: 16px; font-weight: 400; letter-spacing: -0.3px; }
+.stage-gate { font-size: 12px; color: var(--text-muted); font-style: italic; margin-bottom: 12px; }
+.stage-status-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+.stage-status-badge.done { background: #4ecdc420; color: var(--teal); }
+.stage-status-badge.active { background: #ef6f2e20; color: var(--accent); }
+.stage-status-badge.pending { background: #a49d9a15; color: var(--text-muted); }
+.stage-prs { margin-top: 8px; }
+.stage-pr-link { font-size: 12px; color: var(--text-secondary); display: block; padding: 4px 0; }
+.stage-pr-link:hover { color: var(--accent); }
+.stage-details { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+.stage-card.expanded .stage-details { display: block; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 40px; }
+.timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--border-subtle); }
+.timeline-date { position: relative; margin: 32px 0 8px; }
+.timeline-date:first-child { margin-top: 0; }
+.timeline-date .date-badge { display: inline-block; position: relative; left: -40px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); background: var(--base-primary); padding: 2px 8px; }
+.timeline-entry { position: relative; margin-bottom: 16px; }
+.timeline-entry::before { content: ''; position: absolute; left: -33px; top: 18px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--border-subtle); background: var(--base-primary); z-index: 1; }
+.timeline-entry[data-cat="design"]::before { border-color: var(--amber); }
+.timeline-entry[data-cat="feature"]::before { border-color: var(--accent); }
+.timeline-entry[data-cat="quality"]::before { border-color: var(--teal); }
+.timeline-entry[data-cat="ship"]::before { border-color: var(--teal); background: var(--teal); }
+.timeline-entry[data-cat="foundation"]::before { border-color: var(--accent); background: var(--accent); }
+.entry-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 24px; cursor: pointer; transition: all 0.2s ease; }
+.entry-card:hover { border-color: var(--border-visible); transform: translateY(-2px); }
+.entry-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cat-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.cat-badge[data-cat="design"] { background: #f59e0b20; color: var(--amber); }
+.cat-badge[data-cat="feature"] { background: #ef6f2e20; color: var(--accent); }
+.cat-badge[data-cat="quality"] { background: #4ecdc420; color: var(--teal); }
+.cat-badge[data-cat="ship"] { background: #4ecdc420; color: var(--teal); }
+.cat-badge[data-cat="foundation"] { background: #ef6f2e20; color: var(--accent); }
+.cat-badge[data-cat="methodology"] { background: #a49d9a15; color: var(--text-secondary); }
+.entry-title { font-family: var(--font-sans); font-size: 18px; font-weight: 400; letter-spacing: -0.5px; flex: 1; }
+.entry-meta { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: var(--text-muted); }
+.entry-meta code { background: var(--base-secondary); padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+.entry-summary { margin-top: 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.entry-expand-hint { margin-top: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+.entry-body { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle); }
+.entry-card.expanded .entry-body { display: block; }
+.entry-card.expanded .entry-expand-hint { display: none; }
+
+/* Markdown content */
+.md-content h3 { font-family: var(--font-sans); font-size: 16px; font-weight: 400; letter-spacing: -0.3px; margin: 20px 0 10px; }
+.md-content h3:first-child { margin-top: 0; }
+.md-content h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin: 16px 0 8px; }
+.md-content p { color: var(--text-secondary); font-size: 13px; margin: 8px 0; line-height: 1.6; }
+.md-content strong { color: var(--text-primary); }
+.md-content code { background: var(--base-secondary); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+.md-content pre { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+.md-content pre code { background: none; padding: 0; color: var(--text-primary); font-size: 12px; }
+.md-content ul { padding-left: 20px; margin: 8px 0; }
+.md-content li { color: var(--text-secondary); font-size: 13px; margin: 4px 0; line-height: 1.5; }
+.md-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+.md-content th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border-subtle); color: var(--text-primary); font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; }
+.md-content td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: top; }
+.md-content hr { border: none; border-top: 1px solid var(--border-subtle); margin: 20px 0; }
+.md-content a { color: var(--accent); text-decoration: none; }
+
+/* Assessment */
+.assess-section { margin-bottom: 48px; }
+.assessment-item { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 24px; margin-bottom: 12px; transition: opacity 0.3s ease; }
+.assessment-item.completed { opacity: 0.4; }
+.assessment-item.completed .assess-label { text-decoration: line-through; color: var(--text-muted); }
+.assessment-item.completed .assess-body { opacity: 0.25; pointer-events: none; }
+.assessment-check { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.assess-checkbox { appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--border-visible); border-radius: 3px; background: transparent; cursor: pointer; position: relative; flex-shrink: 0; }
+.assess-checkbox:checked { background: var(--teal); border-color: var(--teal); }
+.assess-checkbox:checked::after { content: ''; position: absolute; top: 2px; left: 5px; width: 4px; height: 8px; border: solid #020202; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.assess-label { font-family: var(--font-sans); font-size: 15px; font-weight: 400; transition: color 0.3s ease; }
+.assess-body { margin-top: 12px; padding-left: 28px; transition: opacity 0.3s ease; }
+.assess-desc { font-size: 13px; color: var(--text-secondary); margin: 8px 0; line-height: 1.5; }
+.severity-badge { display: inline-block; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 10px; }
+.severity-badge.high { background: #ef6f2e20; color: var(--accent); }
+.severity-badge.medium { background: #f59e0b20; color: var(--amber); }
+.severity-badge.low { background: #a49d9a15; color: var(--text-secondary); }
+.severity-badge.win { background: #4ecdc420; color: var(--teal); }
+.prompt-block { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent); border-radius: 4px; padding: 16px; font-size: 12px; white-space: pre-wrap; position: relative; margin-top: 12px; line-height: 1.5; }
+.copy-btn { position: absolute; top: 8px; right: 8px; background: var(--border-subtle); border: none; color: var(--text-secondary); font-family: var(--font-mono); font-size: 10px; padding: 4px 8px; border-radius: 2px; cursor: pointer; }
+.copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+.copy-btn.copied { color: var(--teal); }
+#assess-progress { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 24px; display: block; }
+
+/* Opus Tab */
+.opus-philosophy { background: var(--base-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--teal); border-radius: 10px; padding: 28px; margin-bottom: 32px; }
+.opus-philosophy h3 { font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: -0.5px; margin-bottom: 12px; }
+.opus-philosophy p { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 12px; }
+.opus-philosophy p:last-child { margin-bottom: 0; }
+.opus-philosophy strong { color: var(--text-primary); }
+.token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.token-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 24px; }
+.token-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.token-card-title { font-family: var(--font-sans); font-size: 15px; font-weight: 400; }
+.token-card-model { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 10px; }
+.token-card-model.opus { background: #ef6f2e20; color: var(--accent); }
+.token-card-model.sonnet { background: #4ecdc420; color: var(--teal); }
+.token-bar { height: 6px; background: var(--border-subtle); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.token-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.token-bar-fill.input { background: var(--accent); }
+.token-bar-fill.output { background: var(--teal); }
+.token-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.token-stat { font-size: 12px; color: var(--text-secondary); margin: 6px 0; }
+.token-stat strong { color: var(--text-primary); font-weight: 400; }
+.difficulty-badge { display: inline-block; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 10px; margin-top: 8px; }
+.difficulty-badge.frontier { background: #c45c3c25; color: #c45c3c; border: 1px solid #c45c3c40; }
+.difficulty-badge.hard { background: #ef6f2e20; color: var(--accent); border: 1px solid #ef6f2e30; }
+.difficulty-badge.moderate { background: #f59e0b20; color: var(--amber); border: 1px solid #f59e0b30; }
+.difficulty-badge.simple { background: #4ecdc420; color: var(--teal); border: 1px solid #4ecdc430; }
+.opus-grade { display: flex; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
+.grade-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 24px; flex: 1; min-width: 280px; }
+.grade-card h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 12px; }
+.grade-score { font-family: var(--font-sans); font-size: 48px; font-weight: 400; letter-spacing: -2px; line-height: 1; margin-bottom: 8px; }
+.grade-score.high { color: var(--teal); }
+.grade-score.mid { color: var(--amber); }
+.grade-score.low { color: #c45c3c; }
+.grade-detail { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.opus5-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent); border-radius: 10px; padding: 20px 24px; margin-bottom: 12px; }
+.opus5-card h4 { font-family: var(--font-sans); font-size: 15px; font-weight: 400; margin-bottom: 8px; }
+.opus5-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.opus-totals { background: var(--base-secondary); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 24px 28px; margin-bottom: 40px; display: flex; gap: 40px; flex-wrap: wrap; }
+.opus-total-item { text-align: center; }
+.opus-total-value { font-family: var(--font-sans); font-size: 28px; font-weight: 400; letter-spacing: -1px; }
+.opus-total-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Filter */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+.filter-chip { background: transparent; border: 1px solid var(--border-subtle); border-radius: 10px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; cursor: pointer; transition: all 0.15s ease; }
+.filter-chip:hover { border-color: var(--border-visible); }
+.filter-chip.active { border-color: currentColor; color: var(--text-primary); }
+
+/* Animations */
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.15); } 50% { box-shadow: 0 0 6px 0 rgba(78, 205, 196, 0.15); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.reveal { opacity: 0; }
+.reveal.visible { animation: fadeSlideUp 0.5s ease forwards; }
+
+@media (max-width: 768px) {
+  .header h1 { font-size: 32px; }
+  .stats-bar { gap: 20px; }
+  .stat-value { font-size: 28px; }
+  .container { padding: 0 20px; }
+  .phase-row { grid-template-columns: 1fr; }
+  .entry-title, .pr-title { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Building Parallax</h1>
+    <div class="subtitle">Real-time conflict resolution -- concept to ship in 3 days</div>
+    <div class="live-indicator">
+      <span class="live-dot" id="live-dot"></span>
+      <span id="live-label">Loading...</span>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-value" id="stat-commits">0</div><div class="stat-label">Commits</div></div>
+    <div class="stat"><div class="stat-value" id="stat-prs">0</div><div class="stat-label">Pull Requests</div></div>
+    <div class="stat"><div class="stat-value" id="stat-additions">0</div><div class="stat-label">Lines Added</div></div>
+    <div class="stat"><div class="stat-value" id="stat-tests">0</div><div class="stat-label">Tests</div></div>
+    <div class="stat"><div class="stat-value" id="stat-stages">0</div><div class="stat-label">Stages</div></div>
+  </div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('journey')">Journey</button>
+    <button class="tab-btn" onclick="switchTab('prs')">Pull Requests</button>
+    <button class="tab-btn" onclick="switchTab('stages')">Stages</button>
+    <button class="tab-btn" onclick="switchTab('opus')">Opus at the Edge</button>
+    <button class="tab-btn" onclick="switchTab('assessment')">Assessment</button>
+  </nav>
+  <div class="tab-content active" id="tab-journey">
+    <div class="filter-bar" id="filter-bar"></div>
+    <div class="timeline" id="timeline"><div class="loading-state"><div class="spinner"></div>Fetching build data...</div></div>
+  </div>
+  <div class="tab-content" id="tab-prs">
+    <div class="section-dot"><span>All Pull Requests</span></div>
+    <div id="pr-list" class="pr-list"><div class="loading-state"><div class="spinner"></div>Fetching PRs from GitHub...</div></div>
+  </div>
+  <div class="tab-content" id="tab-stages">
+    <div class="section-dot"><span>Pipeline Stages</span></div>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; max-width: 700px;">The ID8 Pipeline -- 11 stages from concept to ship. Each stage has a gate question that must pass before advancing.</p>
+    <div id="stages-content"></div>
+  </div>
+  <div class="tab-content" id="tab-opus">
+    <div id="opus-content"></div>
+  </div>
+  <div class="tab-content" id="tab-assessment">
+    <span id="assess-progress">0 of 0 addressed</span>
+    <div id="assessment-content"></div>
+  </div>
+</div>
+
+<script>
+var REPO = 'eddiebelaval/parallax';
+var RAW_URL = 'https://raw.githubusercontent.com/' + REPO + '/main/BUILDING.md';
+var API_URL = 'https://api.github.com/repos/' + REPO;
+var CACHE_KEY = 'parallax-build-journey-v2';
+var ASSESS_KEY = 'visualize-assess-parallax-build-journey';
+
+// ---- Helpers ----
+function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+function inlineMd(t) {
+  var s = esc(t);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md2html(text) {
+  var html = '', inCode = false, inTable = false, inList = false, isHeader = false;
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.trim().indexOf('```') === 0) {
+      if (inCode) { html += '</code></pre>'; inCode = false; } else { if (inList) { html += '</ul>'; inList = false; } if (inTable) { html += '</table>'; inTable = false; } html += '<pre><code>'; inCode = true; } continue;
+    }
+    if (inCode) { html += esc(line) + '\n'; continue; }
+    if (line.trim().indexOf('|') === 0) {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (/^\|\s*[-:]+/.test(line.trim())) { isHeader = false; continue; }
+      if (!inTable) { html += '<table>'; inTable = true; isHeader = true; }
+      var cells = line.split('|').slice(1, -1); var tag = isHeader ? 'th' : 'td';
+      html += '<tr>' + cells.map(function(c) { return '<' + tag + '>' + inlineMd(c.trim()) + '</' + tag + '>'; }).join('') + '</tr>'; continue;
+    } else if (inTable) { html += '</table>'; inTable = false; }
+    if (line.trim() === '') { if (inList) { html += '</ul>'; inList = false; } continue; }
+    if (line.indexOf('#### ') === 0) { if (inList) { html += '</ul>'; inList = false; } html += '<h4>' + inlineMd(line.slice(5)) + '</h4>'; continue; }
+    if (line.indexOf('### ') === 0) { if (inList) { html += '</ul>'; inList = false; } html += '<h3>' + inlineMd(line.slice(4)) + '</h3>'; continue; }
+    if (/^---+$/.test(line.trim())) { if (inList) { html += '</ul>'; inList = false; } html += '<hr>'; continue; }
+    if (/^\s*[-*]\s/.test(line)) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inlineMd(line.replace(/^\s*[-*]\s/, '')) + '</li>'; continue; }
+    if (/^\s*\d+\.\s/.test(line)) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inlineMd(line.replace(/^\s*\d+\.\s/, '')) + '</li>'; continue; }
+    if (inList) { html += '</ul>'; inList = false; }
+    html += '<p>' + inlineMd(line) + '</p>';
+  }
+  if (inList) html += '</ul>'; if (inTable) html += '</table>'; if (inCode) html += '</code></pre>';
+  return html;
+}
+function fmtDate(iso) { if (!iso) return ''; var d = new Date(iso); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+function fmtNum(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+function animateCounter(el, target) {
+  var dur = 600, st = null;
+  function step(ts) { if (!st) st = ts; var p = Math.min((ts - st) / dur, 1); el.textContent = fmtNum(Math.round(target * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.toggle('active', b.textContent.toLowerCase().replace(/\s/g, '') === id.replace(/\s/g, '')); });
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.toggle('active', t.id === 'tab-' + id); });
+}
+function staggerReveal(container, delay) {
+  setTimeout(function() { container.querySelectorAll('.reveal').forEach(function(el, i) { el.style.animationDelay = (i * 50) + 'ms'; el.classList.add('visible'); }); }, delay || 50);
+}
+function setLive(status, ts) {
+  var dot = document.getElementById('live-dot'); var label = document.getElementById('live-label');
+  dot.className = 'live-dot ' + status;
+  label.textContent = status === 'live' ? 'Live from GitHub' : status === 'cached' ? 'Cached' + (ts ? ' (' + fmtDate(ts) + ')' : '') : 'Offline';
+}
+
+// ---- Stage Definitions ----
+var STAGES = [
+  { num: 1, name: 'Concept Lock', gate: "What's the one-liner?", phase: 'planning' },
+  { num: 2, name: 'Scope Fence', gate: 'What are we NOT building?', phase: 'planning' },
+  { num: 3, name: 'Architecture Sketch', gate: 'Could another dev build from this blueprint?', phase: 'planning' },
+  { num: 4, name: 'Foundation Pour', gate: 'Does the skeleton stand?', phase: 'building' },
+  { num: 5, name: 'Feature Blocks', gate: 'Does the core feature work end-to-end?', phase: 'building' },
+  { num: 6, name: 'Integration Pass', gate: 'Do all the parts talk to each other?', phase: 'building' },
+  { num: 7, name: 'Test Coverage', gate: 'Are tests green and covering critical paths?', phase: 'quality' },
+  { num: 8, name: 'Polish and Harden', gate: 'Would you show this to a stranger?', phase: 'quality' },
+  { num: 9, name: 'Launch Prep', gate: 'Is the launch checklist complete?', phase: 'launch' },
+  { num: 10, name: 'Ship', gate: 'Did you tell the world?', phase: 'launch' },
+  { num: 11, name: 'Listen and Iterate', gate: 'What did users actually do?', phase: 'launch' }
+];
+
+// ---- PR Mapping to Stages ----
+var PR_STAGE_MAP = {
+  1: [4], 2: [5], 3: [5], 4: [], 5: [5], 6: [6, 8], 7: [9, 10], 8: [10], 9: [10], 10: [10],
+  11: [8], 12: [8], 13: [10], 14: [8], 15: [10], 16: [5], 17: [5], 18: [5], 19: [5],
+  20: [6], 21: [8], 22: [9], 23: [9], 24: [9], 25: [7], 26: [9], 27: [9], 28: [9], 29: [9]
+};
+
+// ---- Data Fetching ----
+var appData = { md: null, prs: [], sections: [] };
+
+async function fetchData() {
+  var mdOk = false, prOk = false;
+  // Fetch BUILDING.md
+  try {
+    var res = await fetch(RAW_URL);
+    if (!res.ok) throw new Error(res.status);
+    appData.md = await res.text();
+    localStorage.setItem(CACHE_KEY + '-md', appData.md);
+    localStorage.setItem(CACHE_KEY + '-time', new Date().toISOString());
+    mdOk = true;
+  } catch (e) {
+    appData.md = localStorage.getItem(CACHE_KEY + '-md') || '';
+  }
+  // Fetch PRs
+  try {
+    var res2 = await fetch(API_URL + '/pulls?state=all&per_page=50&sort=created&direction=asc');
+    if (!res2.ok) throw new Error(res2.status);
+    appData.prs = await res2.json();
+    localStorage.setItem(CACHE_KEY + '-prs', JSON.stringify(appData.prs));
+    prOk = true;
+  } catch (e) {
+    try { appData.prs = JSON.parse(localStorage.getItem(CACHE_KEY + '-prs') || '[]'); } catch (e2) { appData.prs = []; }
+  }
+  setLive(mdOk && prOk ? 'live' : (appData.md || appData.prs.length) ? 'cached' : 'offline', localStorage.getItem(CACHE_KEY + '-time'));
+}
+
+// ---- Section Parser (from BUILDING.md) ----
+function getCategory(title) {
+  var t = title.toLowerCase();
+  if (t.indexOf('methodology') >= 0 || t.indexOf('pipeline') >= 0) return 'methodology';
+  if (/^v\d/.test(t)) return 'design';
+  if (t.indexOf('test coverage') >= 0 || t.indexOf('audit') >= 0 || t.indexOf('hardening') >= 0) return 'quality';
+  if (t.indexOf('consolidation') >= 0 || t.indexOf('deployment') >= 0 || t.indexOf('production') >= 0) return 'ship';
+  if (t.indexOf('stage 4') >= 0 || t.indexOf('foundation') >= 0) return 'foundation';
+  return 'feature';
+}
+function getSummary(content) {
+  var lines = content.split('\n'), summary = '', found = false;
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].trim();
+    if (!l || /^\*\*(Date|Branch|Gate|PR|Status):/.test(l) || l.indexOf('#') === 0 || l.indexOf('|') === 0) { if (found) break; continue; }
+    found = true; summary += l + ' '; if (summary.length > 220) break;
+  }
+  return summary.trim().slice(0, 250);
+}
+function parseSections(md) {
+  if (!md) return [];
+  var parts = md.split(/\n(?=## )/), sections = [];
+  for (var p = 0; p < parts.length; p++) {
+    var block = parts[p].trim(), lines = block.split('\n');
+    if (lines[0].indexOf('## ') !== 0) continue;
+    var title = lines[0].replace(/^## /, '').trim();
+    if (title.indexOf('Table of Contents') >= 0) continue;
+    var content = lines.slice(1).join('\n').trim();
+    var dateMatch = content.match(/\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})/);
+    var branchMatch = content.match(/\*\*Branch:\*\*\s*`([^`]+)`/);
+    var gateMatch = content.match(/\*\*Gate:\*\*\s*"([^"]+)"/);
+    sections.push({ title: title, date: dateMatch ? dateMatch[1] : null, branch: branchMatch ? branchMatch[1] : null, gate: gateMatch ? gateMatch[1] : null, category: getCategory(title), summary: getSummary(content), content: content, contentHtml: md2html(content) });
+  }
+  return sections;
+}
+
+// ---- Journey Tab ----
+function renderJourney(sections, prs) {
+  var timeline = document.getElementById('timeline');
+  // Merge BUILDING.md sections + PRs into unified timeline
+  var items = [];
+  // Add building.md sections (skip methodology — it's in Stages tab)
+  sections.forEach(function(s) {
+    if (s.category === 'methodology') return;
+    items.push({ type: 'section', title: s.title, date: s.date || '2026-02-10', cat: s.category, summary: s.summary, branch: s.branch, gate: s.gate, contentHtml: s.contentHtml });
+  });
+  // Add PRs not already covered by sections
+  var sectionTitles = sections.map(function(s) { return s.title.toLowerCase(); });
+  prs.forEach(function(pr) {
+    // Check if this PR is already represented by a section
+    var covered = sectionTitles.some(function(t) {
+      return t.indexOf('pr #' + pr.number) >= 0 || t.indexOf('#' + pr.number) >= 0;
+    });
+    // For early PRs (1-6) that have no dedicated section, always add them
+    if (!covered || pr.number <= 6) {
+      var stageNums = PR_STAGE_MAP[pr.number] || [];
+      var cat = 'feature';
+      if (stageNums.some(function(n) { return n <= 4; })) cat = 'foundation';
+      else if (stageNums.some(function(n) { return n === 7; })) cat = 'quality';
+      else if (stageNums.some(function(n) { return n >= 9; })) cat = 'ship';
+      items.push({ type: 'pr', title: 'PR #' + pr.number + ': ' + pr.title, date: (pr.created_at || pr.createdAt || '').slice(0, 10), cat: cat, pr: pr, summary: (pr.body || '').split('\n').filter(function(l) { return l.trim() && !l.startsWith('#') && !l.startsWith('-'); }).slice(0, 2).join(' ').slice(0, 200) });
+    }
+  });
+  // Sort chronologically, then by type (PRs before sections on same date for sequencing)
+  items.sort(function(a, b) { return a.date.localeCompare(b.date) || (a.type === 'pr' ? -1 : 1); });
+  // Deduplicate: if a PR and section have very similar titles on same date, keep section
+  var seen = {};
+  items = items.filter(function(item) {
+    var key = item.date + '|' + item.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+
+  var frag = document.createDocumentFragment();
+  var lastDate = '', cats = {};
+  items.forEach(function(item) {
+    cats[item.cat] = true;
+    if (item.date !== lastDate) {
+      var dateDiv = document.createElement('div');
+      dateDiv.className = 'timeline-date reveal';
+      var d = new Date(item.date + 'T12:00:00');
+      var badge = document.createElement('span');
+      badge.className = 'date-badge';
+      badge.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      dateDiv.appendChild(badge);
+      frag.appendChild(dateDiv);
+      lastDate = item.date;
+    }
+    var entry = document.createElement('div');
+    entry.className = 'timeline-entry reveal';
+    entry.setAttribute('data-cat', item.cat);
+    var card = document.createElement('div');
+    card.className = 'entry-card';
+    card.addEventListener('click', function() { this.classList.toggle('expanded'); });
+    var header = document.createElement('div');
+    header.className = 'entry-header';
+    var catBadge = document.createElement('span');
+    catBadge.className = 'cat-badge';
+    catBadge.setAttribute('data-cat', item.cat);
+    catBadge.textContent = item.type === 'pr' ? 'PR #' + item.pr.number : item.cat;
+    header.appendChild(catBadge);
+    var title = document.createElement('span');
+    title.className = 'entry-title';
+    title.textContent = item.type === 'pr' ? item.pr.title : item.title;
+    header.appendChild(title);
+    card.appendChild(header);
+    if (item.type === 'pr' && item.pr) {
+      var stats = document.createElement('div');
+      stats.className = 'entry-meta';
+      var add = item.pr.additions || 0, del = item.pr.deletions || 0, files = item.pr.changed_files || item.pr.changedFiles || 0;
+      stats.innerHTML = '<span style="color:var(--teal)">+' + fmtNum(add) + '</span> <span style="color:#c45c3c">-' + fmtNum(del) + '</span> <span>' + files + ' files</span>';
+      card.appendChild(stats);
+    }
+    if (item.branch || item.gate) {
+      var meta = document.createElement('div');
+      meta.className = 'entry-meta';
+      if (item.branch) { var bs = document.createElement('span'); var bc = document.createElement('code'); bc.textContent = item.branch; bs.appendChild(bc); meta.appendChild(bs); }
+      if (item.gate) { var gs = document.createElement('span'); gs.textContent = '"' + item.gate + '"'; meta.appendChild(gs); }
+      card.appendChild(meta);
+    }
+    if (item.summary) { var sum = document.createElement('div'); sum.className = 'entry-summary'; sum.textContent = item.summary.replace(/<[^>]+>/g, ''); card.appendChild(sum); }
+    var hint = document.createElement('div');
+    hint.className = 'entry-expand-hint';
+    hint.textContent = 'Click to expand';
+    card.appendChild(hint);
+    var body = document.createElement('div');
+    body.className = 'entry-body';
+    var mdDiv = document.createElement('div');
+    mdDiv.className = 'md-content';
+    if (item.type === 'pr' && item.pr && item.pr.body) { mdDiv.innerHTML = md2html(item.pr.body); }
+    else if (item.contentHtml) { mdDiv.innerHTML = item.contentHtml; }
+    body.appendChild(mdDiv);
+    card.appendChild(body);
+    entry.appendChild(card);
+    frag.appendChild(entry);
+  });
+  timeline.textContent = '';
+  timeline.appendChild(frag);
+  // Filters
+  var filterBar = document.getElementById('filter-bar');
+  filterBar.textContent = '';
+  var allChip = document.createElement('button');
+  allChip.className = 'filter-chip active'; allChip.textContent = 'All';
+  allChip.addEventListener('click', function() { filterTimeline('all', this); });
+  filterBar.appendChild(allChip);
+  Object.keys(cats).forEach(function(cat) {
+    var chip = document.createElement('button');
+    chip.className = 'filter-chip'; chip.textContent = cat; chip.setAttribute('data-cat', cat);
+    chip.addEventListener('click', function() { filterTimeline(cat, this); });
+    filterBar.appendChild(chip);
+  });
+  staggerReveal(timeline, 100);
+}
+function filterTimeline(cat, btn) {
+  document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.timeline-entry').forEach(function(el) { el.style.display = (cat === 'all' || el.getAttribute('data-cat') === cat) ? '' : 'none'; });
+}
+
+// ---- PRs Tab ----
+function renderPRs(prs) {
+  var container = document.getElementById('pr-list');
+  container.textContent = '';
+  if (!prs.length) { container.textContent = 'No PRs found.'; return; }
+  // Sort newest first
+  var sorted = prs.slice().sort(function(a, b) { return (b.number || 0) - (a.number || 0); });
+  sorted.forEach(function(pr, i) {
+    var card = document.createElement('div');
+    card.className = 'pr-card reveal';
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.copy-btn')) return;
+      this.classList.toggle('expanded');
+      // Lazy load comments
+      if (this.classList.contains('expanded') && !this.dataset.loaded) {
+        loadPRComments(pr.number, this.querySelector('.pr-comments'));
+        this.dataset.loaded = 'true';
+      }
+    });
+    var header = document.createElement('div');
+    header.className = 'pr-header';
+    var num = document.createElement('span');
+    num.className = 'pr-number';
+    num.textContent = '#' + pr.number;
+    header.appendChild(num);
+    var state = document.createElement('span');
+    state.className = 'pr-state ' + ((pr.state || '').toLowerCase() === 'open' ? 'open' : 'merged');
+    state.textContent = (pr.merged_at || pr.mergedAt) ? 'Merged' : pr.state || 'Open';
+    header.appendChild(state);
+    var title = document.createElement('span');
+    title.className = 'pr-title';
+    title.textContent = pr.title;
+    header.appendChild(title);
+    var date = document.createElement('span');
+    date.className = 'pr-date';
+    date.textContent = fmtDate(pr.created_at || pr.createdAt);
+    header.appendChild(date);
+    card.appendChild(header);
+    // Stats
+    var add = pr.additions || 0, del = pr.deletions || 0, files = pr.changed_files || pr.changedFiles || 0;
+    if (add || del) {
+      var stats = document.createElement('div');
+      stats.className = 'pr-stats';
+      stats.innerHTML = '<span class="additions">+' + fmtNum(add) + '</span> <span class="deletions">-' + fmtNum(del) + '</span> <span>' + files + ' files changed</span>';
+      card.appendChild(stats);
+    }
+    // Body preview
+    if (pr.body) {
+      var preview = document.createElement('div');
+      preview.className = 'pr-body-preview';
+      var firstLine = pr.body.split('\n').filter(function(l) { return l.trim() && !l.startsWith('#') && !l.startsWith('<!--'); })[0] || '';
+      preview.textContent = firstLine.replace(/\*\*/g, '').slice(0, 150) + (firstLine.length > 150 ? '...' : '');
+      card.appendChild(preview);
+    }
+    var hint = document.createElement('div');
+    hint.className = 'pr-expand-hint';
+    hint.textContent = 'Click to expand';
+    card.appendChild(hint);
+    // Full body
+    var bodyFull = document.createElement('div');
+    bodyFull.className = 'pr-body-full';
+    if (pr.body) {
+      var mdDiv = document.createElement('div');
+      mdDiv.className = 'md-content';
+      mdDiv.innerHTML = md2html(pr.body);
+      bodyFull.appendChild(mdDiv);
+    }
+    var commentsDiv = document.createElement('div');
+    commentsDiv.className = 'pr-comments';
+    bodyFull.appendChild(commentsDiv);
+    card.appendChild(bodyFull);
+    container.appendChild(card);
+  });
+  staggerReveal(container, 50);
+}
+
+async function loadPRComments(prNumber, container) {
+  container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Loading comments...</div>';
+  try {
+    var res = await fetch(API_URL + '/issues/' + prNumber + '/comments');
+    if (!res.ok) throw new Error(res.status);
+    var comments = await res.json();
+    container.textContent = '';
+    if (comments.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No comments</div>';
+      return;
+    }
+    var heading = document.createElement('h4');
+    heading.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-secondary);margin-bottom:12px;';
+    heading.textContent = comments.length + ' Comment' + (comments.length !== 1 ? 's' : '');
+    container.appendChild(heading);
+    comments.forEach(function(c) {
+      var div = document.createElement('div');
+      div.className = 'pr-comment';
+      var author = document.createElement('div');
+      author.className = 'pr-comment-author';
+      author.textContent = (c.user && c.user.login) || 'Unknown';
+      div.appendChild(author);
+      var body = document.createElement('div');
+      body.className = 'pr-comment-body md-content';
+      // Truncate very long comments (CodeRabbit can be huge)
+      var text = c.body || '';
+      if (text.length > 2000) text = text.slice(0, 2000) + '\n\n... (truncated)';
+      body.innerHTML = md2html(text);
+      div.appendChild(body);
+      container.appendChild(div);
+    });
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Could not load comments</div>';
+  }
+}
+
+// ---- Stages Tab ----
+function renderStages(prs) {
+  var container = document.getElementById('stages-content');
+  container.textContent = '';
+  // Map PRs to stages
+  var stagePRs = {};
+  prs.forEach(function(pr) {
+    var stages = PR_STAGE_MAP[pr.number] || [];
+    stages.forEach(function(s) {
+      if (!stagePRs[s]) stagePRs[s] = [];
+      stagePRs[s].push(pr);
+    });
+  });
+  // Completed stages (any stage with at least one merged PR)
+  var completed = {};
+  Object.keys(stagePRs).forEach(function(s) {
+    if (stagePRs[s].some(function(pr) { return pr.merged_at || pr.mergedAt; })) completed[s] = true;
+  });
+  // Also mark 1-3 as completed (from gate log)
+  completed[1] = true; completed[2] = true; completed[3] = true;
+
+  var phases = { planning: [1,2,3], building: [4,5,6], quality: [7,8], launch: [9,10,11] };
+  var phaseLabels = { planning: 'Planning', building: 'Building', quality: 'Quality', launch: 'Launch' };
+
+  Object.keys(phases).forEach(function(phase) {
+    var label = document.createElement('div');
+    label.className = 'stage-phase-label';
+    label.textContent = phaseLabels[phase];
+    container.appendChild(label);
+    var row = document.createElement('div');
+    row.className = 'phase-row';
+    phases[phase].forEach(function(num) {
+      var stage = STAGES[num - 1];
+      var isCompleted = completed[num];
+      var card = document.createElement('div');
+      card.className = 'stage-card ' + phase + (isCompleted ? ' completed' : (!stagePRs[num] ? ' not-started' : ''));
+      card.addEventListener('click', function() { this.classList.toggle('expanded'); });
+      var header = document.createElement('div');
+      header.className = 'stage-header';
+      var numEl = document.createElement('span');
+      numEl.className = 'stage-num';
+      numEl.textContent = (num < 10 ? '0' : '') + num;
+      header.appendChild(numEl);
+      var nameEl = document.createElement('span');
+      nameEl.className = 'stage-name';
+      nameEl.textContent = stage.name;
+      header.appendChild(nameEl);
+      card.appendChild(header);
+      var gateEl = document.createElement('div');
+      gateEl.className = 'stage-gate';
+      gateEl.textContent = '"' + stage.gate + '"';
+      card.appendChild(gateEl);
+      var statusBadge = document.createElement('span');
+      statusBadge.className = 'stage-status-badge ' + (isCompleted ? 'done' : stagePRs[num] ? 'active' : 'pending');
+      statusBadge.textContent = isCompleted ? 'Completed' : stagePRs[num] ? 'In Progress' : 'Not Started';
+      card.appendChild(statusBadge);
+      // PR list for this stage
+      if (stagePRs[num] && stagePRs[num].length > 0) {
+        var prDiv = document.createElement('div');
+        prDiv.className = 'stage-prs';
+        stagePRs[num].forEach(function(pr) {
+          var link = document.createElement('div');
+          link.className = 'stage-pr-link';
+          link.textContent = '#' + pr.number + ' ' + pr.title;
+          prDiv.appendChild(link);
+        });
+        card.appendChild(prDiv);
+      }
+      // Expandable details
+      var details = document.createElement('div');
+      details.className = 'stage-details';
+      if (stagePRs[num] && stagePRs[num].length > 0) {
+        var totalAdd = 0, totalDel = 0, totalFiles = 0;
+        stagePRs[num].forEach(function(pr) {
+          totalAdd += pr.additions || 0; totalDel += pr.deletions || 0; totalFiles += pr.changed_files || pr.changedFiles || 0;
+        });
+        details.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">' +
+          '<strong style="color:var(--teal)">+' + fmtNum(totalAdd) + '</strong> / <strong style="color:#c45c3c">-' + fmtNum(totalDel) + '</strong> across ' + totalFiles + ' files in ' + stagePRs[num].length + ' PR' + (stagePRs[num].length !== 1 ? 's' : '') + '</div>';
+      } else if (num <= 3) {
+        details.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);">Completed retroactively on Feb 10, 2026. Gate passed via override -- concept, scope, and architecture were locked before coding began.</div>';
+      }
+      card.appendChild(details);
+      row.appendChild(card);
+    });
+    container.appendChild(row);
+  });
+}
+
+// ---- Opus at the Edge Tab ----
+function renderOpus() {
+  var c = document.getElementById('opus-content');
+  c.textContent = '';
+
+  // Philosophy
+  var phil = document.createElement('div'); phil.className = 'opus-philosophy';
+  phil.innerHTML = '<h3>Why This Matters</h3>' +
+    '<p>Most AI products prove Claude can write code, summarize documents, or answer questions. <strong>Parallax tests something nobody else is testing: can Opus 4.6 serve as a real-time emotional intelligence engine for humans in crisis?</strong></p>' +
+    '<p>There are real people in this world going through real conflicts -- couples on the edge of separation, employees being silenced by power dynamics, families fracturing over unspoken resentments. They need help. Professional mediation costs $300-500/hr and has weeks-long wait times.</p>' +
+    '<p>Parallax puts Opus 4.6 in the room with them. Not as a chatbot. As a <strong>mediator who can read between the lines</strong> -- detecting cognitive distortions in natural speech, identifying attachment patterns in real-time, measuring emotional temperature as a continuous signal, and translating raw hurt into structured understanding.</p>' +
+    '<p>As Opus gets better, our ability to help people gets better. We are building the scaffolding now -- 14 analytical lenses, 6 context modes, persistent behavioral profiles, real-time intervention detection -- so that when Opus 5 arrives, Parallax is ready to catch everything it can offer. <strong>We are building for Opus 5.</strong></p>';
+  c.appendChild(phil);
+
+  // Session Token Totals
+  var totals = document.createElement('div'); totals.className = 'opus-totals';
+  var totalData = [
+    { value: '101K-1M', label: 'Tokens per Session' },
+    { value: '$2-$8', label: 'Opus Cost per Session' },
+    { value: '7', label: 'Opus API Routes' },
+    { value: '14', label: 'Analytical Lenses' },
+    { value: '2', label: 'Frontier-Level Tasks' }
+  ];
+  totalData.forEach(function(t) {
+    var item = document.createElement('div'); item.className = 'opus-total-item';
+    item.innerHTML = '<div class="opus-total-value">' + t.value + '</div><div class="opus-total-label">' + t.label + '</div>';
+    totals.appendChild(item);
+  });
+  c.appendChild(totals);
+
+  // Token Dashboard Header
+  var tokenDot = document.createElement('div'); tokenDot.className = 'section-dot';
+  var tokenLabel = document.createElement('span'); tokenLabel.textContent = 'Token Dashboard'; tokenDot.appendChild(tokenLabel);
+  c.appendChild(tokenDot);
+
+  var tokenDesc = document.createElement('p');
+  tokenDesc.style.cssText = 'color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; max-width: 700px; line-height: 1.5;';
+  tokenDesc.textContent = 'Every API route that calls Claude Opus, with estimated token usage per call and cognitive difficulty rating. Orange bars = input tokens. Teal bars = output tokens.';
+  c.appendChild(tokenDesc);
+
+  // Token Cards
+  var routes = [
+    { name: '/api/mediate', model: 'opus', title: 'Conflict Intelligence Analysis', difficulty: 'frontier',
+      inputMin: 2100, inputMax: 9000, outputMin: 2560, outputMax: 4096, callsMin: 10, callsMax: 50,
+      desc: 'Multi-lens NVC analysis through 5-7 psychological frameworks simultaneously. Detects cognitive distortions, attachment patterns, power dynamics, and emotional temperature in natural speech. Writes NVC translations that sound human, not clinical.' },
+    { name: '/api/conductor', model: 'opus', title: 'Conversational Orchestrator', difficulty: 'hard',
+      inputMin: 400, inputMax: 3000, outputMin: 512, outputMax: 1024, callsMin: 4, callsMax: 12,
+      desc: 'Extracts names from natural conversation. Synthesizes two competing perspectives into shared goals. Detects escalation, dominance, breakthrough, and resolution moments. Manages 4-phase onboarding state machine.' },
+    { name: '/api/sessions/[code]/summary', model: 'opus', title: 'Session Summary', difficulty: 'frontier',
+      inputMin: 300, inputMax: 22000, outputMin: 2048, outputMax: 2048, callsMin: 1, callsMax: 1,
+      desc: 'Analyzes the full conversation arc. Maps temperature trajectory across 5-100 messages. Synthesizes lens patterns into personalized takeaways. Identifies strengths and growth areas for each person.' },
+    { name: '/api/issues/analyze', model: 'opus', title: 'Issue Extraction + Grading', difficulty: 'moderate',
+      inputMin: 100, inputMax: 4500, outputMin: 1024, outputMax: 1024, callsMin: 10, callsMax: 50,
+      desc: 'Extracts discrete issues from implicit conflict. Attributes each issue to a speaker. Grades existing issues (better/worse/no_change) as conversation progresses.' },
+    { name: '/api/coach', model: 'opus', title: 'Private Coaching Channel', difficulty: 'hard',
+      inputMin: 750, inputMax: 12500, outputMin: 512, outputMax: 512, callsMin: 0, callsMax: 20,
+      desc: 'One-on-one coaching invisible to the other party. Helps users understand the other person\'s perspective. Detects blind spots in real-time. Coaches on expressing needs, not scripting responses.' },
+    { name: '/api/converse', model: 'opus', title: 'Conversational Layer', difficulty: 'simple',
+      inputMin: 1100, inputMax: 11500, outputMin: 512, outputMax: 1024, callsMin: 1, callsMax: 5,
+      desc: 'Explorer mode: Parallax explains her own architecture in first person, citing files and PRs. Guide mode: product help with agentic settings management via tool_use.' },
+    { name: '/api/interview', model: 'sonnet', title: 'Intelligence Network Profiler', difficulty: 'hard',
+      inputMin: 900, inputMax: 2600, outputMin: 1024, outputMax: 1024, callsMin: 8, callsMax: 16,
+      desc: 'Builds persistent behavioral profiles through 4-phase conversational interview. Extracts 9 signal types (attachment, conflict mode, Gottman risk, regulation, SCARF, Drama Triangle, values). Confidence-scored.' }
+  ];
+
+  var maxInput = 22000;
+  var grid = document.createElement('div'); grid.className = 'token-grid';
+  routes.forEach(function(r) {
+    var card = document.createElement('div'); card.className = 'token-card';
+    // Header
+    var header = document.createElement('div'); header.className = 'token-card-header';
+    var title = document.createElement('div'); title.className = 'token-card-title'; title.textContent = r.name;
+    var badge = document.createElement('span'); badge.className = 'token-card-model ' + r.model; badge.textContent = r.model === 'opus' ? 'OPUS 4.6' : 'SONNET 4.5';
+    header.appendChild(title); header.appendChild(badge); card.appendChild(header);
+    // Description
+    var desc = document.createElement('div'); desc.style.cssText = 'font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5;'; desc.textContent = r.desc;
+    card.appendChild(desc);
+    // Input bar
+    var inputStat = document.createElement('div'); inputStat.className = 'token-stat';
+    inputStat.innerHTML = 'Input: <strong>' + fmtNum(r.inputMin) + ' - ' + fmtNum(r.inputMax) + '</strong> tokens';
+    card.appendChild(inputStat);
+    var inputBar = document.createElement('div'); inputBar.className = 'token-bar';
+    var inputFill = document.createElement('div'); inputFill.className = 'token-bar-fill input';
+    inputFill.style.width = '0%';
+    setTimeout(function(el, pct) { return function() { el.style.width = pct + '%'; }; }(inputFill, Math.round(r.inputMax / maxInput * 100)), 300);
+    inputBar.appendChild(inputFill); card.appendChild(inputBar);
+    // Output bar
+    var outputStat = document.createElement('div'); outputStat.className = 'token-stat';
+    outputStat.innerHTML = 'Output: <strong>' + fmtNum(r.outputMin) + ' - ' + fmtNum(r.outputMax) + '</strong> tokens';
+    card.appendChild(outputStat);
+    var outputBar = document.createElement('div'); outputBar.className = 'token-bar';
+    var outputFill = document.createElement('div'); outputFill.className = 'token-bar-fill output';
+    outputFill.style.width = '0%';
+    setTimeout(function(el, pct) { return function() { el.style.width = pct + '%'; }; }(outputFill, Math.round(r.outputMax / maxInput * 100)), 500);
+    outputBar.appendChild(outputFill); card.appendChild(outputBar);
+    // Meta
+    var meta = document.createElement('div'); meta.className = 'token-meta';
+    meta.innerHTML = '<span>' + r.callsMin + '-' + r.callsMax + ' calls/session</span>';
+    card.appendChild(meta);
+    // Difficulty
+    var diff = document.createElement('span'); diff.className = 'difficulty-badge ' + r.difficulty; diff.textContent = r.difficulty;
+    card.appendChild(diff);
+    grid.appendChild(card);
+  });
+  c.appendChild(grid);
+
+  // Self-Assessment Header
+  var gradeDot = document.createElement('div'); gradeDot.className = 'section-dot';
+  var gradeLabel = document.createElement('span'); gradeLabel.textContent = 'Self-Assessment: Are We Pushing the Edge?'; gradeDot.appendChild(gradeLabel);
+  c.appendChild(gradeDot);
+
+  var gradeDesc = document.createElement('p');
+  gradeDesc.style.cssText = 'color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; max-width: 700px; line-height: 1.5;';
+  gradeDesc.textContent = 'An objective assessment of how well Parallax uses Opus at the frontier of its capabilities. Graded on four dimensions.';
+  c.appendChild(gradeDesc);
+
+  // Grade Cards
+  var grades = document.createElement('div'); grades.className = 'opus-grade';
+  var gradeData = [
+    { label: 'Emotional Intelligence Depth', score: 'A', cls: 'high',
+      detail: 'Opus analyzes through 14 validated psychological frameworks simultaneously. The NVC translation field requires genuine emotional fluency -- not just classification, but articulating feelings and needs in human language. This is the hardest single output field in the entire system.' },
+    { label: 'Real-World Stakes', score: 'A+', cls: 'high',
+      detail: 'Parallax isn\'t a toy demo. Real couples, real workplace conflicts, real family tensions. The safety architecture (abuse detection, crisis resources, asymmetric exit) exists because the stakes demand it. Opus is being tested where failure means real harm to real people.' },
+    { label: 'Model Utilization', score: 'B+', cls: 'mid',
+      detail: 'Strong on analysis depth (14 lenses, temperature calibration, trajectory prediction). Room to grow: intervention timing is still heuristic-based, not model-driven. Profile-mediation integration is built but underutilized. Cross-session learning not yet implemented.' },
+    { label: 'Future-Proofing (Opus 5 Ready)', score: 'A-', cls: 'high',
+      detail: 'The scaffolding is right: modular lens architecture (add new frameworks without rewriting), profile schema designed for richer signals, intervention hook ready for model-driven timing, context injection pipeline supports progressive disclosure. When Opus 5 arrives with deeper reasoning, Parallax can absorb it.' }
+  ];
+  gradeData.forEach(function(g) {
+    var card = document.createElement('div'); card.className = 'grade-card';
+    card.innerHTML = '<h4>' + g.label + '</h4><div class="grade-score ' + g.cls + '">' + g.score + '</div><div class="grade-detail">' + g.detail + '</div>';
+    grades.appendChild(card);
+  });
+  c.appendChild(grades);
+
+  // What Opus Does at the Frontier
+  var frontierDot = document.createElement('div'); frontierDot.className = 'section-dot';
+  var frontierLabel = document.createElement('span'); frontierLabel.textContent = 'Where Opus 4.6 Is at Its Edge'; frontierDot.appendChild(frontierLabel);
+  c.appendChild(frontierDot);
+
+  var frontierItems = [
+    { title: 'Multi-Framework Integration', text: 'Any model can run one psychological framework. Running 7 simultaneously and having them inform each other -- Gottman detecting stonewalling while Attachment identifies avoidant pattern while CBT catches catastrophizing -- requires the deep reasoning Opus is built for.' },
+    { title: 'NVC Translation Quality', text: 'The hardest output field. "I feel scared when deadlines change because I need predictability to do my best work" -- not "The speaker appears to be experiencing anxiety related to schedule modifications." Warm, vulnerable, specific, human.' },
+    { title: 'Profile-Informed Mediation', text: 'Opus holds two invisible psychological profiles in working memory while analyzing live speech, without revealing either profile to the other person. That\'s a cognitive load most human mediators struggle with.' },
+    { title: 'Emotional Temperature Calibration', text: 'Not binary positive/negative. A continuous 0.0-1.0 float that drives the entire visual system. Opus must distinguish between 0.3 (mild tension) and 0.7 (significant charge) with enough consistency to make the UI meaningful.' },
+    { title: 'Trajectory Prediction', text: 'Every analysis includes a resolutionDirection: escalating, stable, or de-escalating. Opus must read the arc of the conversation, not just the current message. This requires true conversational understanding.' }
+  ];
+  frontierItems.forEach(function(item) {
+    var card = document.createElement('div'); card.className = 'opus5-card';
+    card.innerHTML = '<h4>' + item.title + '</h4><p>' + item.text + '</p>';
+    c.appendChild(card);
+  });
+
+  // Building for Opus 5
+  var o5Dot = document.createElement('div'); o5Dot.className = 'section-dot'; o5Dot.style.marginTop = '40px';
+  var o5Label = document.createElement('span'); o5Label.textContent = 'Building for Opus 5'; o5Dot.appendChild(o5Label);
+  c.appendChild(o5Dot);
+
+  var o5Desc = document.createElement('p');
+  o5Desc.style.cssText = 'color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; max-width: 700px; line-height: 1.5;';
+  o5Desc.textContent = 'What would a more capable model unlock? Parallax is designed so that every model improvement directly translates to better mediation outcomes.';
+  c.appendChild(o5Desc);
+
+  var o5Items = [
+    { title: 'Model-Driven Intervention Timing', text: 'Currently, interventions trigger on heuristic rules (temperature > threshold, dominance ratio, message count). Opus 5 could judge when to intervene based on conversational context -- knowing the difference between productive tension and destructive escalation.' },
+    { title: 'Cross-Session Pattern Learning', text: 'Today each session starts fresh (except for profiles). Opus 5 could recognize patterns across sessions: "This couple tends to escalate around financial topics in the first 5 minutes, then de-escalate when the underlying fairness concern surfaces."' },
+    { title: 'Cultural Context Sensitivity', text: 'Conflict expression varies dramatically across cultures. What reads as "stonewalling" in one culture is respectful silence in another. Opus 5 with broader cultural understanding would produce more accurate and less Western-biased analyses.' },
+    { title: 'Richer Profile Intelligence', text: 'The profile schema supports 9 signal types. A more capable model could extract subtler signals: humor style, trust repair patterns, apology language preferences, meta-communication awareness. Every new signal makes mediation more personalized.' },
+    { title: 'Longer Context for Deep Sessions', text: 'Heavy sessions hit 100+ messages. With longer context windows, Opus 5 could hold the full conversation while still analyzing through multiple lenses -- seeing patterns that only emerge over long arcs.' },
+    { title: 'Real-Time Cultural Code-Switching', text: 'Parallax should adapt its own voice to match the users -- formal for professional disputes, warm for intimate, measured for family. Opus 5 could dynamically adjust tone, vocabulary, and framing based on the context mode and the users\' own language patterns.' }
+  ];
+  o5Items.forEach(function(item) {
+    var card = document.createElement('div'); card.className = 'opus5-card';
+    card.innerHTML = '<h4>' + item.title + '</h4><p>' + item.text + '</p>';
+    c.appendChild(card);
+  });
+
+  // Closing statement
+  var closing = document.createElement('div'); closing.className = 'opus-philosophy'; closing.style.marginTop = '40px';
+  closing.style.borderLeftColor = 'var(--accent)';
+  closing.innerHTML = '<h3>The Bet</h3>' +
+    '<p>We built Parallax because we believe the most impactful use of frontier AI isn\'t writing code faster or summarizing documents better. It\'s <strong>helping humans understand each other</strong>.</p>' +
+    '<p>Every improvement in Opus\'s emotional reasoning, every gain in nuance detection, every step toward genuine empathy -- Parallax converts that into better mediation outcomes for real people in real pain. The 14 lenses, the profile intelligence, the modular prompt architecture -- it\'s all scaffolding designed to absorb whatever the next generation of models can offer.</p>' +
+    '<p>We\'re not building for today\'s capabilities. We\'re building for tomorrow\'s. And when Opus 5 arrives, Parallax will be ready to catch everything it can give.</p>';
+  c.appendChild(closing);
+}
+
+// ---- Assessment Tab ----
+function renderAssessment() {
+  var container = document.getElementById('assessment-content');
+  var wins = [
+    { id: 'win-1', title: 'Pipeline methodology kept the build organized across 9+ stages', desc: 'Every commit references its stage, gates are documented, overrides are logged. Full traceability from concept to ship.' },
+    { id: 'win-2', title: '29 PRs with descriptions, reviews, and CI checks', desc: 'Every change went through a PR. CodeRabbit reviewed each one. No direct commits to main.' },
+    { id: 'win-3', title: 'BUILDING.md serves as a 1400+ line living build journal', desc: 'Every architectural decision documented with reasoning. Design docs written before code.' },
+    { id: 'win-4', title: '475 tests across 47 files before shipping', desc: 'Full test pyramid: unit, component, hook, API route, and E2E. All mocked, no external deps.' },
+    { id: 'win-5', title: '136 commits in 3 days with zero broken builds', desc: 'Every commit message references its pipeline stage. Build verified before every merge.' },
+    { id: 'win-6', title: 'Zero new infrastructure for the interview rebuild', desc: 'The interview page composed 6 existing components with zero new files, deps, or API changes.' }
+  ];
+  var fixes = [
+    { id: 'fix-1', title: 'Write README.md for hackathon submission', severity: 'high', desc: 'Judges need a quick overview, setup instructions, and demo link.', prompt: 'In ~/Development/id8/products/parallax/, create README.md for the Claude Code Hackathon. Include: one-liner, demo link, features, tech stack, setup instructions, architecture overview (link BUILDING.md), team info.' },
+    { id: 'fix-2', title: 'Reorder BUILDING.md sections chronologically', severity: 'medium', desc: 'Stage 7 appears after Stage 9 in the file. The TOC compensates but the file is confusing to scroll.', prompt: 'In ~/Development/id8/products/parallax/BUILDING.md, reorder the Build Log sections chronologically by date. Keep all content within each section intact.' },
+    { id: 'fix-3', title: 'Add status callouts to V3/V4 design docs', severity: 'medium', desc: 'V3 and V4 could be mistaken for implemented features. Add clear status indicators.', prompt: 'In BUILDING.md, add status callouts at the top of V3 and V4 sections indicating they are design documents, not fully implemented features.' },
+    { id: 'fix-4', title: 'Merge PR #29 and deploy to production', severity: 'high', desc: 'Interview page rebuild is ready. Merge to main and verify Vercel deployment.', prompt: 'Merge PR #29: gh pr merge 29 --merge. Verify deployment. Update BUILDING.md with merge confirmation.' }
+  ];
+  var nexts = [
+    { id: 'next-1', title: 'Record demo video', desc: 'Show the full flow: landing page narration, create session, voice mediation, NVC analysis, Conversational Layer.', prompt: 'Prepare a 2-minute demo script: 1) Landing page (Parallax narrates herself), 2) Create session, 3) Voice input from both parties, 4) NVC analysis with The Melt, 5) Ask Parallax to explain herself via Explorer.' },
+    { id: 'next-2', title: 'Submit to hackathon before Feb 16', desc: 'Deadline is Feb 16. Need: repo link, demo, Claude Code usage description.', prompt: 'Prepare hackathon submission: GitHub URL (eddiebelaval/parallax), production URL, list of Claude Code features used, submission description.' }
+  ];
+  container.textContent = '';
+  // Wins
+  var winsSection = buildAssessSection('What We Did Right', wins, false);
+  container.appendChild(winsSection);
+  var fixesSection = buildAssessSection('What Needs Fixing', fixes, true);
+  container.appendChild(fixesSection);
+  var nextsSection = buildAssessSection('High-Impact Next Steps', nexts, true);
+  container.appendChild(nextsSection);
+  // Summary
+  var summarySection = document.createElement('div');
+  summarySection.className = 'assess-section';
+  var summaryDot = document.createElement('div');
+  summaryDot.className = 'section-dot';
+  var sl = document.createElement('span');
+  sl.textContent = 'All Prompts';
+  summaryDot.appendChild(sl);
+  summarySection.appendChild(summaryDot);
+  fixes.concat(nexts).forEach(function(item, i) {
+    summarySection.appendChild(buildAssessItem(item, true, 'summary-' + item.id, (i + 1) + '. ' + item.title));
+  });
+  container.appendChild(summarySection);
+  wireAssessCheckboxes();
+}
+function buildAssessSection(label, items, hasCheckbox) {
+  var section = document.createElement('div'); section.className = 'assess-section';
+  var dot = document.createElement('div'); dot.className = 'section-dot';
+  var s = document.createElement('span'); s.textContent = label; dot.appendChild(s); section.appendChild(dot);
+  items.forEach(function(item) { section.appendChild(buildAssessItem(item, hasCheckbox, item.id, item.title)); });
+  return section;
+}
+function buildAssessItem(item, hasCheckbox, itemId, displayTitle) {
+  var div = document.createElement('div'); div.className = 'assessment-item'; div.id = 'assess-' + itemId;
+  if (hasCheckbox) {
+    var label = document.createElement('label'); label.className = 'assessment-check';
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'assess-checkbox'; cb.setAttribute('data-key', item.id);
+    label.appendChild(cb);
+    var span = document.createElement('span'); span.className = 'assess-label'; span.textContent = displayTitle;
+    label.appendChild(span); div.appendChild(label);
+  } else {
+    var hd = document.createElement('div'); hd.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    var badge = document.createElement('span'); badge.className = 'severity-badge ' + (item.severity || 'win'); badge.textContent = (item.severity || 'Win').toUpperCase();
+    hd.appendChild(badge);
+    var ts = document.createElement('span'); ts.className = 'assess-label'; ts.textContent = displayTitle; hd.appendChild(ts);
+    div.appendChild(hd);
+  }
+  var body = document.createElement('div'); body.className = 'assess-body';
+  if (hasCheckbox && item.severity) { var b = document.createElement('span'); b.className = 'severity-badge ' + item.severity; b.textContent = item.severity.toUpperCase(); body.appendChild(b); }
+  if (item.desc) { var d = document.createElement('p'); d.className = 'assess-desc'; d.textContent = item.desc; body.appendChild(d); }
+  if (item.prompt) {
+    var block = document.createElement('div'); block.className = 'prompt-block';
+    var btn = document.createElement('button'); btn.className = 'copy-btn'; btn.textContent = 'COPY';
+    btn.addEventListener('click', function(e) { e.stopPropagation(); var t = this.parentElement.querySelector('.prompt-text').textContent; navigator.clipboard.writeText(t); this.textContent = 'COPIED'; this.classList.add('copied'); var b = this; setTimeout(function() { b.textContent = 'COPY'; b.classList.remove('copied'); }, 1500); });
+    block.appendChild(btn);
+    var pt = document.createElement('div'); pt.className = 'prompt-text'; pt.textContent = item.prompt; block.appendChild(pt);
+    body.appendChild(block);
+  }
+  div.appendChild(body); return div;
+}
+function wireAssessCheckboxes() {
+  document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+      state[this.dataset.key] = this.checked; localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+      var item = this.closest('.assessment-item');
+      if (this.checked) item.classList.add('completed'); else item.classList.remove('completed');
+      var key = this.dataset.key, checked = this.checked, self = this;
+      document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sib) {
+        if (sib !== self) { sib.checked = checked; var si = sib.closest('.assessment-item'); if (checked) si.classList.add('completed'); else si.classList.remove('completed'); }
+      });
+      updateAssessProgress();
+    });
+  });
+  var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+  Object.keys(state).forEach(function(key) {
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) { cb.checked = state[key]; if (state[key]) cb.closest('.assessment-item').classList.add('completed'); });
+  });
+  updateAssessProgress();
+}
+function updateAssessProgress() {
+  var total = document.querySelectorAll('.assessment-item[id^="assess-fix-"], .assessment-item[id^="assess-next-"]').length;
+  var done = document.querySelectorAll('.assessment-item[id^="assess-fix-"].completed, .assessment-item[id^="assess-next-"].completed').length;
+  var counter = document.getElementById('assess-progress');
+  if (counter) { counter.textContent = done + ' of ' + total + ' addressed'; counter.style.color = done === total && total > 0 ? 'var(--teal)' : 'var(--text-secondary)'; }
+}
+
+// ---- Init ----
+async function init() {
+  await fetchData();
+  var sections = parseSections(appData.md);
+  var prs = appData.prs;
+  // Stats
+  var totalAdd = 0, totalPRs = prs.length;
+  prs.forEach(function(pr) { totalAdd += pr.additions || 0; });
+  var testMatch = (appData.md || '').match(/(\d+)\s*(?:Vitest\s+)?tests?\s+across/i);
+  var tests = testMatch ? parseInt(testMatch[1]) : 0;
+  var stagesCompleted = 0;
+  var stagesSeen = {};
+  prs.forEach(function(pr) { (PR_STAGE_MAP[pr.number] || []).forEach(function(s) { stagesSeen[s] = true; }); });
+  [1,2,3].forEach(function(s) { stagesSeen[s] = true; });
+  stagesCompleted = Object.keys(stagesSeen).length;
+  // Count commits from BUILDING.md references
+  var commitMatch = (appData.md || '').match(/(\d+)\s*files?\s*committed/i);
+  var commits = 136; // known from git log
+  setTimeout(function() { animateCounter(document.getElementById('stat-commits'), commits); }, 400);
+  setTimeout(function() { animateCounter(document.getElementById('stat-prs'), totalPRs); }, 520);
+  setTimeout(function() { animateCounter(document.getElementById('stat-additions'), totalAdd); }, 640);
+  setTimeout(function() { animateCounter(document.getElementById('stat-tests'), tests); }, 760);
+  setTimeout(function() { animateCounter(document.getElementById('stat-stages'), stagesCompleted); }, 880);
+  // Render all tabs
+  renderJourney(sections, prs);
+  renderPRs(prs);
+  renderStages(prs);
+  renderOpus();
+  renderAssessment();
+}
+init();
+</script>
+
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "parallax-build-journey",
+  "project": "parallax",
+  "generated": "2026-02-12T00:00:00Z",
+  "dynamic": true,
+  "sources": [
+    "https://raw.githubusercontent.com/eddiebelaval/parallax/main/BUILDING.md",
+    "https://api.github.com/repos/eddiebelaval/parallax/pulls",
+    "https://api.github.com/repos/eddiebelaval/parallax/issues/{number}/comments"
+  ],
+  "sections": [
+    { "id": "journey", "title": "Build Journey Timeline", "type": "tab" },
+    { "id": "prs", "title": "Pull Requests", "type": "tab" },
+    { "id": "stages", "title": "Pipeline Stages", "type": "tab" },
+    { "id": "opus", "title": "Opus at the Edge", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ]
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Persona Architecture</title>
+<style>
+:root {
+  --base-primary: #020202;
+  --base-secondary: #101010;
+  --base-card: #1f1d1c;
+  --text-primary: #eeeeee;
+  --text-secondary: #a49d9a;
+  --text-muted: #5c5855;
+  --border-subtle: #2e2c2b;
+  --border-visible: #3d3a39;
+  --accent: #ef6f2e;
+  --accent-hover: #ee6018;
+  --amber: #f59e0b;
+  --teal: #4ecdc4;
+  --neutral-700: #4d4947;
+  --neutral-800: #3d3a39;
+  --neutral-900: #2e2c2b;
+  --neutral-1000: #1f1d1c;
+  --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--base-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 36px; }
+.section-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(239,111,46,0); }
+  50% { box-shadow: 0 0 6px rgba(239,111,46,0.15); }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawLine { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+h1 {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 400;
+  letter-spacing: -2px;
+  line-height: 1.0;
+  color: var(--text-primary);
+  animation: fadeSlideUp 0.7s ease forwards;
+  animation-delay: 0.15s;
+  opacity: 0;
+}
+h2 {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+h3 {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+/* Header */
+.header {
+  padding: 80px 0 40px;
+  animation: fadeIn 0.6s ease forwards;
+}
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  animation: fadeSlideUp 0.7s ease forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+/* Stats */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 32px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  margin: 32px 0;
+}
+.stat { text-align: center; }
+.stat-num {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  color: var(--accent);
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  position: sticky;
+  top: 0;
+  background: var(--base-primary);
+  padding: 16px 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tab {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tab:hover { border-color: var(--border-visible); color: var(--text-primary); }
+.tab.active { background: var(--accent); color: #020202; border-color: var(--accent); }
+.tab-view { display: none; }
+.tab-view.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 20px;
+  transition: transform 0.2s ease;
+  opacity: 0;
+  animation: fadeSlideUp 0.5s ease forwards;
+}
+.card:hover { transform: translateY(-2px); }
+.card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.card-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  margin-bottom: 12px;
+}
+.card-body { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.badge {
+  display: inline-block;
+  border-radius: 10px;
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.badge-orange { background: rgba(239,111,46,0.12); color: var(--accent); }
+.badge-teal { background: rgba(78,205,196,0.12); color: var(--teal); }
+.badge-amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+.badge-muted { background: rgba(92,88,85,0.12); color: var(--text-muted); }
+.file-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.file-row:last-child { border-bottom: none; }
+.file-name { color: var(--text-primary); }
+.file-lines { color: var(--text-muted); font-size: 11px; }
+.file-desc { color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
+
+/* Flow diagram */
+.flow-section { margin: 40px 0; }
+.flow-svg { width: 100%; height: auto; }
+.flow-path {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 8 12;
+  animation: flowDash 1.5s linear infinite;
+}
+@keyframes flowDash { to { stroke-dashoffset: -40; } }
+
+/* Layer stack */
+.layer-stack { display: flex; flex-direction: column; gap: 0; margin: 32px 0; }
+.layer {
+  border: 1px solid var(--border-subtle);
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  opacity: 0;
+  animation: fadeSlideUp 0.5s ease forwards;
+}
+.layer:first-child { border-radius: 10px 10px 0 0; }
+.layer:last-child { border-radius: 0 0 10px 10px; }
+.layer + .layer { border-top: none; }
+.layer-num {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--text-muted);
+  min-width: 32px;
+}
+.layer-title { font-size: 14px; color: var(--text-primary); min-width: 160px; }
+.layer-desc { font-size: 12px; color: var(--text-secondary); flex: 1; }
+.layer-source { font-size: 10px; color: var(--text-muted); text-align: right; min-width: 180px; }
+.layer.l-orange { border-left: 3px solid var(--accent); }
+.layer.l-amber { border-left: 3px solid var(--amber); }
+.layer.l-teal { border-left: 3px solid var(--teal); }
+.layer.l-muted { border-left: 3px solid var(--text-muted); }
+
+/* Comparison */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 32px 0; }
+.compare-col { }
+.compare-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border-subtle);
+}
+.compare-header.explorer { color: var(--accent); border-color: var(--accent); }
+.compare-header.guide { color: var(--teal); border-color: var(--teal); }
+.compare-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.compare-label {
+  color: var(--text-primary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+/* Before/After */
+.before-after { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: start; margin: 32px 0; }
+.ba-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 40px;
+  color: var(--accent);
+  font-size: 24px;
+}
+.ba-col { }
+.ba-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 16px;
+}
+.ba-header.before { color: var(--text-muted); }
+.ba-header.after { color: var(--teal); }
+.ba-item {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.ba-item.code { background: var(--base-secondary); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.ba-item.md { background: rgba(78,205,196,0.06); border: 1px solid rgba(78,205,196,0.15); color: var(--teal); }
+.ba-item.gone { background: rgba(92,88,85,0.06); border: 1px solid var(--border-subtle); color: var(--text-muted); text-decoration: line-through; }
+
+/* Assessment */
+.assessment-item {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  transition: opacity 0.3s ease;
+}
+.assessment-item.completed .assess-label { text-decoration: line-through; color: var(--text-muted); }
+.assessment-item.completed .assess-body { opacity: 0.25; pointer-events: none; }
+.assessment-item.completed .severity-badge { opacity: 0.3; }
+.assess-body { transition: opacity 0.3s ease; }
+.assess-label { transition: color 0.3s ease; font-size: 15px; color: var(--text-primary); }
+.assessment-check { display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 12px; }
+.assess-checkbox {
+  appearance: none;
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--border-visible);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+.assess-checkbox:checked { background: var(--teal); border-color: var(--teal); }
+.assess-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 5px;
+  width: 4px; height: 8px;
+  border: solid #020202;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.assess-desc { color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin: 8px 0; }
+.severity-badge {
+  display: inline-block;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: opacity 0.3s ease;
+}
+.severity-badge.high { background: rgba(239,111,46,0.15); color: var(--accent); }
+.severity-badge.medium { background: rgba(245,158,11,0.15); color: var(--amber); }
+.severity-badge.low { background: rgba(78,205,196,0.15); color: var(--teal); }
+.prompt-block {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  position: relative;
+  margin-top: 12px;
+}
+.copy-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: var(--border-subtle);
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+.copy-btn.copied { color: var(--teal); }
+.win-card {
+  background: rgba(78,205,196,0.04);
+  border: 1px solid rgba(78,205,196,0.15);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+}
+.win-card .card-title { color: var(--teal); font-size: 15px; }
+.win-card .card-body { color: var(--text-secondary); font-size: 12px; }
+
+@media (max-width: 768px) {
+  h1 { font-size: 32px; }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .card-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .before-after { grid-template-columns: 1fr; }
+  .ba-arrow { transform: rotate(90deg); padding: 0; }
+  .tabs { flex-wrap: wrap; }
+  .layer { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .layer-source { text-align: left; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="label" style="margin-bottom: 16px;">
+      <span class="section-dot"></span>Parallax / System Architecture
+    </div>
+    <h1>Parallax Persona Architecture</h1>
+    <div class="subtitle">How Parallax's identity is structured, assembled, and delivered to Claude</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-num" data-target="4">0</div><div class="stat-label">Persona Files</div></div>
+    <div class="stat"><div class="stat-num" data-target="99">0</div><div class="stat-label">Lines of Soul</div></div>
+    <div class="stat"><div class="stat-num" data-target="104">0</div><div class="stat-label">Lines of Loader</div></div>
+    <div class="stat"><div class="stat-num" data-target="0">0</div><div class="stat-label">Inline Personas</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="architecture">Architecture</button>
+    <button class="tab" data-tab="files">File Map</button>
+    <button class="tab" data-tab="assembly">Prompt Assembly</button>
+    <button class="tab" data-tab="comparison">Explorer vs Guide</button>
+    <button class="tab" data-tab="before-after">Before / After</button>
+    <button class="tab" data-tab="assessment">Assessment</button>
+  </div>
+
+  <!-- Tab: Architecture -->
+  <div class="tab-view active" id="tab-architecture">
+    <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>Mental Model</div>
+    <h2 style="margin-bottom: 12px;">Three-Layer Prompt Assembly</h2>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 32px; line-height: 1.6;">
+      Parallax's system prompt is assembled from markdown files at runtime. No personality
+      is hardcoded in TypeScript. The loader reads files, concatenates them, and passes
+      the result to Claude. To change who Parallax is, edit a markdown file.
+    </p>
+
+    <div class="layer-stack">
+      <div class="layer l-orange" style="animation-delay: 0.1s;">
+        <div class="layer-num">01</div>
+        <div class="layer-title">Shared Persona</div>
+        <div class="layer-desc">Who Parallax IS. Identity, voice, intelligence pitch, boundaries. Same for both modes.</div>
+        <div class="layer-source"><span class="badge badge-orange">docs/parallax/*.md</span></div>
+      </div>
+      <div class="layer l-amber" style="animation-delay: 0.2s;">
+        <div class="layer-num">02</div>
+        <div class="layer-title">Mode Framing</div>
+        <div class="layer-desc">One line of context: "you're on the landing page" vs "you're helping a user." The only inline string.</div>
+        <div class="layer-source"><span class="badge badge-amber">MODE_FRAMING constant</span></div>
+      </div>
+      <div class="layer l-teal" style="animation-delay: 0.3s;">
+        <div class="layer-num">03</div>
+        <div class="layer-title">Mode Knowledge</div>
+        <div class="layer-desc">What Parallax knows in this context. Explorer gets architecture + PRs + BUILDING.md. Guide gets FAQ + manual.</div>
+        <div class="layer-source"><span class="badge badge-teal">docs/explorer/ or docs/guide/</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 48px;">
+      <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>Data Flow</div>
+      <svg class="flow-svg" viewBox="0 0 1028 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Persona files group -->
+        <rect x="20" y="20" width="220" height="160" rx="8" fill="none" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="4 6"/>
+        <text x="32" y="12" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5">DOCS/PARALLAX/</text>
+        <rect x="36" y="36" width="188" height="28" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="130" y="54" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="10">soul.md</text>
+        <rect x="36" y="72" width="188" height="28" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="130" y="90" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="10">voice.md</text>
+        <rect x="36" y="108" width="188" height="28" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="130" y="126" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="10">intelligence.md</text>
+        <rect x="36" y="144" width="188" height="28" rx="4" fill="var(--base-card)" stroke="var(--accent)" stroke-width="1"/>
+        <text x="130" y="162" text-anchor="middle" fill="var(--accent)" font-family="var(--font-mono)" font-size="10">boundaries.md</text>
+
+        <!-- Knowledge files group -->
+        <rect x="20" y="200" width="220" height="80" rx="8" fill="none" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="4 6"/>
+        <text x="32" y="194" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5">DOCS/EXPLORER/ + GUIDE/</text>
+        <rect x="36" y="216" width="90" height="24" rx="4" fill="var(--base-card)" stroke="var(--teal)" stroke-width="1"/>
+        <text x="81" y="232" text-anchor="middle" fill="var(--teal)" font-family="var(--font-mono)" font-size="9">explorer/</text>
+        <rect x="134" y="216" width="90" height="24" rx="4" fill="var(--base-card)" stroke="var(--teal)" stroke-width="1"/>
+        <text x="179" y="232" text-anchor="middle" fill="var(--teal)" font-family="var(--font-mono)" font-size="9">guide/</text>
+        <rect x="36" y="248" width="188" height="24" rx="4" fill="var(--base-card)" stroke="var(--amber)" stroke-width="1"/>
+        <text x="130" y="264" text-anchor="middle" fill="var(--amber)" font-family="var(--font-mono)" font-size="9">BUILDING.md + CLAUDE.md</text>
+
+        <!-- Loader -->
+        <rect x="380" y="100" width="200" height="80" rx="4" fill="var(--base-card)" stroke="var(--border-visible)" stroke-width="1.5"/>
+        <text x="480" y="132" text-anchor="middle" fill="var(--text-primary)" font-family="var(--font-mono)" font-size="12">knowledge-base.ts</text>
+        <text x="480" y="152" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9">getSystemPrompt(mode)</text>
+
+        <!-- API -->
+        <rect x="700" y="100" width="160" height="80" rx="4" fill="var(--base-card)" stroke="var(--border-visible)" stroke-width="1.5"/>
+        <text x="780" y="132" text-anchor="middle" fill="var(--text-primary)" font-family="var(--font-mono)" font-size="12">converse/route.ts</text>
+        <text x="780" y="152" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="9">POST /api/converse</text>
+
+        <!-- Claude -->
+        <circle cx="960" cy="140" r="30" fill="none" stroke="var(--teal)" stroke-width="1.5"/>
+        <text x="960" y="136" text-anchor="middle" fill="var(--teal)" font-family="var(--font-mono)" font-size="9">CLAUDE</text>
+        <text x="960" y="148" text-anchor="middle" fill="var(--teal)" font-family="var(--font-mono)" font-size="8">OPUS</text>
+
+        <!-- Flow lines: persona -> loader -->
+        <path id="p1" d="M240,100 C310,100 310,130 380,130" stroke="var(--border-subtle)" stroke-width="1.5" fill="none"/>
+        <path d="M240,100 C310,100 310,130 380,130" class="flow-path"/>
+        <circle r="3" fill="var(--accent)" filter="url(#glow)"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+
+        <!-- Flow lines: knowledge -> loader -->
+        <path id="p2" d="M240,240 C340,240 300,150 380,150" stroke="var(--border-subtle)" stroke-width="1.5" fill="none"/>
+        <path d="M240,240 C340,240 300,150 380,150" class="flow-path" style="animation-delay: 0.5s;"/>
+
+        <!-- Flow lines: loader -> API -->
+        <path id="p3" d="M580,140 L700,140" stroke="var(--border-subtle)" stroke-width="1.5" fill="none"/>
+        <path d="M580,140 L700,140" class="flow-path" style="animation-delay: 1s;"/>
+        <circle r="3" fill="var(--accent)" filter="url(#glow)"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+
+        <!-- Flow lines: API -> Claude -->
+        <path id="p4" d="M860,140 L930,140" stroke="var(--border-subtle)" stroke-width="1.5" fill="none"/>
+        <path d="M860,140 L930,140" class="flow-path" style="animation-delay: 1.5s;"/>
+
+        <!-- Labels -->
+        <text x="310" y="90" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8" letter-spacing="1">PERSONA</text>
+        <text x="310" y="220" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8" letter-spacing="1">KNOWLEDGE</text>
+        <text x="640" y="126" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8" letter-spacing="1">SYSTEM PROMPT</text>
+        <text x="900" y="126" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="8" letter-spacing="1">API CALL</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Tab: Files -->
+  <div class="tab-view" id="tab-files">
+    <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>File Map</div>
+    <h2 style="margin-bottom: 32px;">Every File, Explained</h2>
+
+    <h3 style="margin-bottom: 16px; color: var(--accent);">docs/parallax/ <span class="badge badge-orange">Shared Persona</span></h3>
+    <div class="card" style="animation-delay: 0.1s;">
+      <div class="file-row"><div><div class="file-name">soul.md</div><div class="file-desc">Who Parallax IS. Identity, origin, philosophy, what she does.</div></div><div class="file-lines">23 lines</div></div>
+      <div class="file-row"><div><div class="file-name">voice.md</div><div class="file-desc">HOW she speaks. Tone rules, first-person mandate, mode-specific adjustments.</div></div><div class="file-lines">30 lines</div></div>
+      <div class="file-row"><div><div class="file-name">intelligence.md</div><div class="file-desc">Intelligence Network pitch layer. How to naturally mention profiles.</div></div><div class="file-lines">26 lines</div></div>
+      <div class="file-row"><div><div class="file-name">boundaries.md</div><div class="file-desc">What she cannot do, what she is not, privacy commitments.</div></div><div class="file-lines">20 lines</div></div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; color: var(--teal);">docs/explorer/ <span class="badge badge-teal">Explorer Knowledge</span></h3>
+    <div class="card" style="animation-delay: 0.2s;">
+      <div class="file-row"><div><div class="file-name">voice.md</div><div class="file-desc">Architecture details, NVC system, Conflict Intelligence Engine, key patterns, PR history.</div></div><div class="file-lines">39 lines</div></div>
+      <div class="file-row"><div><div class="file-name">eddie-story.md</div><div class="file-desc">Eddie Belaval's background, id8Labs, philosophy.</div></div><div class="file-lines">41 lines</div></div>
+      <div class="file-row"><div><div class="file-name">hackathon-journey.md</div><div class="file-desc">The build story. What was built, what was cut, and why.</div></div><div class="file-lines">75 lines</div></div>
+      <div class="file-row"><div><div class="file-name">narration-intro.md</div><div class="file-desc">Landing page narration script context.</div></div><div class="file-lines">21 lines</div></div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; color: var(--teal);">docs/guide/ <span class="badge badge-teal">Guide Knowledge</span></h3>
+    <div class="card" style="animation-delay: 0.3s;">
+      <div class="file-row"><div><div class="file-name">faq.md</div><div class="file-desc">Frequently asked questions about Parallax.</div></div><div class="file-lines">31 lines</div></div>
+      <div class="file-row"><div><div class="file-name">user-manual.md</div><div class="file-desc">How to use every feature.</div></div><div class="file-lines">48 lines</div></div>
+      <div class="file-row"><div><div class="file-name">settings-schema.md</div><div class="file-desc">Settings structure for Guide tool calls.</div></div><div class="file-lines">41 lines</div></div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; color: var(--text-muted);">System Files</h3>
+    <div class="card" style="animation-delay: 0.4s;">
+      <div class="file-row"><div><div class="file-name">src/lib/knowledge-base.ts</div><div class="file-desc">Pure loader. Reads markdown, assembles prompt. Zero personality content.</div></div><div class="file-lines">104 lines</div></div>
+      <div class="file-row"><div><div class="file-name">src/app/api/converse/route.ts</div><div class="file-desc">API endpoint. Calls getSystemPrompt(), passes to Claude.</div></div><div class="file-lines">204 lines</div></div>
+      <div class="file-row"><div><div class="file-name">BUILDING.md</div><div class="file-desc">Build journal. Explorer-only context loaded at runtime.</div></div><div class="file-lines">1,150 lines</div></div>
+    </div>
+  </div>
+
+  <!-- Tab: Assembly -->
+  <div class="tab-view" id="tab-assembly">
+    <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>Prompt Assembly</div>
+    <h2 style="margin-bottom: 12px;">What Claude Actually Receives</h2>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 32px; line-height: 1.6;">
+      The system prompt is assembled at runtime by <code style="color: var(--accent);">getSystemPrompt(mode)</code>.
+      Here's the exact layering order for each mode.
+    </p>
+
+    <div class="card-grid">
+      <div class="card" style="animation-delay: 0.1s; border-top: 2px solid var(--accent);">
+        <div class="card-title" style="color: var(--accent);">Explorer Mode Prompt</div>
+        <div class="card-body">
+          <div style="margin-bottom: 12px;">
+            <div class="badge badge-orange" style="margin-bottom: 6px;">Layer 1: Persona</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              boundaries.md + intelligence.md + soul.md + voice.md<br>
+              <span style="color: var(--text-secondary);">(alphabetical sort, ~99 lines)</span>
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div class="badge badge-amber" style="margin-bottom: 6px;">Layer 2: Framing</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              "Speaking to judges, developers... Go deep... Cite PRs..."
+            </div>
+          </div>
+          <div>
+            <div class="badge badge-teal" style="margin-bottom: 6px;">Layer 3: Knowledge</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              BUILDING.md + CLAUDE.md + docs/explorer/*.md + docs/research/*.md<br>
+              <span style="color: var(--text-secondary);">(~1,900+ lines of context)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay: 0.2s; border-top: 2px solid var(--teal);">
+        <div class="card-title" style="color: var(--teal);">Guide Mode Prompt</div>
+        <div class="card-body">
+          <div style="margin-bottom: 12px;">
+            <div class="badge badge-orange" style="margin-bottom: 6px;">Layer 1: Persona</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              Same docs/parallax/*.md files<br>
+              <span style="color: var(--text-secondary);">(identical persona, ~99 lines)</span>
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div class="badge badge-amber" style="margin-bottom: 6px;">Layer 2: Framing</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              "Helping an active user... Be concise... Redirect conflicts to sessions..."
+            </div>
+          </div>
+          <div>
+            <div class="badge badge-teal" style="margin-bottom: 6px;">Layer 3: Knowledge</div>
+            <div style="font-size: 11px; color: var(--text-muted); padding-left: 12px;">
+              docs/guide/*.md only<br>
+              <span style="color: var(--text-secondary);">(~120 lines — lighter context)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px; animation-delay: 0.3s; border-left: 3px solid var(--amber);">
+      <div class="card-title">The Only Inline Strings</div>
+      <div class="card-body" style="font-family: var(--font-mono); font-size: 12px;">
+        <div style="color: var(--accent); margin-bottom: 8px;">MODE_FRAMING.explorer:</div>
+        <div style="padding-left: 12px; margin-bottom: 16px;">"You are speaking to judges, developers, and curious visitors on the landing page. Go deep when asked. Tell the story behind the decision. Cite PRs, pipeline stages, architectural trade-offs."</div>
+        <div style="color: var(--teal); margin-bottom: 8px;">MODE_FRAMING.guide:</div>
+        <div style="padding-left: 12px;">"You are helping an active user inside the product. Be concise. Get to the point. Use simple language. If they ask about a personal conflict, redirect them to start a session."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Comparison -->
+  <div class="tab-view" id="tab-comparison">
+    <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>Mode Comparison</div>
+    <h2 style="margin-bottom: 32px;">Explorer vs Guide</h2>
+
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="compare-header explorer">Explorer Mode</div>
+        <div class="compare-item"><div class="compare-label">Where</div>Landing page chat ("Talk to Parallax")</div>
+        <div class="compare-item"><div class="compare-label">Audience</div>Judges, developers, curious visitors</div>
+        <div class="compare-item"><div class="compare-label">Persona</div>Full identity. Narrative-driven. Tells stories.</div>
+        <div class="compare-item"><div class="compare-label">Response Length</div>2-4 paragraphs, up to 1024 tokens</div>
+        <div class="compare-item"><div class="compare-label">Tools</div>None (read-only, supports streaming)</div>
+        <div class="compare-item"><div class="compare-label">Knowledge</div>BUILDING.md, CLAUDE.md, architecture, PRs, research (1,900+ lines)</div>
+        <div class="compare-item"><div class="compare-label">Intelligence Pitch</div>Natural mentions when relevant</div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-header guide">Guide Mode</div>
+        <div class="compare-item"><div class="compare-label">Where</div>In-product help (ConversationalPanel)</div>
+        <div class="compare-item"><div class="compare-label">Audience</div>Active users mid-session</div>
+        <div class="compare-item"><div class="compare-label">Persona</div>Same identity, concise delivery. Gets to the point.</div>
+        <div class="compare-item"><div class="compare-label">Response Length</div>1-3 short paragraphs, up to 512 tokens</div>
+        <div class="compare-item"><div class="compare-label">Tools</div>update_setting, get_settings (tool-use loop)</div>
+        <div class="compare-item"><div class="compare-label">Knowledge</div>FAQ, user manual, settings schema (120 lines)</div>
+        <div class="compare-item"><div class="compare-label">Intelligence Pitch</div>Natural mentions when relevant</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px; border-left: 3px solid var(--teal);">
+      <div class="card-title">Key Insight</div>
+      <div class="card-body">
+        Both modes share the exact same persona files. Parallax's identity, voice, boundaries, and Intelligence Network awareness
+        are identical. The difference is context (who she's talking to) and depth (how much she knows in this conversation).
+        This means iterating on her personality in <code style="color: var(--accent);">docs/parallax/</code> affects both modes simultaneously.
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Before/After -->
+  <div class="tab-view" id="tab-before-after">
+    <div class="label" style="margin-bottom: 20px;"><span class="section-dot"></span>Refactor</div>
+    <h2 style="margin-bottom: 32px;">Before and After</h2>
+
+    <div class="before-after">
+      <div class="ba-col">
+        <div class="ba-header before">Before (Inline Strings)</div>
+        <div class="ba-item code">EXPLORER_PERSONA<br><span style="color: var(--text-muted); font-size: 10px;">35-line string constant in knowledge-base.ts</span></div>
+        <div class="ba-item code">GUIDE_PERSONA<br><span style="color: var(--text-muted); font-size: 10px;">15-line string constant in knowledge-base.ts</span></div>
+        <div class="ba-item code">docs/explorer/voice.md<br><span style="color: var(--text-muted); font-size: 10px;">64 lines — duplicated identity + tone + architecture</span></div>
+        <div class="ba-item code" style="border-left: 2px solid var(--accent);">
+          <span style="color: var(--accent); font-size: 10px;">PROBLEM:</span><br>
+          <span style="color: var(--text-muted); font-size: 11px;">Personality split between TypeScript and markdown. Drift risk. Two sources of truth.</span>
+        </div>
+      </div>
+
+      <div class="ba-arrow">&#8594;</div>
+
+      <div class="ba-col">
+        <div class="ba-header after">After (Markdown Files)</div>
+        <div class="ba-item md">docs/parallax/soul.md<br><span style="font-size: 10px; opacity: 0.7;">23 lines — identity, origin, philosophy</span></div>
+        <div class="ba-item md">docs/parallax/voice.md<br><span style="font-size: 10px; opacity: 0.7;">30 lines — tone rules, mode adjustments</span></div>
+        <div class="ba-item md">docs/parallax/intelligence.md<br><span style="font-size: 10px; opacity: 0.7;">26 lines — Intelligence Network pitch</span></div>
+        <div class="ba-item md">docs/parallax/boundaries.md<br><span style="font-size: 10px; opacity: 0.7;">20 lines — limitations, privacy</span></div>
+        <div class="ba-item gone">EXPLORER_PERSONA (deleted)</div>
+        <div class="ba-item gone">GUIDE_PERSONA (deleted)</div>
+        <div class="ba-item md" style="border-left: 2px solid var(--teal);">
+          <span style="font-size: 10px;">knowledge-base.ts: pure loader, 104 lines, zero personality</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Assessment -->
+  <div class="tab-view" id="tab-assessment">
+    <div class="label" style="margin-bottom: 8px;"><span class="section-dot"></span>Senior Dev Assessment</div>
+    <h2 style="margin-bottom: 8px;">Assessment</h2>
+    <span id="assess-progress" class="label">0 of 5 addressed</span>
+
+    <div style="margin-top: 32px;">
+      <h3 style="color: var(--teal); margin-bottom: 16px;">What We Did Right</h3>
+      <div class="win-card">
+        <div class="card-title">Single Source of Truth for Identity</div>
+        <div class="card-body">docs/parallax/ is the one place to edit Parallax's personality. No inline strings compete with markdown. Both Explorer and Guide read the same persona files.</div>
+      </div>
+      <div class="win-card">
+        <div class="card-title">Runtime File Reading</div>
+        <div class="card-body">Files are read with fs.readFileSync at request time, not at build time. This means you can edit a persona file and the next conversation picks up the change without a redeploy.</div>
+      </div>
+      <div class="win-card">
+        <div class="card-title">Clean Separation of Concerns</div>
+        <div class="card-body">Persona (who she is) vs. framing (who she's talking to) vs. knowledge (what she knows) are three distinct layers. You can change any layer independently.</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <h3 style="color: var(--accent); margin-bottom: 16px;">What Needs Fixing</h3>
+
+      <div class="assessment-item" id="assess-fix-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+          <span class="assess-label">Rename docs/explorer/voice.md to architecture.md</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge low">LOW</span>
+          <p class="assess-desc">The file was originally "voice.md" with identity + architecture. We extracted identity to docs/parallax/ but kept the architecture knowledge in the same filename. The name "voice.md" is now misleading — it contains architecture details, not voice rules.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/, rename docs/explorer/voice.md to docs/explorer/architecture.md. Use `git mv` to preserve history. Verify npm run build passes after the rename.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+          <span class="assess-label">Cache persona files instead of reading on every request</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge medium">MEDIUM</span>
+          <p class="assess-desc">readDirMarkdown runs fs.readFileSync + fs.readdirSync on every /api/converse call. In production, these files don't change between deploys. A simple module-level cache with lazy initialization would eliminate redundant disk reads.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/src/lib/knowledge-base.ts, add a module-level cache for loadSharedPersona() and loadExplorerKnowledge() / loadGuideKnowledge(). Use a simple pattern: `let _explorerCache: string | null = null` with lazy init on first call. This avoids fs.readFileSync on every API request while still loading files at runtime (not build time). Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+          <span class="assess-label">Add Intelligence Network to Guide knowledge</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge medium">MEDIUM</span>
+          <p class="assess-desc">The shared persona includes intelligence.md (so Guide knows about the Intelligence Network), but Guide's knowledge base (docs/guide/) has no FAQ entries about profiles, interviews, or signals. A user asking the Guide "what is my profile?" would get a generic answer.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/docs/guide/faq.md, add 3-4 FAQ entries about the Intelligence Network: "What is my profile?", "How do I build a profile?", "What are behavioral signals?", "Is my data private?". Keep answers concise (2-3 sentences each, Guide style). Reference the interview flow and privacy guarantees from docs/parallax/intelligence.md and docs/parallax/boundaries.md for accuracy.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <h3 style="color: var(--accent); margin-bottom: 16px;">High-Impact Next Steps</h3>
+
+      <div class="assessment-item" id="assess-next-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-1">
+          <span class="assess-label">Add session summary Intelligence Network mention</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge high">HIGH</span>
+          <p class="assess-desc">After completing a session, users have experienced the value of Parallax's analysis. This is the highest-conversion moment to mention the Intelligence Network. The session summary prompt in opus.ts could include a conditional line: "If neither participant has a profile, include a brief mention..."</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/src/lib/opus.ts, find the summarizeSession function's system prompt. Add a conditional instruction: if neither person_a_user_id nor person_b_user_id is set on the session, append to the prompt: "End the summary with a brief, warm note: if either participant wants Parallax to understand their communication style in future sessions, they can build a free profile at the Intelligence Network." Pass person_a_user_id and person_b_user_id as parameters to summarizeSession from the summary API route. Keep the mention organic — one sentence, not a sales pitch.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-2">
+          <span class="assess-label">Add a docs/parallax/knowledge-map.md for cross-referencing</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge low">LOW</span>
+          <p class="assess-desc">As the persona files grow, a knowledge-map.md that lists what Parallax knows about and where it's documented would help you (and future collaborators) maintain consistency. Think of it as a table of contents for Parallax's brain.</p>
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/docs/parallax/, create a knowledge-map.md that lists every topic Parallax can speak about, which file documents it, and which mode(s) have access. Format as a markdown table with columns: Topic, Source File, Modes (Explorer/Guide/Both). Include entries for: identity, voice rules, intelligence network, boundaries, architecture, NVC system, conflict engine, hackathon journey, Eddie's story, FAQ, settings, user manual.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <h3 style="color: var(--teal); margin-bottom: 16px;">Prompts Summary</h3>
+
+      <div class="assessment-item" id="assess-prompt-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+          <span class="assess-label">01 -- Rename voice.md to architecture.md</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/, rename docs/explorer/voice.md to docs/explorer/architecture.md. Use `git mv` to preserve history. Verify npm run build passes after the rename.</div>
+          </div>
+        </div>
+      </div>
+      <div class="assessment-item" id="assess-prompt-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+          <span class="assess-label">02 -- Cache persona files</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/src/lib/knowledge-base.ts, add a module-level cache for loadSharedPersona() and loadExplorerKnowledge() / loadGuideKnowledge(). Use a simple pattern: `let _explorerCache: string | null = null` with lazy init on first call. This avoids fs.readFileSync on every API request while still loading files at runtime (not build time). Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+      <div class="assessment-item" id="assess-prompt-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+          <span class="assess-label">03 -- Add Intelligence Network Guide FAQ entries</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/docs/guide/faq.md, add 3-4 FAQ entries about the Intelligence Network: "What is my profile?", "How do I build a profile?", "What are behavioral signals?", "Is my data private?". Keep answers concise (2-3 sentences each, Guide style). Reference the interview flow and privacy guarantees from docs/parallax/intelligence.md and docs/parallax/boundaries.md for accuracy.</div>
+          </div>
+        </div>
+      </div>
+      <div class="assessment-item" id="assess-prompt-4">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-1">
+          <span class="assess-label">04 -- Session summary Intelligence Network mention</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/src/lib/opus.ts, find the summarizeSession function's system prompt. Add a conditional instruction: if neither person_a_user_id nor person_b_user_id is set on the session, append to the prompt: "End the summary with a brief, warm note: if either participant wants Parallax to understand their communication style in future sessions, they can build a free profile at the Intelligence Network." Pass person_a_user_id and person_b_user_id as parameters to summarizeSession from the summary API route. Keep the mention organic — one sentence, not a sales pitch.</div>
+          </div>
+        </div>
+      </div>
+      <div class="assessment-item" id="assess-prompt-5">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-2">
+          <span class="assess-label">05 -- Create knowledge-map.md</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/docs/parallax/, create a knowledge-map.md that lists every topic Parallax can speak about, which file documents it, and which mode(s) have access. Format as a markdown table with columns: Topic, Source File, Modes (Explorer/Guide/Both). Include entries for: identity, voice rules, intelligence network, boundaries, architecture, NVC system, conflict engine, hackathon journey, Eddie's story, FAQ, settings, user manual.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 80px;"></div>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-view').forEach(function(v) { v.classList.remove('active'); });
+    this.classList.add('active');
+    var view = document.getElementById('tab-' + this.dataset.tab);
+    view.classList.add('active');
+    // Stagger animations
+    view.querySelectorAll('.card, .layer, .assessment-item, .win-card').forEach(function(el, i) {
+      el.style.opacity = '0';
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'fadeSlideUp 0.5s ease forwards';
+      el.style.animationDelay = (60 * i) + 'ms';
+    });
+  });
+});
+
+// Stat counter animation
+function animateCounter(el, target, duration) {
+  var start = 0;
+  var startTime = null;
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var progress = Math.min((timestamp - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('.stat-num[data-target]').forEach(function(el, i) {
+  setTimeout(function() {
+    animateCounter(el, parseInt(el.dataset.target), 600);
+  }, 400 + i * 120);
+});
+
+// Copy buttons
+document.querySelectorAll('.copy-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var text = this.parentElement.querySelector('.prompt-text').textContent;
+    navigator.clipboard.writeText(text);
+    this.textContent = 'COPIED';
+    this.classList.add('copied');
+    var b = this;
+    setTimeout(function() { b.textContent = 'COPY'; b.classList.remove('copied'); }, 1500);
+  });
+});
+
+// Assessment checkboxes with localStorage
+var ASSESS_KEY = 'visualize-assess-parallax-persona-architecture';
+
+document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    state[this.dataset.key] = this.checked;
+    localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+    var item = this.closest('.assessment-item');
+    if (this.checked) { item.classList.add('completed'); }
+    else { item.classList.remove('completed'); }
+    // Two-way sync
+    var key = this.dataset.key;
+    var checked = this.checked;
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sibling) {
+      if (sibling !== cb) {
+        sibling.checked = checked;
+        var sibItem = sibling.closest('.assessment-item');
+        if (checked) { sibItem.classList.add('completed'); }
+        else { sibItem.classList.remove('completed'); }
+      }
+    });
+    updateAssessProgress();
+  });
+});
+
+window.addEventListener('load', function() {
+  var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+  Object.keys(state).forEach(function(key) {
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+      cb.checked = state[key];
+      if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+    });
+  });
+  updateAssessProgress();
+});
+
+function updateAssessProgress() {
+  var total = document.querySelectorAll('.assessment-item[id^="assess-fix-"], .assessment-item[id^="assess-next-"]').length;
+  var done = document.querySelectorAll('.assessment-item[id^="assess-fix-"].completed, .assessment-item[id^="assess-next-"].completed').length;
+  var counter = document.getElementById('assess-progress');
+  if (counter) {
+    counter.textContent = done + ' of ' + total + ' addressed';
+    counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+  }
+}
+</script>
+
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "parallax-persona-architecture",
+  "project": "parallax",
+  "generated": "2026-02-12T22:00:00Z",
+  "sections": [
+    { "id": "architecture", "title": "Architecture", "type": "tab" },
+    { "id": "files", "title": "File Map", "type": "tab" },
+    { "id": "assembly", "title": "Prompt Assembly", "type": "tab" },
+    { "id": "comparison", "title": "Explorer vs Guide", "type": "tab" },
+    { "id": "before-after", "title": "Before / After", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ],
+  "nodes": [
+    { "id": "soul", "label": "soul.md", "type": "file", "section": "architecture", "lines": 23 },
+    { "id": "voice", "label": "voice.md", "type": "file", "section": "architecture", "lines": 30 },
+    { "id": "intelligence", "label": "intelligence.md", "type": "file", "section": "architecture", "lines": 26 },
+    { "id": "boundaries", "label": "boundaries.md", "type": "file", "section": "architecture", "lines": 20 },
+    { "id": "loader", "label": "knowledge-base.ts", "type": "service", "section": "architecture", "lines": 104 },
+    { "id": "api", "label": "converse/route.ts", "type": "service", "section": "architecture", "lines": 204 },
+    { "id": "claude", "label": "Claude Opus", "type": "external", "section": "architecture" }
+  ],
+  "edges": [
+    { "from": "soul", "to": "loader", "label": "readDirMarkdown", "style": "flow" },
+    { "from": "voice", "to": "loader", "label": "readDirMarkdown", "style": "flow" },
+    { "from": "intelligence", "to": "loader", "label": "readDirMarkdown", "style": "flow" },
+    { "from": "boundaries", "to": "loader", "label": "readDirMarkdown", "style": "flow" },
+    { "from": "loader", "to": "api", "label": "getSystemPrompt()", "style": "flow" },
+    { "from": "api", "to": "claude", "label": "system prompt", "style": "flow" }
+  ],
+  "assessment": {
+    "wins": [
+      "Single source of truth for identity",
+      "Runtime file reading — no redeploy needed",
+      "Clean separation: persona vs framing vs knowledge"
+    ],
+    "fixes": [
+      { "id": "fix-1", "title": "Rename voice.md to architecture.md", "severity": "LOW" },
+      { "id": "fix-2", "title": "Cache persona files", "severity": "MEDIUM" },
+      { "id": "fix-3", "title": "Add Intelligence Network Guide FAQ", "severity": "MEDIUM" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "Session summary Intelligence Network mention", "impact": "Highest-conversion growth touchpoint" },
+      { "id": "next-2", "title": "Create knowledge-map.md", "impact": "Maintainability as persona grows" }
+    ]
+  }
+}
+</script>
+</body>
+</html>

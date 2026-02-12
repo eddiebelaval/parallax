@@ -162,12 +162,12 @@ This entire project was built using Claude Code as the primary development tool.
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 136 |
-| Pull requests | 29 (all reviewed, zero direct-to-main) |
+| Total commits | 130+ |
+| Pull requests | 30+ (all reviewed, zero direct-to-main) |
 | Test coverage | 475 tests across 47 files (426 Vitest + 49 Playwright E2E) |
 | Build time | 3 days (Feb 10-12, 2026) |
-| BUILDING.md | 1,650+ lines of documented decisions |
-| Interactive artifacts | 16 HTML visualizations |
+| BUILDING.md | 1,700+ lines of documented decisions |
+| Interactive artifacts | 21 HTML visualizations |
 
 ### The Pipeline
 
@@ -222,20 +222,24 @@ npm run test:all          # Everything
 
 ## Interactive Artifacts
 
-16 HTML visualizations documenting the build process, architecture decisions, and design explorations. Open any in a browser:
+21 HTML visualizations documenting the build process, architecture decisions, and design explorations. Open any in a browser:
 
 | Artifact | What It Shows |
 |----------|---------------|
-| `parallax-blueprint.html` | Build plan — phases, batches, dependency graph |
+| **`parallax-build-journey.html`** | **The Build Journey** — live-fetches BUILDING.md + PR data from GitHub, interactive timeline with Opus at the Edge narrative |
+| **`parallax-final-blueprint.html`** | **Live Blueprint** — 10-phase build plan with 48 tasks, live-polling completion state |
+| `parallax-intelligence-network.html` | Intelligence Network architecture — 9 signal types, extraction pipeline |
+| `parallax-persona-architecture.html` | Persona system — interview flow, profile structure, privacy model |
+| `user-flow-map.html` | Complete user journey map across all interaction modes |
+| `parallax-conflict-intelligence-blueprint.html` | V3 14-lens Conflict Intelligence Engine architecture |
+| `parallax-user-intelligence-layer-blueprint.html` | Interview + profile system design |
+| `parallax-conversational-layer-blueprint.html` | Explorer + Guide conversational layer architecture |
+| `parallax-ember-design-system.html` | Ember design system — temperature colors, backlit glow, orbs |
 | `parallax-day-one.html` | Day 1 build retrospective |
-| `parallax-ember-design-system.html` | Ember design system deep dive |
-| `parallax-conflict-intelligence-blueprint.html` | V3 14-lens engine architecture |
-| `parallax-user-intelligence-layer-blueprint.html` | V2 interview + profile system |
-| `parallax-conversational-layer-blueprint.html` | Explorer + Guide architecture |
-| `integration-audit.html` | Full integration audit results |
+| `integration-audit.html` | Full integration audit results (4 parallel agents) |
 | `v3-conflict-intelligence-engine.html` | V3 lens activation visualization |
 
-All artifacts in [`artifacts/`](./artifacts/).
+Plus 9 additional design explorations and architecture diagrams. All artifacts in [`artifacts/`](./artifacts/).
 
 ---
 
