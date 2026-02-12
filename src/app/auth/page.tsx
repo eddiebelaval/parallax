@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signUp, signIn, signInWithGoogle } from '@/lib/auth'
+import { signUp, signIn, signInWithGoogle, signInWithMagicLink } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -10,11 +10,12 @@ function AuthContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
-  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [authMode, setAuthMode] = useState<'default' | 'magic' | 'password'>('default')
   const [isSignUp, setIsSignUp] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   // Surface OAuth errors from callback redirect
@@ -47,6 +48,22 @@ function AuthContent() {
       await signInWithGoogle()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed')
+      setLoading(false)
+    }
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setLoading(true)
+
+    try {
+      await signInWithMagicLink(email)
+      setSuccess('Check your email — we sent you a sign-in link.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send magic link')
+    } finally {
       setLoading(false)
     }
   }
@@ -100,7 +117,13 @@ function AuthContent() {
           </div>
         )}
 
-        {/* Google OAuth — Primary */}
+        {success && (
+          <div className="text-[var(--temp-cool)] text-sm font-mono bg-[var(--temp-cool)]/10 rounded-lg px-4 py-3 mb-6">
+            {success}
+          </div>
+        )}
+
+        {/* Google OAuth — Primary (one click) */}
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
@@ -134,15 +157,34 @@ function AuthContent() {
           <div className="flex-1 border-t border-border" />
         </div>
 
-        {/* Email/Password — Secondary (toggle) */}
-        {!showEmailForm ? (
-          <button
-            onClick={() => setShowEmailForm(true)}
-            className="w-full border border-border rounded-lg py-3 text-sm font-mono text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
-          >
-            {isSignUp ? 'Sign up with email' : 'Sign in with email'}
-          </button>
-        ) : (
+        {/* Magic Link — Secondary (no password, just email) */}
+        {authMode === 'default' && (
+          <div className="space-y-3">
+            <form onSubmit={handleMagicLink} className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 bg-[var(--surface)] border border-border rounded-lg px-4 py-3 text-foreground font-sans text-sm placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
+                placeholder="your@email.com"
+              />
+              <button
+                type="submit"
+                disabled={loading || !email}
+                className="px-5 py-3 border border-accent text-accent font-mono text-xs uppercase tracking-widest rounded-lg hover:bg-accent hover:text-[var(--ember-dark)] transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {loading ? '...' : 'Send link'}
+              </button>
+            </form>
+            <p className="text-muted text-xs font-mono text-center">
+              No password needed — we email you a sign-in link
+            </p>
+          </div>
+        )}
+
+        {/* Email + Password — Tertiary (hidden by default) */}
+        {authMode === 'password' && (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-mono text-muted uppercase tracking-wider mb-2">
@@ -183,29 +225,45 @@ function AuthContent() {
           </form>
         )}
 
-        <div className="text-center mt-6">
-          <button
-            onClick={() => { setIsSignUp(!isSignUp); setError(null); setShowEmailForm(false) }}
-            className="text-muted text-sm font-mono hover:text-foreground transition-colors"
-          >
-            {isSignUp ? 'Already have a profile? Sign in' : 'Need a profile? Create one'}
-          </button>
+        {/* Mode switchers */}
+        <div className="text-center mt-6 space-y-2">
+          {authMode === 'default' && (
+            <button
+              onClick={() => { setAuthMode('password'); setError(null); setSuccess(null) }}
+              className="text-muted text-xs font-mono hover:text-foreground transition-colors"
+            >
+              Use email + password instead
+            </button>
+          )}
+          {authMode === 'password' && (
+            <>
+              <button
+                onClick={() => { setAuthMode('default'); setError(null); setSuccess(null) }}
+                className="text-muted text-xs font-mono hover:text-foreground transition-colors block mx-auto"
+              >
+                Use magic link instead (no password)
+              </button>
+              <button
+                onClick={() => { setIsSignUp(!isSignUp); setError(null) }}
+                className="text-muted text-xs font-mono hover:text-foreground transition-colors block mx-auto"
+              >
+                {isSignUp ? 'Already have a profile? Sign in' : 'Need a profile? Create one'}
+              </button>
+            </>
+          )}
         </div>
 
-        {isSignUp && (
-          <div className="mt-8 p-4 border border-border rounded-lg">
-            <div className="flex items-start gap-3">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ember-teal)" strokeWidth="1.5" className="mt-0.5 flex-shrink-0">
-                <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-              <div className="text-xs font-mono text-muted leading-relaxed">
-                Your profile data is encrypted at rest and isolated by row-level security.
-                Only you can access your raw data. Anonymous behavioral signals are shared
-                only with your explicit consent, per session.
-              </div>
+        <div className="mt-8 p-4 border border-border rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ember-teal)" strokeWidth="1.5" className="mt-0.5 flex-shrink-0">
+              <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            </svg>
+            <div className="text-xs font-mono text-muted leading-relaxed">
+              Your profile data is encrypted at rest and isolated by row-level security.
+              Only you can access your raw data.
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
