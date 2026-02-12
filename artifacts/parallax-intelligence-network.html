@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Intelligence Network — How Parallax Gets Smarter With Every Person</title>
+<style>
+:root {
+  --base-primary: #020202;
+  --base-secondary: #101010;
+  --base-card: #1f1d1c;
+  --text-primary: #eeeeee;
+  --text-secondary: #a49d9a;
+  --text-muted: #5c5855;
+  --border-subtle: #2e2c2b;
+  --border-visible: #3d3a39;
+  --accent: #ef6f2e;
+  --accent-hover: #ee6018;
+  --accent-active: #d15010;
+  --amber: #f59e0b;
+  --teal: #4ecdc4;
+  --red: #ef4444;
+  --green: #22c55e;
+  --neutral-100: #d6d3d2;
+  --neutral-300: #b8b3b0;
+  --neutral-400: #a49d9a;
+  --neutral-500: #8a8380;
+  --neutral-600: #5c5855;
+  --neutral-700: #4d4947;
+  --neutral-800: #3d3a39;
+  --neutral-900: #2e2c2b;
+  --neutral-1000: #1f1d1c;
+  --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--base-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 80px 36px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.section-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+
+h1 {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 400;
+  letter-spacing: -2px;
+  line-height: 1.0;
+  color: var(--text-primary);
+  opacity: 0;
+  animation: fadeSlideUp 0.7s ease-out 0.15s forwards;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-top: 16px;
+  opacity: 0;
+  animation: fadeSlideUp 0.7s ease-out 0.3s forwards;
+  max-width: 700px;
+}
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex;
+  gap: 40px;
+  margin-top: 32px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+.stat-number {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── NAV ── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--base-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 36px;
+}
+
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 12px 0;
+}
+
+.nav-inner::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.nav-tab:hover {
+  border-color: var(--border-visible);
+  color: var(--text-primary);
+}
+
+.nav-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #020202;
+}
+
+/* ── CONTENT ── */
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 60px 36px 120px;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 20px;
+  opacity: 0;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover { border-color: var(--border-visible); }
+.card.revealed { animation: fadeSlideUp 0.6s ease-out forwards; }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-number {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.card-title {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+.card-body {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  h1 { font-size: 32px; }
+  .stats-bar { flex-wrap: wrap; gap: 24px; }
+}
+
+/* ── VIEW HEADERS ── */
+.view-header {
+  margin-bottom: 40px;
+}
+
+.view-header h2 {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+.view-header p {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  max-width: 600px;
+}
+
+/* ── BADGES ── */
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.badge-orange { background: #ef6f2e20; color: var(--accent); }
+.badge-teal { background: #4ecdc420; color: var(--teal); }
+.badge-amber { background: #f59e0b20; color: var(--amber); }
+.badge-red { background: #ef444420; color: var(--red); }
+.badge-green { background: #22c55e20; color: var(--green); }
+
+/* ── FLOW DIAGRAM ── */
+.flow-container {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 40px;
+  margin: 32px 0;
+  overflow: hidden;
+}
+
+.flow-container svg {
+  width: 100%;
+  height: auto;
+}
+
+/* ── PHASE CARDS (interview) ── */
+.phase-card {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.phase-card:hover {
+  border-color: var(--border-visible);
+  transform: translateY(-2px);
+}
+
+.phase-card.expanded .phase-details { display: block; }
+.phase-card .phase-details { display: none; }
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phase-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+.phase-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.phase-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.data-point {
+  display: inline-block;
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 12px;
+  margin: 3px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.data-point.captured { border-color: var(--teal); color: var(--teal); }
+
+/* ── PRIVACY WALL ── */
+.privacy-wall {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  gap: 0;
+  margin: 32px 0;
+  min-height: 400px;
+}
+
+.wall-side {
+  padding: 28px;
+}
+
+.wall-left {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px 0 0 10px;
+}
+
+.wall-right {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0 10px 10px 0;
+}
+
+.wall-center {
+  background: repeating-linear-gradient(
+    0deg,
+    var(--accent) 0px,
+    var(--accent) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.wall-label {
+  background: var(--base-primary);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 12px 6px;
+}
+
+.private-item {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.private-item .label-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--red);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.signal-item {
+  background: var(--base-secondary);
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.signal-item .label-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--teal);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ── NETWORK VISUALIZATION ── */
+.network-canvas {
+  width: 100%;
+  height: 500px;
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin: 32px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.network-node {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--teal);
+  background: var(--base-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--teal);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.network-node:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.15);
+}
+
+.network-node.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #020202;
+}
+
+.network-node.enriched {
+  border-color: var(--teal);
+  box-shadow: 0 0 12px rgba(78, 205, 196, 0.15);
+}
+
+/* ── MODE CARDS ── */
+.mode-card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.mode-card.revealed { animation: fadeSlideUp 0.6s ease-out forwards; }
+
+.mode-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.mode-icon.therapist { background: #ef6f2e15; border: 1px solid #ef6f2e40; color: var(--accent); }
+.mode-icon.xray { background: #4ecdc415; border: 1px solid #4ecdc440; color: var(--teal); }
+.mode-icon.guide { background: #f59e0b15; border: 1px solid #f59e0b40; color: var(--amber); }
+
+.mode-title {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.mode-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.mode-enhancement {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.mode-enhancement .label-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--teal);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ── SECURITY ── */
+.security-layer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  opacity: 0;
+}
+
+.security-layer.revealed { animation: fadeSlideUp 0.6s ease-out forwards; }
+
+.security-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #ef6f2e15;
+  border: 1px solid #ef6f2e40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.security-title {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+}
+
+.security-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ── EVOLUTION TIMELINE ── */
+.timeline {
+  position: relative;
+  padding-left: 32px;
+  margin: 32px 0;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-subtle);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 32px;
+  opacity: 0;
+}
+
+.timeline-item.revealed { animation: fadeSlideUp 0.6s ease-out forwards; }
+
+.timeline-dot {
+  position: absolute;
+  left: -28px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  background: var(--base-primary);
+}
+
+.timeline-item.current .timeline-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.timeline-item.future .timeline-dot {
+  border-color: var(--text-muted);
+  border-style: dashed;
+}
+
+.timeline-version {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.timeline-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.timeline-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ── COMPETITIVE QUADRANT ── */
+.quadrant-container {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 40px;
+  margin: 32px 0;
+  position: relative;
+}
+
+.quadrant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  height: 320px;
+  background: var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quadrant-cell {
+  background: var(--base-secondary);
+  padding: 20px;
+  position: relative;
+}
+
+.quadrant-cell .q-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.competitor-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin: 3px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.quadrant-cell.target {
+  border: 2px solid var(--teal);
+}
+
+.parallax-dot {
+  border-color: var(--teal) !important;
+  color: var(--teal) !important;
+  background: #4ecdc410 !important;
+}
+
+.axis-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ── ASSESSMENT ── */
+.assessment-item {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: opacity 0.3s ease;
+}
+
+.assessment-item.completed .assess-label {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.assessment-item.completed .assess-body {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.assessment-item.completed .severity-badge { opacity: 0.3; }
+
+.assess-body { transition: opacity 0.3s ease; }
+.assess-label { transition: color 0.3s ease; }
+
+.assessment-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.assess-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-visible);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.assess-checkbox:checked {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.assess-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 8px;
+  border: solid #020202;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.assess-label {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+}
+
+.severity-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-top: 12px;
+}
+
+.severity-badge.critical { background: #ef444430; color: var(--red); }
+.severity-badge.high { background: #ef6f2e25; color: var(--accent); }
+.severity-badge.medium { background: #f59e0b20; color: var(--amber); }
+
+.assess-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.prompt-block {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  position: relative;
+  margin-top: 12px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--border-subtle);
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+.copy-btn.copied { color: var(--teal); }
+
+.assess-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 40px 0 20px;
+}
+
+.assess-section-header .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.assess-section-header h3 {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+.assess-progress {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* ── QUOTE BLOCK ── */
+.quote-block {
+  border-left: 3px solid var(--teal);
+  padding: 20px 28px;
+  background: #4ecdc408;
+  border-radius: 0 10px 10px 0;
+  margin: 32px 0;
+}
+
+.quote-text {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.quote-attr {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+/* ── KEY NUMBERS ── */
+.key-number {
+  text-align: center;
+  padding: 28px;
+}
+
+.key-number .number {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 400;
+  letter-spacing: -2px;
+}
+
+.key-number .unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── FLOW ARROW ── */
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 12px 0;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 111, 46, 0.15); }
+  50% { box-shadow: 0 0 6px 3px rgba(239, 111, 46, 0.15); }
+}
+
+@keyframes flowDash {
+  to { stroke-dashoffset: -40; }
+}
+
+@keyframes drawLine {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* ── NETWORK ANIMATION ── */
+@keyframes nodeAppear {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes connectionDraw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── EXPANDABLE ── */
+.expandable-trigger {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-arrow {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.expanded .expand-arrow { transform: rotate(90deg); }
+
+/* ── DATA TABLE ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.data-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ HEADER ════════════════════ -->
+<div class="header">
+  <div class="section-indicator">
+    <div class="section-dot"></div>
+    <span class="section-label">Parallax Intelligence Network</span>
+  </div>
+  <h1>Every Person Makes the<br>Network Smarter</h1>
+  <p class="subtitle">A persistent, private knowledge base per user that accumulates context over time — enabling anonymous cross-party conflict resolution at scale.</p>
+
+  <div class="stats-bar">
+    <div class="stat" style="animation-delay: 0.5s">
+      <div class="stat-number" data-target="14">0</div>
+      <div class="stat-label">Analytical Lenses</div>
+    </div>
+    <div class="stat" style="animation-delay: 0.62s">
+      <div class="stat-number" data-target="6">0</div>
+      <div class="stat-label">Context Modes</div>
+    </div>
+    <div class="stat" style="animation-delay: 0.74s">
+      <div class="stat-number" data-target="4">0</div>
+      <div class="stat-label">Interview Phases</div>
+    </div>
+    <div class="stat" style="animation-delay: 0.86s">
+      <div class="stat-number">0%</div>
+      <div class="stat-label">Personal Data Shared</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ NAV ════════════════════ -->
+<div class="nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" data-view="vision">Vision</button>
+    <button class="nav-tab" data-view="interview">Interview Flow</button>
+    <button class="nav-tab" data-view="privacy">Privacy Wall</button>
+    <button class="nav-tab" data-view="mediation">Cross-Party Flow</button>
+    <button class="nav-tab" data-view="modes">Three Modes</button>
+    <button class="nav-tab" data-view="security">Security</button>
+    <button class="nav-tab" data-view="assessment">Assessment</button>
+  </div>
+</div>
+
+<!-- ════════════════════ CONTENT ════════════════════ -->
+<div class="content">
+
+  <!-- ════ VISION TAB ════ -->
+  <div class="view active" id="view-vision">
+    <div class="view-header">
+      <h2>The Conflict Resolution Network Effect</h2>
+      <p>Every person who enriches their profile improves outcomes for every conflict they'll ever be part of.</p>
+    </div>
+
+    <div class="quote-block">
+      <div class="quote-text">How cool would it be if you had all the data you needed to help neutralize 10 situations — and it's safe, secure, and anonymous.</div>
+      <div class="quote-attr">— Eddie Belaval, Feb 2026</div>
+    </div>
+
+    <!-- The Insight -->
+    <div class="card revealed" style="animation-delay: 0.1s">
+      <div class="card-header">
+        <span class="card-number">01</span>
+        <span class="card-title">The Core Insight</span>
+      </div>
+      <div class="card-body">
+        Today, every mediation session starts from zero. Claude has no context about who you are, how you communicate under stress, or what your blind spots are. It's like going to a new therapist every single session.<br><br>
+        The Intelligence Network changes this. Each user builds a persistent profile through a conversational interview. Claude enters mediation already understanding your attachment style, conflict modes, emotional triggers, and communication patterns. <strong>Not because you told it in this session — because it already knows you.</strong>
+      </div>
+    </div>
+
+    <!-- Three Evolutions -->
+    <div class="timeline">
+      <div class="timeline-item revealed" style="animation-delay: 0.2s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-version">V1 — Shipped Now</div>
+        <div class="timeline-title">Stateless Mediation</div>
+        <div class="timeline-desc">Claude sees only the current conversation. Every session starts fresh. Good analysis, but no accumulated understanding of the people involved.</div>
+      </div>
+
+      <div class="timeline-item current revealed" style="animation-delay: 0.35s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-version">V2 — Building Now</div>
+        <div class="timeline-title">Personal Intelligence Profiles</div>
+        <div class="timeline-desc">Each user has a persistent profile enriched through conversational interview. Claude enters mediation already understanding the current speaker — their attachment style, conflict tendencies, triggers. <span style="color: var(--teal)">One-way mirror: Claude sees YOUR profile when YOU speak.</span></div>
+      </div>
+
+      <div class="timeline-item future revealed" style="animation-delay: 0.5s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-version">V3 — The Network</div>
+        <div class="timeline-title">Anonymous Cross-Party Intelligence</div>
+        <div class="timeline-desc">When both parties have profiles, Claude works with <strong>anonymized behavioral signals</strong> from both sides simultaneously. Not personal data — just conflict styles, patterns, tendencies. The system knows "Party A stonewalls under stress" and "Party B escalates when sensing withdrawal" without either seeing the other's raw data. <span style="color: var(--accent)">This is the network effect.</span></div>
+      </div>
+
+      <div class="timeline-item future revealed" style="animation-delay: 0.65s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-version">V4 — The Graph</div>
+        <div class="timeline-title">Relationship Knowledge Graph</div>
+        <div class="timeline-desc">Anonymized conflict pattern edges connect behavioral profile nodes. The system learns that "avoidant + anxious" pairs escalate differently than "avoidant + avoidant." Mediation strategies become data-informed across the entire network.</div>
+      </div>
+    </div>
+
+    <!-- Competitive Position -->
+    <div class="view-header" style="margin-top: 48px">
+      <h2>The Empty Quadrant</h2>
+      <p>No competitor combines persistent profiles + NVC + dual-perspective mediation + anonymous cross-party context.</p>
+    </div>
+
+    <div class="quadrant-container">
+      <div style="display: grid; grid-template-columns: auto 1fr; gap: 0; align-items: stretch;">
+        <div style="writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); display: flex; align-items: center; padding-right: 12px; transform: rotate(180deg);">High Personalization</div>
+        <div>
+          <div class="quadrant-grid">
+            <!-- Top-left: High personalization, Low conflict focus -->
+            <div class="quadrant-cell">
+              <div class="q-label">Personal + General</div>
+              <span class="competitor-dot">Replika</span>
+              <span class="competitor-dot">Woebot</span>
+              <span class="competitor-dot">Pi</span>
+            </div>
+            <!-- Top-right: High personalization, High conflict focus -->
+            <div class="quadrant-cell target">
+              <div class="q-label" style="color: var(--teal)">Personal + Conflict-Focused</div>
+              <span class="competitor-dot parallax-dot">Parallax</span>
+              <div style="margin-top: 16px; font-size: 12px; color: var(--teal)">Empty quadrant. This is ours.</div>
+            </div>
+            <!-- Bottom-left: Low personalization, Low conflict focus -->
+            <div class="quadrant-cell">
+              <div class="q-label">Generic + General</div>
+              <span class="competitor-dot">ChatGPT</span>
+              <span class="competitor-dot">Claude (raw)</span>
+            </div>
+            <!-- Bottom-right: Low personalization, High conflict focus -->
+            <div class="quadrant-cell">
+              <div class="q-label">Generic + Conflict-Focused</div>
+              <span class="competitor-dot">BetterHelp</span>
+              <span class="competitor-dot">Couples Therapy Inc</span>
+              <span class="competitor-dot">Talkspace</span>
+            </div>
+          </div>
+          <div class="axis-label">Low Conflict Focus ← → High Conflict Focus</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market Numbers -->
+    <div class="grid-3" style="margin-top: 32px;">
+      <div class="card revealed" style="animation-delay: 0.1s">
+        <div class="key-number">
+          <div class="number" style="color: var(--accent)">$26.6B</div>
+          <div class="unit">Online Therapy Market by 2028</div>
+        </div>
+      </div>
+      <div class="card revealed" style="animation-delay: 0.2s">
+        <div class="key-number">
+          <div class="number" style="color: var(--teal)">85%</div>
+          <div class="unit">Mental Health Needs Untreated</div>
+        </div>
+      </div>
+      <div class="card revealed" style="animation-delay: 0.3s">
+        <div class="key-number">
+          <div class="number" style="color: var(--amber)">35%</div>
+          <div class="unit">Couples Already Using AI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ INTERVIEW FLOW TAB ════ -->
+  <div class="view" id="view-interview">
+    <div class="view-header">
+      <h2>The Enrichment Interview</h2>
+      <p>A conversational AI interview that builds a comprehensive behavioral profile in 10-15 minutes. Audio-first, clinically-informed, never clinical-feeling.</p>
+    </div>
+
+    <div class="grid-2" style="margin-bottom: 32px;">
+      <div class="card revealed">
+        <div class="card-body">
+          <span class="badge badge-teal">Key Finding</span>
+          <div style="margin-top: 12px;">AI conversational interviews outperform paper questionnaires in agreement with clinical assessment — <strong>kappa 0.72 vs 0.55</strong>. People disclose more to AI than to forms.</div>
+        </div>
+      </div>
+      <div class="card revealed">
+        <div class="card-body">
+          <span class="badge badge-amber">Design Principle</span>
+          <div style="margin-top: 12px;">This is NOT a diagnostic assessment. It's a conversation that happens to capture clinically-useful patterns. The user should feel heard, not evaluated.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 1 -->
+    <div class="phase-card" onclick="this.classList.toggle('expanded')">
+      <div class="phase-header">
+        <div>
+          <span class="badge badge-orange" style="margin-right: 8px;">Phase 1</span>
+          <span class="phase-title">Context Setting</span>
+        </div>
+        <span class="phase-meta">3-4 min / 4 questions</span>
+      </div>
+      <div class="phase-details">
+        <div class="card-body">Establishes safety, explains what data is captured and how it's protected. Sets the tone: conversational, not clinical. Captures basic conflict context — who are the key relationships in your life, what brings you here.</div>
+        <div style="margin-top: 12px;">
+          <span class="data-point captured">Relationship landscape</span>
+          <span class="data-point captured">Primary conflict context</span>
+          <span class="data-point captured">Consent acknowledgment</span>
+          <span class="data-point captured">Communication preference</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-card" onclick="this.classList.toggle('expanded')">
+      <div class="phase-header">
+        <div>
+          <span class="badge badge-orange" style="margin-right: 8px;">Phase 2</span>
+          <span class="phase-title">Communication Profiling</span>
+        </div>
+        <span class="phase-meta">3-4 min / 5 questions</span>
+      </div>
+      <div class="phase-details">
+        <div class="card-body">Explores communication style under stress. Uses validated instruments (ECR-RS for attachment, TKI-inspired for conflict modes) but delivered conversationally — never "on a scale of 1-5."</div>
+        <div style="margin-top: 12px;">
+          <span class="data-point captured">Attachment style (ECR-RS)</span>
+          <span class="data-point captured">Conflict mode (TKI)</span>
+          <span class="data-point captured">Emotional regulation (DERS-16)</span>
+          <span class="data-point captured">Stress response pattern</span>
+          <span class="data-point captured">Communication defaults</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-card" onclick="this.classList.toggle('expanded')">
+      <div class="phase-header">
+        <div>
+          <span class="badge badge-orange" style="margin-right: 8px;">Phase 3</span>
+          <span class="phase-title">Context-Specific Deep Dive</span>
+        </div>
+        <span class="phase-meta">3-4 min / 4 questions</span>
+      </div>
+      <div class="phase-details">
+        <div class="card-body">Adapts based on the user's primary conflict context. Intimate relationships get Gottman Four Horsemen questions. Professional contexts get SCARF and Organizational Justice probes. Family gets intergenerational pattern exploration.</div>
+        <div style="margin-top: 12px;">
+          <span class="data-point captured">Gottman patterns</span>
+          <span class="data-point captured">SCARF sensitivity</span>
+          <span class="data-point captured">Drama Triangle role</span>
+          <span class="data-point captured">Power dynamics</span>
+          <span class="data-point captured">Cognitive distortions</span>
+          <span class="data-point captured">Fairness orientation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-card" onclick="this.classList.toggle('expanded')">
+      <div class="phase-header">
+        <div>
+          <span class="badge badge-orange" style="margin-right: 8px;">Phase 4</span>
+          <span class="phase-title">Narrative Capture</span>
+        </div>
+        <span class="phase-meta">2-3 min / 3 questions</span>
+      </div>
+      <div class="phase-details">
+        <div class="card-body">The most human phase. "Tell me about a conflict that sticks with you." Free-form narrative capture that reveals patterns the structured questions miss. The AI extracts implicit values, unstated needs, and recurring themes.</div>
+        <div style="margin-top: 12px;">
+          <span class="data-point captured">Core values</span>
+          <span class="data-point captured">Recurring themes</span>
+          <span class="data-point captured">Unmet needs</span>
+          <span class="data-point captured">Growth edges</span>
+          <span class="data-point captured">Self-awareness level</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- What Gets Built -->
+    <div style="margin-top: 48px;">
+      <div class="section-indicator">
+        <div class="section-dot"></div>
+        <span class="section-label">Profile Output</span>
+      </div>
+      <h3 style="font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: -0.5px; margin-bottom: 20px;">What the Interview Produces</h3>
+
+      <div class="grid-2">
+        <div class="card revealed">
+          <div class="card-header">
+            <span class="badge badge-red">Private</span>
+            <span class="card-title">Raw Profile</span>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <tr><th>Field</th><th>Example</th></tr>
+              <tr><td>Narratives</td><td>"My father never listened..."</td></tr>
+              <tr><td>Specific triggers</td><td>"Being interrupted mid-thought"</td></tr>
+              <tr><td>Relationship details</td><td>"Partner of 4 years, co-parent"</td></tr>
+              <tr><td>Emotional history</td><td>"Shut down after divorce"</td></tr>
+              <tr><td>Self-reported patterns</td><td>"I know I get defensive"</td></tr>
+            </table>
+            <div style="margin-top: 12px; font-size: 12px; color: var(--red);">AES-256-GCM encrypted. User-only access. Never leaves their scope.</div>
+          </div>
+        </div>
+
+        <div class="card revealed">
+          <div class="card-header">
+            <span class="badge badge-teal">Shareable</span>
+            <span class="card-title">Behavioral Signals</span>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <tr><th>Signal</th><th>Value</th></tr>
+              <tr><td>Attachment style</td><td>Anxious-preoccupied</td></tr>
+              <tr><td>Primary conflict mode</td><td>Avoiding</td></tr>
+              <tr><td>Emotional regulation</td><td>Low under perceived rejection</td></tr>
+              <tr><td>Gottman risk</td><td>Stonewalling, Criticism</td></tr>
+              <tr><td>SCARF sensitivity</td><td>High on Relatedness</td></tr>
+              <tr><td>Drama Triangle default</td><td>Rescuer</td></tr>
+            </table>
+            <div style="margin-top: 12px; font-size: 12px; color: var(--teal);">Anonymized. Consent-gated. Cannot reconstruct source narratives.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PRIVACY WALL TAB ════ -->
+  <div class="view" id="view-privacy">
+    <div class="view-header">
+      <h2>The Anonymization Boundary</h2>
+      <p>A one-way function separates personal narratives from behavioral signals. You can derive signals from data — you can never reconstruct data from signals.</p>
+    </div>
+
+    <div class="privacy-wall">
+      <div class="wall-side wall-left">
+        <div style="margin-bottom: 16px;">
+          <span class="badge badge-red">Private Zone</span>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: 8px;">AES-256-GCM / RLS / User-Only</span>
+        </div>
+
+        <div class="private-item">
+          <span class="label-tag">Narrative</span>
+          "My ex-wife used to give me the silent treatment for days. Now when my partner goes quiet, I panic."
+        </div>
+        <div class="private-item">
+          <span class="label-tag">Trigger Detail</span>
+          "Being left on read triggers abandonment anxiety from childhood."
+        </div>
+        <div class="private-item">
+          <span class="label-tag">Relationship Data</span>
+          "Partner: Alex, 3 years, live together, co-parenting his daughter."
+        </div>
+        <div class="private-item">
+          <span class="label-tag">Self-Report</span>
+          "I know I get clingy when I'm scared they're pulling away."
+        </div>
+        <div class="private-item">
+          <span class="label-tag">History</span>
+          "Divorced in 2022. Father was emotionally unavailable."
+        </div>
+      </div>
+
+      <div class="wall-center">
+        <span class="wall-label">ONE-WAY FUNCTION</span>
+      </div>
+
+      <div class="wall-side wall-right">
+        <div style="margin-bottom: 16px;">
+          <span class="badge badge-teal">Signal Zone</span>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: 8px;">Anonymized / Consent-Gated</span>
+        </div>
+
+        <div class="signal-item">
+          <span class="label-tag">Attachment</span>
+          Anxious-preoccupied. High activation on perceived withdrawal.
+        </div>
+        <div class="signal-item">
+          <span class="label-tag">Conflict Mode</span>
+          Accommodating primary, Avoiding secondary. Low competing threshold.
+        </div>
+        <div class="signal-item">
+          <span class="label-tag">Gottman Risk</span>
+          Pursuer pattern. Escalation risk when partner stonewalls.
+        </div>
+        <div class="signal-item">
+          <span class="label-tag">Regulation</span>
+          Emotional flooding onset: 60-90 seconds under rejection cues.
+        </div>
+        <div class="signal-item">
+          <span class="label-tag">Values</span>
+          Security, connection, verbal reassurance. SCARF: high Relatedness.
+        </div>
+      </div>
+    </div>
+
+    <div class="card revealed" style="border-color: var(--accent);">
+      <div class="card-header">
+        <span class="card-title">The One-Way Guarantee</span>
+      </div>
+      <div class="card-body">
+        Behavioral signals are extracted through Claude Structured Outputs — a classification and scoring process, not a summarization. The output is categorical (e.g., "anxious-preoccupied", not "has abandonment issues from childhood"). You can know someone's attachment style without knowing WHY they have it.<br><br>
+        <strong>The test:</strong> Given only the signals on the right side, can you reconstruct the narratives on the left? No. You know what patterns exist — never why they exist, who they involve, or what happened. This is the privacy guarantee.
+      </div>
+    </div>
+
+    <div class="card revealed" style="margin-top: 20px;">
+      <div class="card-header">
+        <span class="card-title">Consent Gates</span>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <tr><th>Level</th><th>What's Shared</th><th>Default</th></tr>
+          <tr><td><span class="badge badge-green">Self-Only</span></td><td>Claude uses YOUR signals to improve YOUR mediation</td><td>On (after interview)</td></tr>
+          <tr><td><span class="badge badge-amber">Anonymous Signals</span></td><td>Other party's Claude gets your behavioral signals (anonymized)</td><td>Off (opt-in per session)</td></tr>
+          <tr><td><span class="badge badge-red">Never</span></td><td>Raw narratives, personal details, relationship data</td><td>Blocked (architectural)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CROSS-PARTY MEDIATION TAB ════ -->
+  <div class="view" id="view-mediation">
+    <div class="view-header">
+      <h2>Cross-Party Intelligence Flow</h2>
+      <p>When both parties have enriched profiles, Claude works with anonymous signals from both sides — seeing patterns, not people.</p>
+    </div>
+
+    <!-- Flow Diagram -->
+    <div class="flow-container">
+      <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Person A Side -->
+        <circle cx="120" cy="80" r="28" fill="none" stroke="#ef6f2e" stroke-width="1.5"/>
+        <text x="120" y="84" text-anchor="middle" fill="#ef6f2e" font-family="var(--font-mono)" font-size="10">PERSON A</text>
+
+        <rect x="50" y="140" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#2e2c2b" stroke-width="1"/>
+        <text x="120" y="166" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">Raw Profile</text>
+        <text x="120" y="180" text-anchor="middle" fill="#ef4444" font-family="var(--font-mono)" font-size="8">ENCRYPTED</text>
+
+        <!-- Arrow A down -->
+        <path d="M120,108 L120,140" stroke="#3d3a39" stroke-width="1.5" fill="none"/>
+
+        <!-- Anonymization A -->
+        <rect x="50" y="220" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="120" y="246" text-anchor="middle" fill="#ef6f2e" font-family="var(--font-mono)" font-size="9">ANONYMIZE</text>
+
+        <path d="M120,184 L120,220" stroke="#3d3a39" stroke-width="1.5" fill="none"/>
+
+        <!-- Signal A -->
+        <rect x="50" y="300" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1.5"/>
+        <text x="120" y="326" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="10">A's Signals</text>
+
+        <path d="M120,264 L120,300" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="8 12" class="flow-anim"/>
+
+        <!-- Person B Side -->
+        <circle cx="780" cy="80" r="28" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="780" y="84" text-anchor="middle" fill="#f59e0b" font-family="var(--font-mono)" font-size="10">PERSON B</text>
+
+        <rect x="710" y="140" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#2e2c2b" stroke-width="1"/>
+        <text x="780" y="166" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="11">Raw Profile</text>
+        <text x="780" y="180" text-anchor="middle" fill="#ef4444" font-family="var(--font-mono)" font-size="8">ENCRYPTED</text>
+
+        <path d="M780,108 L780,140" stroke="#3d3a39" stroke-width="1.5" fill="none"/>
+
+        <!-- Anonymization B -->
+        <rect x="710" y="220" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="780" y="246" text-anchor="middle" fill="#ef6f2e" font-family="var(--font-mono)" font-size="9">ANONYMIZE</text>
+
+        <path d="M780,184 L780,220" stroke="#3d3a39" stroke-width="1.5" fill="none"/>
+
+        <!-- Signal B -->
+        <rect x="710" y="300" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1.5"/>
+        <text x="780" y="326" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="10">B's Signals</text>
+
+        <path d="M780,264 L780,300" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="8 12" class="flow-anim"/>
+
+        <!-- Claude Center -->
+        <rect x="350" y="380" width="200" height="60" rx="8" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="2"/>
+        <text x="450" y="406" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="12">CLAUDE MEDIATION</text>
+        <text x="450" y="424" text-anchor="middle" fill="#a49d9a" font-family="var(--font-mono)" font-size="9">14 LENSES + BOTH SIGNALS</text>
+
+        <!-- Flow A to Claude -->
+        <path id="pathA" d="M190,322 C300,322 300,410 350,410" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="8 12" class="flow-anim"/>
+        <circle r="3" fill="#4ecdc4" filter="url(#glow)">
+          <animateMotion dur="2s" repeatCount="indefinite">
+            <mpath href="#pathA"/>
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2s" repeatCount="indefinite"/>
+        </circle>
+
+        <!-- Flow B to Claude -->
+        <path id="pathB" d="M710,322 C600,322 600,410 550,410" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="8 12" class="flow-anim"/>
+        <circle r="3" fill="#4ecdc4" filter="url(#glow)">
+          <animateMotion dur="2.3s" repeatCount="indefinite">
+            <mpath href="#pathB"/>
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0.9;0.9;0" dur="2.3s" repeatCount="indefinite"/>
+        </circle>
+
+        <!-- Output -->
+        <rect x="350" y="470" width="200" height="40" rx="4" fill="#1f1d1c" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="450" y="494" text-anchor="middle" fill="#22c55e" font-family="var(--font-mono)" font-size="10">ENRICHED MEDIATION</text>
+
+        <path d="M450,440 L450,470" stroke="#22c55e" stroke-width="1.5" fill="none" stroke-dasharray="8 12" class="flow-anim-green"/>
+
+        <!-- Labels -->
+        <text x="450" y="30" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="10" letter-spacing="2" text-transform="uppercase">CROSS-PARTY INTELLIGENCE FLOW</text>
+
+        <!-- Consent Gate Labels -->
+        <rect x="340" y="300" width="220" height="36" rx="4" fill="#1f1d1c" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="450" y="322" text-anchor="middle" fill="#f59e0b" font-family="var(--font-mono)" font-size="9">CONSENT GATE — Both parties opt in</text>
+
+        <!-- X marks on raw profiles -->
+        <line x1="140" y1="155" x2="180" y2="175" stroke="#ef4444" stroke-width="2"/>
+        <line x1="180" y1="155" x2="140" y2="175" stroke="#ef4444" stroke-width="2"/>
+        <text x="200" y="170" fill="#ef4444" font-family="var(--font-mono)" font-size="8">NEVER</text>
+
+        <line x1="720" y1="155" x2="760" y2="175" stroke="#ef4444" stroke-width="2"/>
+        <line x1="760" y1="155" x2="720" y2="175" stroke="#ef4444" stroke-width="2"/>
+        <text x="700" y="170" fill="#ef4444" font-family="var(--font-mono)" font-size="8" text-anchor="end">NEVER</text>
+      </svg>
+    </div>
+
+    <style>
+      .flow-anim { animation: flowDash 1.5s linear infinite; }
+      .flow-anim-green { animation: flowDashGreen 1.5s linear infinite; }
+      @keyframes flowDashGreen { to { stroke-dashoffset: -40; } }
+    </style>
+
+    <!-- What Claude Sees -->
+    <div class="grid-2" style="margin-top: 32px;">
+      <div class="card revealed">
+        <div class="card-header">
+          <span class="badge badge-teal">What Claude Sees</span>
+        </div>
+        <div class="card-body" style="font-family: var(--font-mono); font-size: 12px;">
+          <div style="color: var(--text-muted); margin-bottom: 8px;">// Mediation context injection</div>
+          <div style="color: var(--accent);">Speaker A signals:</div>
+          <div style="padding-left: 16px; color: var(--text-secondary);">
+            - Attachment: anxious-preoccupied<br>
+            - Conflict mode: accommodating<br>
+            - Risk: pursuer escalation on withdrawal<br>
+            - Regulation: low under rejection cues<br>
+          </div>
+          <div style="color: var(--amber); margin-top: 12px;">Speaker B signals:</div>
+          <div style="padding-left: 16px; color: var(--text-secondary);">
+            - Attachment: dismissive-avoidant<br>
+            - Conflict mode: avoiding<br>
+            - Risk: stonewalling under pressure<br>
+            - Regulation: moderate, shutdown after 3 min<br>
+          </div>
+          <div style="color: var(--teal); margin-top: 12px;">Pattern match: Pursuer-Distancer dynamic</div>
+          <div style="color: var(--teal);">Strategy: De-escalate A first, create space for B</div>
+        </div>
+      </div>
+
+      <div class="card revealed">
+        <div class="card-header">
+          <span class="badge badge-red">What Claude Never Sees</span>
+        </div>
+        <div class="card-body" style="font-family: var(--font-mono); font-size: 12px;">
+          <div style="color: var(--text-muted); margin-bottom: 8px;">// These never enter the prompt</div>
+          <div style="text-decoration: line-through; color: var(--text-muted);">
+            "My ex-wife used to..."<br>
+            "We've been together 3 years..."<br>
+            "His daughter from a previous..."<br>
+            "When I was a kid, my father..."<br>
+            "I was diagnosed with anxiety in..."<br>
+            Name, age, location, employer<br>
+            Specific relationship identifiers<br>
+            Session history with other partners<br>
+            Financial or legal details<br>
+          </div>
+          <div style="margin-top: 16px; color: var(--red); font-size: 11px;">
+            Architecturally blocked. Not policy — code.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The Power -->
+    <div class="quote-block" style="margin-top: 32px;">
+      <div class="quote-text">Claude doesn't know who you are. It knows how you fight. And that's exactly enough to help you stop.</div>
+    </div>
+  </div>
+
+  <!-- ════ THREE MODES TAB ════ -->
+  <div class="view" id="view-modes">
+    <div class="view-header">
+      <h2>Profile-Enhanced Modes</h2>
+      <p>The Intelligence Network supercharges all three Parallax interfaces — every mode gets smarter when profiles exist.</p>
+    </div>
+
+    <div class="grid-3">
+      <div class="mode-card revealed" style="animation-delay: 0.1s">
+        <div class="mode-icon therapist">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+        </div>
+        <div class="mode-title">Therapist Review</div>
+        <div class="mode-desc">Remote split-screen for counselors. The therapist sees both participants' real-time messages with NVC analysis layered in.</div>
+        <div class="mode-enhancement">
+          <span class="label-tag">With Intelligence Network</span>
+          <div style="font-size: 12px; color: var(--text-secondary);">Therapist sees both parties' anonymized signals alongside live analysis. They can spot pursuer-distancer dynamics before the first message. Pre-session briefing: "Based on profiles, watch for stonewalling triggers and accommodation spirals."</div>
+        </div>
+      </div>
+
+      <div class="mode-card revealed" style="animation-delay: 0.2s">
+        <div class="mode-icon xray">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <div class="mode-title">X-Ray Glance</div>
+        <div class="mode-desc">In-person three-column view. Signal rails on each side, conversation in the center. Glanceable during live conversation.</div>
+        <div class="mode-enhancement">
+          <span class="label-tag">With Intelligence Network</span>
+          <div style="font-size: 12px; color: var(--text-secondary);">Signal rails light up with PREDICTED patterns, not just detected ones. "A is likely to stonewall in the next 60 seconds" based on their known 60-90 second flooding onset. Real-time early warning system.</div>
+        </div>
+      </div>
+
+      <div class="mode-card revealed" style="animation-delay: 0.3s">
+        <div class="mode-icon guide">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
+        </div>
+        <div class="mode-title">Guide Mode</div>
+        <div class="mode-desc">Personal coaching AI. Helps you prepare for difficult conversations, understand your patterns, and grow your conflict resolution skills.</div>
+        <div class="mode-enhancement">
+          <span class="label-tag">With Intelligence Network</span>
+          <div style="font-size: 12px; color: var(--text-secondary);">Guide becomes deeply personal. "You tend to accommodate, then resent. In your upcoming conversation, try expressing your need directly instead of deferring." Coaching based on YOUR patterns, not generic advice.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Before/After -->
+    <div style="margin-top: 48px;">
+      <div class="section-indicator">
+        <div class="section-dot"></div>
+        <span class="section-label">Before vs After</span>
+      </div>
+
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="card revealed" style="border-color: var(--text-muted);">
+          <div class="card-header">
+            <span class="badge badge-amber">Without Profiles</span>
+          </div>
+          <div class="card-body">
+            Claude: "I notice some tension in this exchange. Let me analyze what might be happening..."<br><br>
+            <span style="color: var(--text-muted);">Generic. Reactive. Analyzing from scratch. Catches patterns only after they've already escalated.</span>
+          </div>
+        </div>
+
+        <div class="card revealed" style="border-color: var(--teal);">
+          <div class="card-header">
+            <span class="badge badge-teal">With Profiles</span>
+          </div>
+          <div class="card-body">
+            Claude: "I'm seeing the pursuer-distancer pattern we've identified before. A, you're seeking reassurance right now — try naming that need directly. B, the withdrawal instinct is natural, but a brief verbal check-in prevents the spiral."<br><br>
+            <span style="color: var(--teal);">Personal. Predictive. Intervening BEFORE escalation. Names the dynamic by its real name.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SECURITY TAB ════ -->
+  <div class="view" id="view-security">
+    <div class="view-header">
+      <h2>Security Architecture</h2>
+      <p>Trust is the product. Every layer is designed so that a breach of any single component cannot expose personal narratives.</p>
+    </div>
+
+    <div class="security-layer revealed" style="animation-delay: 0.1s">
+      <div class="security-icon">
+        <svg width="20" height="20" fill="none" stroke="#ef6f2e" stroke-width="1.5" viewBox="0 0 24 24"><path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+      </div>
+      <div>
+        <div class="security-title">AES-256-GCM Encryption at Rest</div>
+        <div class="security-desc">All raw profile data encrypted before storage. Keys derived per-user. Even a database dump yields only ciphertext.</div>
+      </div>
+    </div>
+
+    <div class="security-layer revealed" style="animation-delay: 0.2s">
+      <div class="security-icon">
+        <svg width="20" height="20" fill="none" stroke="#ef6f2e" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
+      </div>
+      <div>
+        <div class="security-title">Row-Level Security (RLS) Isolation</div>
+        <div class="security-desc">Supabase RLS policies ensure users can only read their own profiles. No admin backdoor. No bulk export API.</div>
+      </div>
+    </div>
+
+    <div class="security-layer revealed" style="animation-delay: 0.3s">
+      <div class="security-icon">
+        <svg width="20" height="20" fill="none" stroke="#ef6f2e" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+      </div>
+      <div>
+        <div class="security-title">Consent-Gated Signal Sharing</div>
+        <div class="security-desc">Anonymous signals only flow to the other party's Claude context when BOTH parties explicitly opt in. Per-session consent. Revocable anytime.</div>
+      </div>
+    </div>
+
+    <div class="security-layer revealed" style="animation-delay: 0.4s">
+      <div class="security-icon">
+        <svg width="20" height="20" fill="none" stroke="#ef6f2e" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+      </div>
+      <div>
+        <div class="security-title">Audit Trail</div>
+        <div class="security-desc">Every signal access is logged: who accessed, when, what session, what consent level was active. Users can review their audit log anytime.</div>
+      </div>
+    </div>
+
+    <div class="security-layer revealed" style="animation-delay: 0.5s">
+      <div class="security-icon">
+        <svg width="20" height="20" fill="none" stroke="#ef6f2e" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285zm0 13.036h.008v.008H12v-.008z"/></svg>
+      </div>
+      <div>
+        <div class="security-title">Safety Rails</div>
+        <div class="security-desc">Abuse detection, "Are you safe?" private check, crisis resources (988 Suicide & Crisis Lifeline, NDVH), asymmetric exit (either party can leave without the other knowing), 18+ age gate.</div>
+      </div>
+    </div>
+
+    <!-- Cautionary Tales -->
+    <div style="margin-top: 48px;">
+      <div class="section-indicator">
+        <div class="section-dot"></div>
+        <span class="section-label">Cautionary Tales</span>
+      </div>
+      <h3 style="font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: -0.5px; margin: 16px 0 20px;">Why we build it this way</h3>
+
+      <div class="grid-3">
+        <div class="card revealed" style="border-color: var(--red);">
+          <div class="card-body">
+            <span class="badge badge-red">Replika</span>
+            <div style="margin-top: 12px; font-size: 13px;">EUR 5M fine for processing children's data without age verification. Lesson: <strong>age gate is non-negotiable.</strong></div>
+          </div>
+        </div>
+        <div class="card revealed" style="border-color: var(--red);">
+          <div class="card-body">
+            <span class="badge badge-red">Woebot</span>
+            <div style="margin-top: 12px; font-size: 13px;">Shut down June 2025 after regulatory pressure. Called itself "therapy" — triggered HIPAA and FDA scrutiny. Lesson: <strong>we are "conflict resolution," not "therapy."</strong></div>
+          </div>
+        </div>
+        <div class="card revealed" style="border-color: var(--red);">
+          <div class="card-body">
+            <span class="badge badge-red">BetterHelp</span>
+            <div style="margin-top: 12px; font-size: 13px;">$7.8M FTC fine for sharing user data with advertisers. Lesson: <strong>data never leaves the user's scope. Period.</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Positioning -->
+    <div class="card revealed" style="margin-top: 32px; border-color: var(--teal);">
+      <div class="card-header">
+        <span class="badge badge-teal">Regulatory Positioning</span>
+      </div>
+      <div class="card-body">
+        Parallax is <strong>"conflict resolution"</strong>, not "therapy." This distinction matters:<br><br>
+        <table class="data-table">
+          <tr><th>Therapy</th><th>Conflict Resolution</th></tr>
+          <tr><td>HIPAA compliance required</td><td>Standard data protection</td></tr>
+          <tr><td>FDA device classification risk</td><td>No medical device claims</td></tr>
+          <tr><td>Licensed practitioner requirement</td><td>No licensure required</td></tr>
+          <tr><td>CMIA restrictions (California)</td><td>Not applicable</td></tr>
+        </table>
+        <div style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">We augment therapists, not replace them. We resolve conflicts, not diagnose conditions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ASSESSMENT TAB ════ -->
+  <div class="view" id="view-assessment">
+    <div class="view-header">
+      <h2>Build Assessment</h2>
+      <p>What to build, in what order, with ready-to-paste prompts.</p>
+    </div>
+
+    <span id="assess-progress" class="assess-progress">0 of 8 addressed</span>
+
+    <!-- WINS -->
+    <div class="assess-section-header">
+      <div class="dot" style="background: var(--green);"></div>
+      <h3>What We Did Right</h3>
+    </div>
+
+    <div class="card revealed">
+      <div class="card-body">
+        <div style="margin-bottom: 8px;"><span class="badge badge-green">Research</span></div>
+        <strong>Comprehensive research foundation.</strong> The User Intelligence Layer research doc covers psychology (validated instruments), competitive analysis (the empty quadrant), privacy model (one-way mirror), safety rails (cautionary tales), and technical architecture. Building from evidence, not assumptions.
+      </div>
+    </div>
+
+    <div class="card revealed">
+      <div class="card-body">
+        <div style="margin-bottom: 8px;"><span class="badge badge-green">Architecture</span></div>
+        <strong>Privacy-by-design, not privacy-as-afterthought.</strong> The anonymization boundary is architectural, not policy-based. Signals are classifications, not summaries. You can't "prompt inject" your way to someone's raw narrative because the raw narrative never enters the signal extraction pipeline.
+      </div>
+    </div>
+
+    <div class="card revealed">
+      <div class="card-body">
+        <div style="margin-bottom: 8px;"><span class="badge badge-green">Positioning</span></div>
+        <strong>"Conflict resolution" not "therapy."</strong> Avoids HIPAA/FDA/CMIA regulatory burden entirely. Lessons from Replika, Woebot, and BetterHelp baked into the design from day one.
+      </div>
+    </div>
+
+    <!-- FIXES / BUILD ITEMS -->
+    <div class="assess-section-header">
+      <div class="dot" style="background: var(--accent);"></div>
+      <h3>What to Build</h3>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-1">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+        <span class="assess-label">Database Schema: User Profiles + Signals</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge critical">CRITICAL</span>
+        <p class="assess-desc">Create the Supabase tables for user profiles (encrypted raw data) and behavioral signals (anonymized, shareable). RLS policies for user-only access on profiles, consent-gated read on signals.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, create a new Supabase migration for the Intelligence Network. Tables needed:
+
+1. `user_profiles` — id (uuid, FK to auth.users), raw_profile (jsonb, encrypted), interview_completed (boolean), interview_phase (int), created_at, updated_at. RLS: users can only read/write their own row.
+
+2. `behavioral_signals` — id (uuid), user_id (uuid, FK), signal_type (text: attachment_style, conflict_mode, gottman_risk, regulation_pattern, scarf_sensitivity, drama_triangle, values), signal_value (jsonb), confidence (float), extracted_at (timestamp). RLS: owner can read. Other users can read ONLY if consent is granted via session.
+
+3. `signal_consent` — id (uuid), session_id (uuid, FK to sessions), user_id (uuid), consent_level (enum: self_only, anonymous_signals), granted_at, revoked_at. RLS: owner manages their own consent.
+
+4. `signal_access_log` — id (uuid), accessor_session_id, signal_owner_id, signal_type, accessed_at. Audit trail, append-only.
+
+Run npm run build after to verify.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-2">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+        <span class="assess-label">Interview API: /api/interview Endpoint</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge critical">CRITICAL</span>
+        <p class="assess-desc">Build the conversational interview API. Reuse the existing /api/converse infrastructure but with interview-specific system prompts and structured output extraction. 4 phases, 16-22 questions, audio-first.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, create the interview API:
+
+1. Create `src/app/api/interview/route.ts` — POST endpoint. Accepts { userId, phase, message, audioTranscript? }. Uses Claude with a phase-specific system prompt. Returns { response, extractedSignals?, nextPhase?, isComplete }.
+
+2. Create `src/lib/interview-prompts.ts` — System prompts for each of the 4 phases:
+   - Phase 1: Context Setting (relationship landscape, consent, why they're here)
+   - Phase 2: Communication Profiling (attachment, conflict modes, regulation — conversational, NOT clinical)
+   - Phase 3: Context-Specific Deep Dive (adapts based on context mode: intimate/family/professional)
+   - Phase 4: Narrative Capture (open-ended story, extract values and patterns)
+
+3. Create `src/lib/signal-extractor.ts` — Takes interview responses, uses Claude Structured Outputs to extract behavioral signals as classifications (not summaries). Output: { signalType, signalValue, confidence }.
+
+4. Add rate limiting (reuse existing pattern from /api/mediate).
+
+Run npm run build && npx tsc --noEmit after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-3">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+        <span class="assess-label">Interview UI: ConversationalInterview Component</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge high">HIGH</span>
+        <p class="assess-desc">Build the interview UI. Reuse ConversationalPanel patterns but with phase indicators, progress tracking, and audio-first input. Should feel like a warm conversation, not a form.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, create the interview UI:
+
+1. Create `src/components/InterviewPanel.tsx` — Full-screen conversational interview. Shows:
+   - Phase indicator (1-4 with progress bar)
+   - Chat-style messages (AI questions, user responses)
+   - Voice input button (reuse existing Web Speech API from session view)
+   - Text input fallback
+   - Phase transition animations
+
+2. Create `src/app/interview/page.tsx` — Interview page route. Auth-gated. Shows InterviewPanel if interview not completed, otherwise shows profile summary.
+
+3. Create `src/hooks/useInterview.ts` — Manages interview state, API calls to /api/interview, phase transitions, and profile completion.
+
+4. Add "Enrich Your Profile" CTA to the landing page and post-session view.
+
+Follow the factory design system. Voice input should be prominent — this is audio-first.
+
+Run npm run build after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-4">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+        <span class="assess-label">Signal Injection into Mediation Context</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge high">HIGH</span>
+        <p class="assess-desc">Modify the existing /api/mediate endpoint to inject behavioral signals into Claude's system prompt when profiles exist. Self-only by default, cross-party when both consent.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, modify the mediation pipeline to inject profile intelligence:
+
+1. In `src/app/api/mediate/route.ts`, before calling Claude, check if the current speaker has behavioral signals in the DB. If yes, inject them into the system prompt as a "Speaker Context" section.
+
+2. Check signal_consent table: if both parties have granted anonymous_signals consent for this session, also inject the OTHER party's signals as "Other Party Context" (anonymized — no names, just patterns).
+
+3. Create `src/lib/context-injector.ts` — Builds the intelligence context block:
+   - Formats signals into Claude-readable context
+   - Respects consent levels
+   - Logs access to signal_access_log
+   - Returns empty string if no signals/consent
+
+4. Update the NVC system prompt in `src/lib/prompts.ts` to include a section header for injected intelligence context, with instructions for Claude on how to use it (predictive, not diagnostic).
+
+Run npm run build && npx tsc --noEmit after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-5">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-5">
+        <span class="assess-label">Auth: User Accounts</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge high">HIGH</span>
+        <p class="assess-desc">Profiles require user accounts. Add Supabase Auth. Keep it minimal — email/password or magic link. No OAuth complexity for the hackathon.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, add user authentication:
+
+1. Enable Supabase Auth (email + magic link). Configure in Supabase dashboard.
+
+2. Create `src/lib/auth.ts` — Client-side auth helpers: signIn, signUp, signOut, getUser, onAuthStateChange.
+
+3. Create `src/components/AuthGate.tsx` — Wrapper component. If user not authenticated, shows sign-in/sign-up form. If authenticated, renders children.
+
+4. Create `src/app/auth/page.tsx` — Dedicated auth page with sign-in form. Factory design system styling.
+
+5. Update layout to show auth state in nav (user email + sign out button when logged in).
+
+6. Gate the interview page behind auth. Sessions can still be anonymous (current behavior) — auth is only required for profile enrichment.
+
+Run npm run build after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-6">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-6">
+        <span class="assess-label">Consent UI: Per-Session Signal Sharing</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge medium">MEDIUM</span>
+        <p class="assess-desc">When both parties are authenticated and have profiles, show a consent prompt at session start: "Share your behavioral patterns (anonymized) with the other party's mediator?"</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, add consent UI:
+
+1. Create `src/components/ConsentPrompt.tsx` — Modal that appears at session start when user is authenticated and has a profile. Shows:
+   - Clear explanation of what signals are (patterns, not data)
+   - What the other party's Claude will see (examples)
+   - What will NEVER be shared (raw narratives)
+   - Toggle: "Share my behavioral patterns for this session"
+   - Default: OFF
+
+2. In SessionView, check if both participants are authenticated with profiles. If yes, show ConsentPrompt before the first message.
+
+3. Write consent choice to signal_consent table.
+
+4. Make consent revocable mid-session (toggle in settings panel).
+
+Run npm run build after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-7">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-7">
+        <span class="assess-label">Safety: Abuse Detection + Crisis Resources</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge high">HIGH</span>
+        <p class="assess-desc">The interview might surface dangerous situations. Build safety rails: detect mentions of abuse/self-harm, show crisis resources privately, enable asymmetric exit.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, add safety rails:
+
+1. Create `src/lib/safety-detector.ts` — Scans interview/message content for:
+   - Domestic violence indicators
+   - Self-harm/suicidal ideation keywords
+   - Coercion patterns
+   Returns { isSafe: boolean, riskType?: string, confidence: number }
+
+2. Create `src/components/SafetyResources.tsx` — Private overlay (only the at-risk user sees it):
+   - "Are you safe right now?" prompt
+   - 988 Suicide & Crisis Lifeline
+   - National Domestic Violence Hotline
+   - "Leave this session safely" button (asymmetric exit — other party sees "disconnected")
+
+3. Add 18+ age gate to auth flow.
+
+4. Wire safety detector into both /api/interview and /api/mediate routes.
+
+Run npm run build after.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-item" id="assess-fix-8">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-8">
+        <span class="assess-label">Profile Dashboard: View Your Intelligence</span>
+      </label>
+      <div class="assess-body">
+        <span class="severity-badge medium">MEDIUM</span>
+        <p class="assess-desc">Let users see their own behavioral signals, review what they've shared, and access their audit log. Transparency builds trust.</p>
+        <div class="prompt-block">
+          <button class="copy-btn">COPY</button>
+          <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax, create the profile dashboard:
+
+1. Create `src/app/profile/page.tsx` — Auth-gated profile page showing:
+   - Interview completion status (phase progress)
+   - Behavioral signals in human-readable cards (attachment style, conflict mode, etc.)
+   - "Re-take interview" button to update profile
+   - Consent history (which sessions, what was shared)
+   - Signal access log (who accessed your signals, when)
+
+2. Use factory design system. Signal cards should use the same data-point styling as the interview flow.
+
+3. Add "Your Profile" link to authenticated nav.
+
+Run npm run build after.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HIGH-IMPACT NEXT STEPS -->
+    <div class="assess-section-header">
+      <div class="dot" style="background: var(--accent);"></div>
+      <h3>Build Order (Recommended)</h3>
+    </div>
+
+    <div class="card revealed">
+      <div class="card-body">
+        <table class="data-table">
+          <tr><th>#</th><th>Item</th><th>Why First</th><th>Ref</th></tr>
+          <tr><td style="color: var(--accent);">1</td><td>Auth (User Accounts)</td><td>Everything else requires user identity</td><td>fix-5</td></tr>
+          <tr><td style="color: var(--accent);">2</td><td>Database Schema</td><td>Tables must exist before any data flows</td><td>fix-1</td></tr>
+          <tr><td style="color: var(--accent);">3</td><td>Interview API</td><td>The enrichment engine — core feature</td><td>fix-2</td></tr>
+          <tr><td style="color: var(--accent);">4</td><td>Interview UI</td><td>Users need to actually take the interview</td><td>fix-3</td></tr>
+          <tr><td style="color: var(--accent);">5</td><td>Safety Rails</td><td>Must be in place before interviews go live</td><td>fix-7</td></tr>
+          <tr><td style="color: var(--accent);">6</td><td>Signal Injection</td><td>The payoff — profiles enhance mediation</td><td>fix-4</td></tr>
+          <tr><td style="color: var(--accent);">7</td><td>Consent UI</td><td>Required for cross-party sharing</td><td>fix-6</td></tr>
+          <tr><td style="color: var(--accent);">8</td><td>Profile Dashboard</td><td>Transparency and trust — polish layer</td><td>fix-8</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROMPTS SUMMARY -->
+    <div class="assess-section-header">
+      <div class="dot" style="background: var(--teal);"></div>
+      <h3>All Prompts</h3>
+    </div>
+
+    <div class="assessment-item" id="assess-sum-1">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-5">
+        <span class="assess-label">1. Auth: User Accounts</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-2">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+        <span class="assess-label">2. Database Schema</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-3">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+        <span class="assess-label">3. Interview API</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-4">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+        <span class="assess-label">4. Interview UI</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-5">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-7">
+        <span class="assess-label">5. Safety Rails</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-6">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+        <span class="assess-label">6. Signal Injection</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-7">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-6">
+        <span class="assess-label">7. Consent UI</span>
+      </label>
+    </div>
+    <div class="assessment-item" id="assess-sum-8">
+      <label class="assessment-check">
+        <input type="checkbox" class="assess-checkbox" data-key="fix-8">
+        <span class="assess-label">8. Profile Dashboard</span>
+      </label>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ SCRIPTS ════════════════════ -->
+<script>
+// ── Tab Navigation ──
+var tabs = document.querySelectorAll('.nav-tab');
+var views = document.querySelectorAll('.view');
+
+tabs.forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    var viewId = 'view-' + this.dataset.view;
+
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    views.forEach(function(v) { v.classList.remove('active'); });
+
+    this.classList.add('active');
+    var targetView = document.getElementById(viewId);
+    if (targetView) {
+      targetView.classList.add('active');
+      staggerReveal(targetView, '.card, .mode-card, .security-layer, .timeline-item, .phase-card', 'revealed', 100, 60);
+    }
+  });
+});
+
+// ── Stagger Reveal ──
+function staggerReveal(container, selector, className, baseDelay, stagger) {
+  container.querySelectorAll(selector).forEach(function(item, i) {
+    item.style.animationDelay = (baseDelay + i * stagger) + 'ms';
+    item.style.opacity = '0';
+    void item.offsetWidth;
+    item.classList.add(className);
+  });
+}
+
+// ── Stat Counter Animation ──
+function animateCounters() {
+  document.querySelectorAll('.stat-number[data-target]').forEach(function(el) {
+    var target = parseInt(el.dataset.target);
+    var start = performance.now();
+    var duration = 600;
+
+    function update(now) {
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+  });
+}
+
+// ── Assessment Checkboxes ──
+var ASSESS_KEY = 'visualize-assess-parallax-intelligence-network';
+
+document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    state[this.dataset.key] = this.checked;
+    localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+
+    var item = this.closest('.assessment-item');
+    if (this.checked) {
+      item.classList.add('completed');
+    } else {
+      item.classList.remove('completed');
+    }
+
+    var key = this.dataset.key;
+    var checked = this.checked;
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sibling) {
+      if (sibling !== cb) {
+        sibling.checked = checked;
+        var sibItem = sibling.closest('.assessment-item');
+        if (checked) { sibItem.classList.add('completed'); }
+        else { sibItem.classList.remove('completed'); }
+      }
+    });
+
+    updateAssessProgress();
+  });
+});
+
+window.addEventListener('load', function() {
+  var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+  Object.keys(state).forEach(function(key) {
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+      cb.checked = state[key];
+      if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+    });
+  });
+  updateAssessProgress();
+  animateCounters();
+});
+
+function updateAssessProgress() {
+  var fixItems = document.querySelectorAll('.assessment-item[id^="assess-fix-"]');
+  var total = fixItems.length;
+  var done = document.querySelectorAll('.assessment-item[id^="assess-fix-"].completed').length;
+  var counter = document.getElementById('assess-progress');
+  if (counter) {
+    counter.textContent = done + ' of ' + total + ' addressed';
+    counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+  }
+}
+
+// ── Copy Buttons ──
+document.querySelectorAll('.copy-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var text = this.parentElement.querySelector('.prompt-text').textContent;
+    navigator.clipboard.writeText(text);
+    this.textContent = 'COPIED';
+    this.classList.add('copied');
+    var b = this;
+    setTimeout(function() { b.textContent = 'COPY'; b.classList.remove('copied'); }, 1500);
+  });
+});
+
+// ── Phase Cards Toggle ──
+// (handled by inline onclick)
+</script>
+
+<!-- ════ EMBEDDED DATA MODEL ════ -->
+<script type="application/json" id="artifact-data">
+{
+  "type": "visualize",
+  "topic": "parallax-intelligence-network",
+  "project": "parallax",
+  "generated": "2026-02-12T00:00:00Z",
+  "sections": [
+    { "id": "vision", "title": "Vision", "type": "tab" },
+    { "id": "interview", "title": "Interview Flow", "type": "tab" },
+    { "id": "privacy", "title": "Privacy Wall", "type": "tab" },
+    { "id": "mediation", "title": "Cross-Party Flow", "type": "tab" },
+    { "id": "modes", "title": "Three Modes", "type": "tab" },
+    { "id": "security", "title": "Security", "type": "tab" },
+    { "id": "assessment", "title": "Assessment", "type": "tab" }
+  ],
+  "nodes": [
+    { "id": "user-a", "label": "Person A", "type": "user", "section": "mediation" },
+    { "id": "user-b", "label": "Person B", "type": "user", "section": "mediation" },
+    { "id": "profile-a", "label": "Raw Profile A", "type": "database", "section": "mediation" },
+    { "id": "profile-b", "label": "Raw Profile B", "type": "database", "section": "mediation" },
+    { "id": "anonymize-a", "label": "Anonymize A", "type": "service", "section": "mediation" },
+    { "id": "anonymize-b", "label": "Anonymize B", "type": "service", "section": "mediation" },
+    { "id": "signals-a", "label": "A Signals", "type": "service", "section": "mediation" },
+    { "id": "signals-b", "label": "B Signals", "type": "service", "section": "mediation" },
+    { "id": "consent-gate", "label": "Consent Gate", "type": "service", "section": "mediation" },
+    { "id": "claude", "label": "Claude Mediation", "type": "service", "section": "mediation" },
+    { "id": "output", "label": "Enriched Mediation", "type": "service", "section": "mediation" }
+  ],
+  "edges": [
+    { "from": "user-a", "to": "profile-a", "label": "Interview", "style": "flow" },
+    { "from": "user-b", "to": "profile-b", "label": "Interview", "style": "flow" },
+    { "from": "profile-a", "to": "anonymize-a", "label": "Extract", "style": "flow" },
+    { "from": "profile-b", "to": "anonymize-b", "label": "Extract", "style": "flow" },
+    { "from": "anonymize-a", "to": "signals-a", "label": "One-way", "style": "flow" },
+    { "from": "anonymize-b", "to": "signals-b", "label": "One-way", "style": "flow" },
+    { "from": "signals-a", "to": "consent-gate", "label": "Consent", "style": "glow" },
+    { "from": "signals-b", "to": "consent-gate", "label": "Consent", "style": "glow" },
+    { "from": "consent-gate", "to": "claude", "label": "Inject", "style": "flow" },
+    { "from": "claude", "to": "output", "label": "Mediate", "style": "flow" }
+  ],
+  "assessment": {
+    "wins": [
+      "Comprehensive research foundation with validated instruments",
+      "Privacy-by-design with architectural anonymization boundary",
+      "Regulatory positioning as conflict resolution, not therapy"
+    ],
+    "fixes": [
+      { "id": "fix-1", "title": "Database Schema", "severity": "CRITICAL" },
+      { "id": "fix-2", "title": "Interview API", "severity": "CRITICAL" },
+      { "id": "fix-3", "title": "Interview UI", "severity": "HIGH" },
+      { "id": "fix-4", "title": "Signal Injection", "severity": "HIGH" },
+      { "id": "fix-5", "title": "Auth: User Accounts", "severity": "HIGH" },
+      { "id": "fix-6", "title": "Consent UI", "severity": "MEDIUM" },
+      { "id": "fix-7", "title": "Safety Rails", "severity": "HIGH" },
+      { "id": "fix-8", "title": "Profile Dashboard", "severity": "MEDIUM" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "Auth first, then schema, then interview pipeline", "impact": "Unblocks entire feature" }
+    ]
+  }
+}
+</script>
+
+</body>
+</html>

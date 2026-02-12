@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax — Final Blueprint</title>
+<style>
+:root {
+  --bg: #020202;
+  --bg-elevated: #0a0a0a;
+  --base-card: #111111;
+  --base-card-hover: #161616;
+  --border-subtle: #1a1a1a;
+  --border-visible: #2a2a2a;
+  --text-primary: #eeeeee;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --accent: #ef6f2e;
+  --accent-dim: rgba(239,111,46,0.15);
+  --teal: #4ecdc4;
+  --teal-dim: rgba(78,205,196,0.15);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.15);
+  --cyan: #06b6d4;
+  --cyan-dim: rgba(6,182,212,0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.15);
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.15);
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.header { padding: 32px 0 24px; border-bottom: 1px solid var(--border-subtle); }
+.header h1 { font-size: 24px; font-weight: 400; letter-spacing: -0.02em; }
+.header .subtitle { color: var(--text-muted); font-size: 13px; margin-top: 4px; letter-spacing: 0.02em; }
+.header .meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.badge { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 2px; font-weight: 600; font-family: var(--font-mono); }
+.badge-stack { background: var(--accent-dim); color: var(--accent); }
+.badge-scale { background: var(--teal-dim); color: var(--teal); }
+.badge-status { background: var(--amber-dim); color: var(--amber); }
+
+.progress-section { padding: 20px 0; border-bottom: 1px solid var(--border-subtle); }
+.progress-stats { display: flex; gap: 32px; margin-bottom: 12px; }
+.progress-stat .value { font-size: 20px; font-weight: 400; font-family: var(--font-mono); color: var(--accent); }
+.progress-stat .label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); font-family: var(--font-mono); }
+.progress-bar { height: 4px; background: var(--border-subtle); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.6s ease-out; }
+
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-subtle); margin-bottom: 24px; overflow-x: auto; }
+.tab { padding: 12px 16px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); cursor: pointer; border: none; border-bottom: 2px solid transparent; background: none; transition: color 0.2s, border-color 0.2s; white-space: nowrap; }
+.tab:hover { color: var(--text-secondary); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content { display: none; padding-bottom: 60px; animation: fadeIn 0.3s ease-out; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.arch-section { margin-bottom: 32px; }
+.arch-section h3 { font-size: 14px; font-weight: 400; letter-spacing: -0.01em; color: var(--text-primary); margin-bottom: 12px; padding-left: 16px; border-left: 3px solid var(--accent); }
+.arch-diagram { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 24px; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); white-space: pre; overflow-x: auto; line-height: 1.7; }
+.arch-decision { padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+.arch-decision:last-child { border-bottom: none; }
+.arch-decision .title { color: var(--accent); font-size: 12px; font-family: var(--font-mono); }
+.arch-decision .rationale { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.principle-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 20px; }
+.principle-card h4 { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; font-family: var(--font-mono); }
+.principle-card p { font-size: 12px; color: var(--text-secondary); }
+
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 16px; text-align: center; }
+.stat-card .stat-value { font-size: 24px; font-weight: 400; color: var(--accent); font-family: var(--font-mono); }
+.stat-card .stat-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+
+.phase-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+.phase-header { padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; }
+.phase-name { font-size: 14px; font-weight: 400; font-family: var(--font-mono); }
+.phase-badge { font-size: 9px; letter-spacing: 0.1em; padding: 3px 10px; border-radius: 2px; font-weight: 600; text-transform: uppercase; font-family: var(--font-mono); }
+.phase-badge.not-started { background: rgba(90,85,80,0.2); color: var(--text-muted); }
+.phase-badge.in-progress { background: var(--accent-dim); color: var(--accent); }
+.phase-badge.complete { background: var(--teal-dim); color: var(--teal); }
+.dependency-line { font-size: 11px; color: var(--text-secondary); padding: 8px 20px; border-bottom: 1px solid var(--border-subtle); font-family: var(--font-mono); }
+.dep-tag { color: var(--amber); }
+.no-dep { color: var(--teal); }
+.phase-desc { color: var(--text-secondary); padding: 12px 20px; font-size: 13px; line-height: 1.7; }
+.task-group-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); padding: 0 20px; margin-bottom: 8px; }
+
+.task-item { display: flex; align-items: flex-start; gap: 12px; padding: 8px 20px; border-bottom: 1px solid rgba(90,85,80,0.08); }
+.task-item:last-child { border-bottom: none; }
+.task-checkbox { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--border-visible); border-radius: 3px; background: transparent; cursor: pointer; position: relative; flex-shrink: 0; margin-top: 2px; }
+.task-checkbox:checked { background: var(--teal); border-color: var(--teal); }
+.task-checkbox:checked::after { content: ''; position: absolute; top: 2px; left: 5px; width: 4px; height: 8px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.task-label { font-size: 13px; color: var(--text-primary); cursor: pointer; }
+.task-item.completed .task-label { text-decoration: line-through; color: var(--text-muted); }
+
+.prompt-block { margin-top: 6px; }
+.prompt-btn { background: none; border: 1px solid var(--border-visible); color: var(--text-muted); font-family: var(--font-mono); font-size: 9px; padding: 3px 10px; border-radius: 2px; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.15s; }
+.prompt-btn:hover { color: var(--accent); border-color: var(--accent); }
+.prompt-btn.copied { color: var(--teal); border-color: var(--teal); }
+.prompt-text { display: none; margin-top: 8px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 3px; padding: 12px; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+.prompt-text.visible { display: block; }
+.task-item.completed .prompt-block { opacity: 0.3; pointer-events: none; }
+
+.parallel-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 12px 20px; }
+.batch-column { border: 1px solid var(--border-subtle); border-radius: 4px; padding: 16px; background: var(--bg-elevated); position: relative; }
+.batch-column::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 4px 4px 0 0; }
+.batch-column.batch-a::before { background: var(--accent); }
+.batch-column.batch-b::before { background: var(--teal); }
+.batch-column.batch-c::before { background: var(--amber); }
+.batch-column.batch-d::before { background: var(--cyan); }
+.batch-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; font-family: var(--font-mono); }
+.batch-column.batch-a .batch-label { color: var(--accent); }
+.batch-column.batch-b .batch-label { color: var(--teal); }
+.batch-column.batch-c .batch-label { color: var(--amber); }
+.batch-column.batch-d .batch-label { color: var(--cyan); }
+.batch-column .task-item { padding: 6px 0; }
+
+.sync-point { text-align: center; padding: 12px 0; color: var(--text-muted); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; font-family: var(--font-mono); position: relative; margin: 8px 20px; }
+.sync-point::before, .sync-point::after { content: ''; position: absolute; top: 50%; height: 1px; width: calc(50% - 60px); background: var(--border-subtle); }
+.sync-point::before { left: 0; }
+.sync-point::after { right: 0; }
+
+.dep-edge { stroke: var(--border-visible); stroke-width: 1.5; fill: none; }
+.dep-edge.animated { stroke-dasharray: 6 8; animation: flowDash 1.5s linear infinite; }
+@keyframes flowDash { to { stroke-dashoffset: -28; } }
+.sync-line-svg { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 4 4; }
+
+.assessment-card { background: var(--base-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 20px; margin-bottom: 16px; }
+.assessment-card h4 { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; font-family: var(--font-mono); }
+.assessment-card.strengths h4 { color: var(--teal); }
+.assessment-card.risks h4 { color: var(--red); }
+.assessment-card.optimizations h4 { color: var(--accent); }
+.assessment-item { padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-secondary); }
+.assessment-item:last-child { border-bottom: none; }
+.severity { font-size: 9px; letter-spacing: 0.1em; padding: 2px 8px; border-radius: 2px; font-family: var(--font-mono); font-weight: 600; }
+.severity.high { background: var(--red-dim); color: var(--red); }
+.severity.medium { background: var(--amber-dim); color: var(--amber); }
+.severity.low { background: var(--green-dim); color: var(--green); }
+
+.file-map { font-family: var(--font-mono); font-size: 11px; line-height: 1.8; color: var(--text-secondary); padding: 16px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 4px; white-space: pre; overflow-x: auto; }
+.file-map .dir { color: var(--amber); }
+.file-map .file { color: var(--text-secondary); }
+.file-map .note { color: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .parallel-group { grid-template-columns: 1fr; }
+  .progress-stats { flex-wrap: wrap; gap: 16px; }
+  .header .meta { flex-direction: column; gap: 8px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="header">
+  <h1>Parallax -- Conflict Intelligence Engine</h1>
+  <div class="subtitle">See the conversation you're actually having. 14 analytical lenses. Real-time mediation for everyone.</div>
+  <div class="meta">
+    <span class="badge badge-stack">Next.js 16</span>
+    <span class="badge badge-stack">Supabase</span>
+    <span class="badge badge-stack">Claude Opus 4.6</span>
+    <span class="badge badge-stack">ElevenLabs</span>
+    <span class="badge badge-stack">Web Audio API</span>
+    <span class="badge badge-scale">Full Product</span>
+    <span class="badge badge-status" id="overall-status">In Progress</span>
+  </div>
+</header>
+
+<div class="progress-section">
+  <div class="progress-stats">
+    <div class="progress-stat"><div class="value" id="pct-complete">0%</div><div class="label">Complete</div></div>
+    <div class="progress-stat"><div class="value" id="phases-complete">0/10</div><div class="label">Phases</div></div>
+    <div class="progress-stat"><div class="value" id="tasks-complete">0/48</div><div class="label">Tasks</div></div>
+    <div class="progress-stat"><div class="value">3 days</div><div class="label">Build Time</div></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="architecture">Architecture</button>
+  <button class="tab" data-tab="phases">Phases</button>
+  <button class="tab" data-tab="parallel-map">Parallel Map</button>
+  <button class="tab" data-tab="assessment">Assessment</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="tab-content active" id="tab-overview">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value">30</div><div class="stat-label">Pull Requests</div></div>
+    <div class="stat-card"><div class="stat-value">150+</div><div class="stat-label">Commits</div></div>
+    <div class="stat-card"><div class="stat-value">475</div><div class="stat-label">Tests</div></div>
+    <div class="stat-card"><div class="stat-value">14</div><div class="stat-label">Analytical Lenses</div></div>
+    <div class="stat-card"><div class="stat-value">6</div><div class="stat-label">Context Modes</div></div>
+    <div class="stat-card"><div class="stat-value">13</div><div class="stat-label">API Routes</div></div>
+    <div class="stat-card"><div class="stat-value">1,712</div><div class="stat-label">BUILDING.md Lines</div></div>
+    <div class="stat-card"><div class="stat-value">16</div><div class="stat-label">HTML Artifacts</div></div>
+  </div>
+
+  <div class="arch-section">
+    <h3>The Thesis</h3>
+    <p style="color:var(--text-secondary);font-size:14px;line-height:1.8;max-width:720px;">
+      Professional mediation costs $300-500/hr. Therapy has month-long waitlists. NVC training takes years.
+      Parallax puts conflict resolution in everyone's hands. Two people, one shared screen (or two phones),
+      Claude Opus 4.6 as invisible infrastructure -- analyzing every message through 14 validated psychological
+      frameworks, surfacing the subtext, blind spots, and unmet needs hiding beneath the words.
+      You don't talk TO the AI. You talk THROUGH it.
+    </p>
+  </div>
+
+  <div class="arch-section">
+    <h3>What Makes This Different</h3>
+    <div class="overview-grid">
+      <div class="principle-card"><h4 style="color:var(--accent)">14 Lenses, Not 1</h4><p>NVC alone has blind spots: pattern-blind, power-blind, role-blind, narrative-blind. 14 frameworks fill every gap.</p></div>
+      <div class="principle-card"><h4 style="color:var(--teal)">The Product Speaks</h4><p>ElevenLabs TTS + teal waveform orb. Parallax is a third presence in the room -- a real mediator.</p></div>
+      <div class="principle-card"><h4 style="color:var(--amber)">Intelligence Network</h4><p>Persistent behavioral profiles built through conversational interviews. 9 signal types. Private by default.</p></div>
+      <div class="principle-card"><h4 style="color:var(--cyan)">Opus at the Edge</h4><p>Not coding, not admin -- emotional intelligence. Real people, real conflicts. Building for Opus 5.</p></div>
+    </div>
+  </div>
+
+  <div class="arch-section">
+    <h3>Build Timeline</h3>
+    <div class="overview-grid">
+      <div class="principle-card"><h4 style="color:var(--accent)">Day 1 -- Feb 10</h4><p>10-hour sprint. Foundation, Opus engine, The Melt, voice, flow. 10,500+ lines. Functional product by midnight.</p></div>
+      <div class="principle-card"><h4 style="color:var(--teal)">Day 2 -- Feb 11</h4><p>Design system, 14 lenses, Intelligence Network, conversational layer, 475 tests, self-narrating landing page. The product found its voice.</p></div>
+      <div class="principle-card"><h4 style="color:var(--amber)">Day 3 -- Feb 12</h4><p>Remote session redesign, branch consolidation, interview rebuild, Opus at the Edge, README, BUILDING.md source of truth. Ship prep.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="tab-content" id="tab-architecture">
+  <div class="arch-section">
+    <h3>System Architecture</h3>
+    <div class="arch-diagram">                    PARALLAX SYSTEM ARCHITECTURE
+
+  PERSON A (Voice/Text)              PERSON B (Voice/Text)
+       |                                   |
+       v                                   v
+  [Web Speech API]                   [Web Speech API]
+       |                                   |
+       +---------------+------------------+
+                        |
+                        v
+              [Next.js 16 App Router]
+              (SessionView, RemoteView, XRayGlanceView)
+                        |
+          +-------------+-------------+
+          |             |             |
+          v             v             v
+   [/api/mediate]  [/api/conductor]  [/api/coach]
+   14-lens Opus     Adaptive flow    Private coaching
+          |             |             |
+          v             v             v
+      [Claude Opus 4.6] ---- FRONTIER EMOTIONAL INTELLIGENCE
+          |
+          +--------+---------+--------+
+          |        |         |        |
+          v        v         v        v
+    [Supabase]  [ElevenLabs] [/api/interview] [/api/converse]
+    Postgres +   TTS Voice    Profile builder   Explorer/Guide
+    Realtime     Ava (Turbo)  9 signal types    Self-explaining
+          |
+          v
+    [Vercel Deploy]
+    parallax-ebon-three.vercel.app</div>
+  </div>
+
+  <div class="arch-section">
+    <h3>Key Decisions</h3>
+    <div class="arch-decision"><div class="title">14 lenses over NVC alone</div><div class="rationale">NVC has 5 critical blind spots (pattern, power, thinking-error, role, narrative). Multi-lens fills every gap.</div></div>
+    <div class="arch-decision"><div class="title">Supabase Realtime over WebSocket server</div><div class="rationale">Zero backend. Postgres-backed. RLS for security. Channel subscriptions for session sync.</div></div>
+    <div class="arch-decision"><div class="title">Non-streaming Claude over streaming</div><div class="rationale">Structured analysis needs complete JSON. Typewriter + TTS create the "streaming" feel client-side.</div></div>
+    <div class="arch-decision"><div class="title">Temperature = data, not decoration</div><div class="rationale">Glow color encodes emotional charge (cool teal -> warm amber -> hot rust). Every visual element is informational.</div></div>
+    <div class="arch-decision"><div class="title">Knowledge-base injection over vector DB</div><div class="rationale">Under 15K tokens of documentation -- system prompt injection is simpler and faster than RAG.</div></div>
+    <div class="arch-decision"><div class="title">Separate coaching table over Realtime channel</div><div class="rationale">Private coaching messages must never leak via Realtime subscription. Separate DB table + service role key.</div></div>
+  </div>
+
+  <div class="arch-section">
+    <h3>Database Schema (7 tables)</h3>
+    <div class="arch-diagram">  sessions          -- id, room_code, person_a/b_name, status, context_mode, temperature
+  messages          -- id, session_id, speaker, raw_text, subtext, blind_spots, unmet_needs, nvc_translation, temperature
+  issues            -- id, session_id, title, severity, status, grade
+  user_profiles     -- id, user_id, display_name, interview_completed
+  behavioral_signals -- id, user_id, signal_type, content (jsonb), confidence, source_session_id
+  coaching_messages  -- id, session_id, person, role, content (private, no Realtime)
+  signal_consent    -- id, user_id, consented_types[], updated_at</div>
+  </div>
+
+  <div class="arch-section">
+    <h3>API Routes (13)</h3>
+    <div class="arch-diagram">  POST /api/sessions              -- Create session with room code
+  POST /api/sessions/[code]/join   -- Join existing session
+  POST /api/sessions/[code]/end    -- End session, trigger summary
+  POST /api/sessions/[code]/onboarding -- In-person state machine
+  POST /api/messages               -- Send message
+  POST /api/mediate                -- Claude 14-lens analysis (FRONTIER)
+  POST /api/issues/analyze         -- Issue extraction + grading
+  POST /api/conductor              -- Adaptive conversation orchestrator
+  POST /api/interview              -- Profile interview AI pipeline
+  POST /api/converse               -- Conversational Layer (Explorer/Guide)
+  POST /api/coach                  -- Private coaching during sessions
+  POST /api/tts                    -- ElevenLabs voice proxy
+  GET  /api/health                 -- Health check</div>
+  </div>
+</div>
+
+<!-- PHASES -->
+<div class="tab-content" id="tab-phases">
+  <div id="phases-container"></div>
+</div>
+
+<!-- PARALLEL MAP -->
+<div class="tab-content" id="tab-parallel-map">
+  <p style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:16px;">Hover any node to trace dependencies. Orange = upstream, Teal = downstream.</p>
+  <svg id="parallel-map-svg"></svg>
+</div>
+
+<!-- ASSESSMENT -->
+<div class="tab-content" id="tab-assessment">
+  <div id="assessment-container"></div>
+</div>
+
+</div>
+
+<script type="application/json" id="blueprint-data">
+{
+  "project": "parallax",
+  "title": "Parallax -- Conflict Intelligence Engine",
+  "generated": "2026-02-12T17:00:00Z",
+  "scale": "full-product",
+  "stack": ["Next.js 16", "Supabase", "Claude Opus 4.6", "ElevenLabs", "Web Audio API", "Tailwind v4", "Vercel"],
+  "phases": [
+    {
+      "id": "p1", "name": "Foundation", "status": "complete", "deps": [],
+      "description": "Day 1, first 4 hours. PR #1: 8,832 lines. Supabase schema, Realtime subscriptions, session management, room codes, two-tab layout, message flow. Gate: two tabs chat in real-time.",
+      "sequential": [
+        { "id": "p1-t1", "title": "Next.js 16 scaffold + TypeScript strict + Tailwind v4", "done": true },
+        { "id": "p1-t2", "title": "Supabase schema (sessions, messages) + RLS policies + Realtime", "done": true },
+        { "id": "p1-t3", "title": "Session hooks (useSession, useMessages) + room code generator", "done": true },
+        { "id": "p1-t4", "title": "Two-tab split-screen layout + message input + voice toggle", "done": true },
+        { "id": "p1-t5", "title": "API routes: /sessions, /sessions/[code]/join, /messages", "done": true }
+      ],
+      "batches": []
+    },
+    {
+      "id": "p2", "name": "Core Engine", "status": "complete", "deps": ["p1"],
+      "description": "Day 1, hours 4-8. PRs #2, #3, #5. The Opus mediation engine, The Melt animation, and voice input pipeline. Gate: messages analyze + animate.",
+      "sequential": [],
+      "batches": [
+        { "id": "p2-ba", "label": "Batch A -- Opus Engine", "tasks": [
+          { "id": "p2-t1", "title": "NVC system prompt (9-step analysis pipeline)", "done": true },
+          { "id": "p2-t2", "title": "/api/mediate route (Claude Opus, non-streaming, structured JSON)", "done": true },
+          { "id": "p2-t3", "title": "Temperature mapping system (emotional charge -> color -> glow)", "done": true }
+        ]},
+        { "id": "p2-bb", "label": "Batch B -- The Melt + Voice", "tasks": [
+          { "id": "p2-t4", "title": "TheMelt.tsx (3-phase: dissolve -> crystallize -> reveal)", "done": true },
+          { "id": "p2-t5", "title": "MessageCard with NVC analysis expansion (subtext, blind spots, needs)", "done": true },
+          { "id": "p2-t6", "title": "VoiceInput.tsx (Web Speech API, push-to-talk, SSR-safe)", "done": true }
+        ]}
+      ]
+    },
+    {
+      "id": "p3", "name": "Integration + Ship Day 1", "status": "complete", "deps": ["p2"],
+      "description": "Day 1, hours 8-10. PRs #6-10. Error handling, mobile responsive, component extraction, session end, first deploy. Gate: end-to-end working product live on Vercel.",
+      "sequential": [
+        { "id": "p3-t1", "title": "Error handling + graceful degradation across all API routes", "done": true },
+        { "id": "p3-t2", "title": "Mobile responsive layout (single-column stack)", "done": true },
+        { "id": "p3-t3", "title": "Session end flow + summary generation (/api/sessions/[code]/end)", "done": true },
+        { "id": "p3-t4", "title": "First Vercel deployment + environment config", "done": true }
+      ],
+      "batches": []
+    },
+    {
+      "id": "p4", "name": "Design System", "status": "complete", "deps": ["p3"],
+      "description": "Day 2 morning. PRs #11, #14. Ember design system, real-time audio waveform orbs, light/dark mode. Gate: visual identity complete.",
+      "sequential": [],
+      "batches": [
+        { "id": "p4-ba", "label": "Batch A -- Ember Tokens", "tasks": [
+          { "id": "p4-t1", "title": "Ember CSS variables (warm chocolate/parchment, temperature colors)", "done": true },
+          { "id": "p4-t2", "title": "Typography (Source Serif 4 + Source Sans 3 + IBM Plex Mono)", "done": true },
+          { "id": "p4-t3", "title": "Backlit glow system (CSS radial-gradient, temperature-reactive)", "done": true }
+        ]},
+        { "id": "p4-bb", "label": "Batch B -- Orbs + Theme", "tasks": [
+          { "id": "p4-t4", "title": "AudioWaveformOrb (Web Audio API -> SVG bezier, 60fps)", "done": true },
+          { "id": "p4-t5", "title": "useAudioAnalyser hook (mic -> AudioContext -> AnalyserNode)", "done": true },
+          { "id": "p4-t6", "title": "Light mode + theme toggle (warm parchment default)", "done": true }
+        ]}
+      ]
+    },
+    {
+      "id": "p5", "name": "Conflict Intelligence", "status": "complete", "deps": ["p4"],
+      "description": "Day 2 afternoon. PRs #13, #15, #16. 14 analytical lenses (beyond NVC), 6 context modes, Intelligence Network with behavioral profiles. Gate: multi-lens analysis operational.",
+      "sequential": [
+        { "id": "p5-t1", "title": "14-lens prompt system (NVC, Gottman, CBT, TKI, Drama Triangle, etc.)", "done": true },
+        { "id": "p5-t2", "title": "6 context modes (intimate, family, professional, transactional, civil)", "done": true },
+        { "id": "p5-t3", "title": "Context router (obligation type determines active lenses)", "done": true }
+      ],
+      "batches": [
+        { "id": "p5-ba", "label": "Batch A -- Intelligence Network", "tasks": [
+          { "id": "p5-t4", "title": "Conversational interview (4-phase: context, profiling, deep dive, narrative)", "done": true },
+          { "id": "p5-t5", "title": "9 signal types extraction (Claude Structured Outputs)", "done": true },
+          { "id": "p5-t6", "title": "User profile persistence (behavioral_signals table)", "done": true },
+          { "id": "p5-t7", "title": "Signal consent system (privacy-first, opt-in per type)", "done": true }
+        ]}
+      ]
+    },
+    {
+      "id": "p6", "name": "Interaction Modes", "status": "complete", "deps": ["p5"],
+      "description": "Day 2-3. PRs #12, #21, #28. In-person shared device, remote split-screen, private coaching. Gate: all modes functional.",
+      "sequential": [],
+      "batches": [
+        { "id": "p6-ba", "label": "Batch A -- In-Person", "tasks": [
+          { "id": "p6-t1", "title": "X-Ray Glance View (shared device, turn-taking, SignalCards)", "done": true },
+          { "id": "p6-t2", "title": "Onboarding state machine (/api/sessions/[code]/onboarding)", "done": true },
+          { "id": "p6-t3", "title": "ActiveSpeakerBar (turn indicator + voice/text input)", "done": true }
+        ]},
+        { "id": "p6-bb", "label": "Batch B -- Remote", "tasks": [
+          { "id": "p6-t4", "title": "RemoteView.tsx (single-pane per person, conversational onboarding)", "done": true },
+          { "id": "p6-t5", "title": "Conductor system (/api/conductor, adaptive flow orchestration)", "done": true },
+          { "id": "p6-t6", "title": "CoachingPanel (private side-conversation, separate DB table)", "done": true }
+        ]}
+      ]
+    },
+    {
+      "id": "p7", "name": "Voice + Landing Page", "status": "complete", "deps": ["p4"],
+      "description": "Day 2 evening. PR #26. ElevenLabs TTS, self-narrating landing page, ParallaxPresence orb. Gate: Parallax speaks.",
+      "sequential": [
+        { "id": "p7-t1", "title": "ElevenLabs TTS integration (/api/tts, Ava Turbo v2.5)", "done": true },
+        { "id": "p7-t2", "title": "useParallaxVoice hook (TTS + real waveform data extraction)", "done": true },
+        { "id": "p7-t3", "title": "Self-narrating landing page (Listen button, NarrationController)", "done": true },
+        { "id": "p7-t4", "title": "ParallaxPresence orb (speaking/thinking/idle states)", "done": true }
+      ],
+      "batches": []
+    },
+    {
+      "id": "p8", "name": "Conversational Layer", "status": "complete", "deps": ["p5"],
+      "description": "Day 2 evening. PR #20. The product can explain itself. Explorer mode for judges, Guide mode for users with agentic settings tools. Gate: product self-explains.",
+      "sequential": [
+        { "id": "p8-t1", "title": "Knowledge base documents (voice, story, journey, user-manual, FAQ)", "done": true },
+        { "id": "p8-t2", "title": "/api/converse route (Explorer + Guide modes)", "done": true },
+        { "id": "p8-t3", "title": "Guide settings tools (Claude tool_use loop, localStorage, validation)", "done": true },
+        { "id": "p8-t4", "title": "Route-aware context switching (usePathname auto-mode)", "done": true }
+      ],
+      "batches": []
+    },
+    {
+      "id": "p9", "name": "Quality + Audit", "status": "complete", "deps": ["p6", "p7", "p8"],
+      "description": "Day 2-3. PRs #22-25, #27. Full test coverage, integration audit, assessment fixes, rate limiting. Gate: 475 tests green, audit score > 73%.",
+      "sequential": [],
+      "batches": [
+        { "id": "p9-ba", "label": "Batch A -- Testing", "tasks": [
+          { "id": "p9-t1", "title": "426 Vitest unit/integration tests across 47 files", "done": true },
+          { "id": "p9-t2", "title": "49 Playwright E2E tests (5 browsers)", "done": true }
+        ]},
+        { "id": "p9-bb", "label": "Batch B -- Audit", "tasks": [
+          { "id": "p9-t3", "title": "Integration audit (4 parallel Explore agents, 17 features scored)", "done": true },
+          { "id": "p9-t4", "title": "Remove 5 orphaned components (-759 lines)", "done": true },
+          { "id": "p9-t5", "title": "Rate limiter (30 req/min on 4 Claude API routes)", "done": true },
+          { "id": "p9-t6", "title": "RLS migration (messages UPDATE policy)", "done": true }
+        ]}
+      ]
+    },
+    {
+      "id": "p10", "name": "Ship", "status": "in_progress", "deps": ["p9"],
+      "description": "Day 3. PRs #29, #30 + remaining. BUILDING.md source of truth, README, Opus at the Edge, interview rebuild, demo, submit. Gate: hackathon submitted.",
+      "sequential": [
+        { "id": "p10-t1", "title": "BUILDING.md source of truth (1,712 lines, all 30 PRs documented)", "done": true },
+        { "id": "p10-t2", "title": "README.md hackathon submission (250 lines, 14 lenses, build stats)", "done": true },
+        { "id": "p10-t3", "title": "Opus at the Edge (token dashboard, self-assessment, Opus 5 roadmap)", "done": true },
+        { "id": "p10-t4", "title": "Interview page rebuild (conversational design parity, orb + TTS)", "done": true },
+        { "id": "p10-t5", "title": "Record demo video (3-min walkthrough)", "done": false },
+        { "id": "p10-t6", "title": "Submit to Claude Code Hackathon", "done": false }
+      ],
+      "batches": []
+    }
+  ],
+  "assessment": {
+    "strengths": [
+      "14-lens analysis is genuinely novel -- no existing mediation tool goes beyond NVC",
+      "3-day build time with 30 PRs and 475 tests demonstrates Claude Code velocity",
+      "The product speaks: ElevenLabs + waveform orbs create a real 'third presence in the room'",
+      "Intelligence Network (persistent profiles) makes every session smarter than the last",
+      "Self-explaining product (Conversational Layer) -- judges can ask Parallax about itself",
+      "Assessment-driven development: audit first, batch fix, net reduction in lines",
+      "BUILDING.md at 1,712 lines is the most thorough build journal in the hackathon"
+    ],
+    "risks": [
+      { "id": "risk-1", "title": "Demo video quality determines 30% of score -- must show The Melt + voice live", "severity": "HIGH" },
+      { "id": "risk-2", "title": "Opus token cost ($2-8/session) limits scale beyond hackathon", "severity": "MEDIUM" },
+      { "id": "risk-3", "title": "ElevenLabs free tier has rate limits -- demo could hit them", "severity": "MEDIUM" },
+      { "id": "risk-4", "title": "Chrome-only voice input (Web Speech API) limits browser support", "severity": "LOW" }
+    ],
+    "optimizations": [
+      { "id": "opt-1", "title": "Cache lens activations per context mode", "impact": "~15% token reduction per mediate call" },
+      { "id": "opt-2", "title": "Stream conductor decisions while Opus analyzes", "impact": "Perceived latency reduction" },
+      { "id": "opt-3", "title": "Batch interview signals extraction at phase boundary", "impact": "Fewer API calls during interview" },
+      { "id": "opt-4", "title": "Pre-warm TTS connection on session start", "impact": "Faster first voice response" }
+    ]
+  }
+}
+</script>
+
+<script>
+(function() {
+  var STORAGE_KEY = 'blueprint-parallax-final';
+  var data = JSON.parse(document.getElementById('blueprint-data').textContent);
+
+  var PROMPTS = {
+    'p10-t5': 'Record a 3-minute demo video of Parallax.\n\nScript:\n0:00 -- "Have you ever said something and gotten a completely unexpected reaction?"\n0:15 -- Open Parallax, create session, show room code\n0:30 -- Two people start typing a real disagreement\n0:45 -- Toggle subtext layer. See what\'s REALLY being said.\n1:30 -- Blind spots light up. Show 14-lens chips.\n2:00 -- The Melt dissolves raw emotion into clarity\n2:15 -- Show Intelligence Network profile signals\n2:30 -- Parallax speaks (TTS orb animation)\n2:45 -- "This is Parallax. See the conversation you\'re actually having."\n\nRecord with OBS or QuickTime. Upload to YouTube/Loom.',
+    'p10-t6': 'Submit Parallax to Claude Code Hackathon.\n\n1. Go to hackathon submission page\n2. Project name: Parallax\n3. One-liner: "Real-time two-person conflict resolution powered by Claude"\n4. Repository: https://github.com/eddiebelaval/parallax\n5. Live URL: https://parallax-ebon-three.vercel.app\n6. Demo video: [YouTube/Loom link]\n7. Category: Break the Barriers\n8. Builder: Eddie Belaval\n\nDeadline: Feb 16, 2026'
+  };
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.remove('active'); });
+      this.classList.add('active');
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+      if (this.dataset.tab === 'parallel-map') renderParallelMap();
+    });
+  });
+
+  function getAllTaskIds() {
+    var ids = [];
+    data.phases.forEach(function(p) {
+      p.sequential.forEach(function(t) { ids.push(t.id); });
+      p.batches.forEach(function(b) { b.tasks.forEach(function(t) { ids.push(t.id); }); });
+    });
+    return ids;
+  }
+
+  function updateProgress() {
+    var state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    var ids = getAllTaskIds();
+    var done = ids.filter(function(id) { return state[id]; }).length;
+    var pct = ids.length > 0 ? Math.round((done / ids.length) * 100) : 0;
+
+    document.getElementById('pct-complete').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('tasks-complete').textContent = done + '/' + ids.length;
+
+    var phasesDone = 0;
+    data.phases.forEach(function(phase) {
+      var pIds = [];
+      phase.sequential.forEach(function(t) { pIds.push(t.id); });
+      phase.batches.forEach(function(b) { b.tasks.forEach(function(t) { pIds.push(t.id); }); });
+      if (pIds.length > 0 && pIds.every(function(id) { return state[id]; })) phasesDone++;
+    });
+    document.getElementById('phases-complete').textContent = phasesDone + '/' + data.phases.length;
+
+    var statusEl = document.getElementById('overall-status');
+    if (pct === 0) { statusEl.textContent = 'Not Started'; statusEl.style.background = ''; statusEl.style.color = ''; }
+    else if (pct < 100) { statusEl.textContent = 'In Progress'; statusEl.style.background = 'var(--accent-dim)'; statusEl.style.color = 'var(--accent)'; }
+    else { statusEl.textContent = 'Complete'; statusEl.style.background = 'var(--teal-dim)'; statusEl.style.color = 'var(--teal)'; }
+  }
+
+  function renderPhases() {
+    var container = document.getElementById('phases-container');
+    var state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    var batchLetters = ['a', 'b', 'c', 'd'];
+
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    data.phases.forEach(function(phase, pi) {
+      var pIds = [];
+      phase.sequential.forEach(function(t) { pIds.push(t.id); });
+      phase.batches.forEach(function(b) { b.tasks.forEach(function(t) { pIds.push(t.id); }); });
+      var allDone = pIds.length > 0 && pIds.every(function(id) { return state[id]; });
+      var anyDone = pIds.some(function(id) { return state[id]; });
+
+      var card = document.createElement('div');
+      card.className = 'phase-card';
+
+      var header = document.createElement('div');
+      header.className = 'phase-header';
+      var name = document.createElement('div');
+      name.className = 'phase-name';
+      name.textContent = 'Phase ' + (pi + 1) + ': ' + phase.name;
+      var badge = document.createElement('span');
+      badge.className = 'phase-badge ' + (allDone ? 'complete' : (anyDone ? 'in-progress' : 'not-started'));
+      badge.textContent = allDone ? 'Complete' : (anyDone ? 'In Progress' : 'Not Started');
+      header.appendChild(name);
+      header.appendChild(badge);
+      card.appendChild(header);
+
+      var depLine = document.createElement('div');
+      depLine.className = 'dependency-line';
+      if (phase.deps.length === 0) {
+        var noDep = document.createElement('span');
+        noDep.className = 'no-dep';
+        noDep.textContent = 'No dependencies -- can start immediately';
+        depLine.appendChild(noDep);
+      } else {
+        depLine.appendChild(document.createTextNode('Requires: '));
+        phase.deps.forEach(function(dep, di) {
+          var depPhase = data.phases.find(function(p) { return p.id === dep; });
+          if (depPhase) {
+            var tag = document.createElement('span');
+            tag.className = 'dep-tag';
+            tag.textContent = depPhase.name;
+            depLine.appendChild(tag);
+            if (di < phase.deps.length - 1) depLine.appendChild(document.createTextNode(', '));
+          }
+        });
+      }
+      card.appendChild(depLine);
+
+      var desc = document.createElement('div');
+      desc.className = 'phase-desc';
+      desc.textContent = phase.description;
+      card.appendChild(desc);
+
+      if (phase.sequential.length > 0) {
+        var seqLabel = document.createElement('div');
+        seqLabel.className = 'task-group-label';
+        seqLabel.textContent = 'Sequential Tasks';
+        card.appendChild(seqLabel);
+        phase.sequential.forEach(function(task) {
+          card.appendChild(createTaskItem(task, state, PROMPTS[task.id]));
+        });
+      }
+
+      if (phase.batches.length > 0) {
+        var batchLabel = document.createElement('div');
+        batchLabel.className = 'task-group-label';
+        batchLabel.style.marginTop = '16px';
+        batchLabel.textContent = 'Parallel Batches';
+        card.appendChild(batchLabel);
+
+        var grid = document.createElement('div');
+        grid.className = 'parallel-group';
+        phase.batches.forEach(function(batch, bi) {
+          var col = document.createElement('div');
+          col.className = 'batch-column batch-' + batchLetters[bi];
+          var lbl = document.createElement('div');
+          lbl.className = 'batch-label';
+          lbl.textContent = batch.label;
+          col.appendChild(lbl);
+          batch.tasks.forEach(function(task) {
+            col.appendChild(createTaskItem(task, state, null));
+          });
+          grid.appendChild(col);
+        });
+        card.appendChild(grid);
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function createTaskItem(task, state, prompt) {
+    var item = document.createElement('div');
+    item.className = 'task-item' + (state[task.id] ? ' completed' : '');
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'task-checkbox';
+    cb.id = task.id;
+    cb.dataset.key = task.id;
+    cb.checked = !!state[task.id];
+    cb.addEventListener('change', function() {
+      var s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      s[this.dataset.key] = this.checked;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      if (this.checked) this.closest('.task-item').classList.add('completed');
+      else this.closest('.task-item').classList.remove('completed');
+      updateProgress();
+    });
+
+    var lbl = document.createElement('label');
+    lbl.className = 'task-label';
+    lbl.setAttribute('for', task.id);
+    lbl.textContent = task.title;
+
+    var wrapper = document.createElement('div');
+    wrapper.style.flex = '1';
+    wrapper.appendChild(lbl);
+
+    if (prompt) {
+      var pb = document.createElement('div');
+      pb.className = 'prompt-block';
+      var btn = document.createElement('button');
+      btn.className = 'prompt-btn';
+      btn.textContent = 'Copy Prompt';
+      var pt = document.createElement('div');
+      pt.className = 'prompt-text';
+      pt.textContent = prompt;
+      btn.addEventListener('click', function() {
+        if (pt.classList.contains('visible')) {
+          pt.classList.remove('visible');
+          btn.textContent = 'Copy Prompt';
+        } else {
+          pt.classList.add('visible');
+          navigator.clipboard.writeText(pt.textContent).then(function() {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() { btn.textContent = 'Hide Prompt'; btn.classList.remove('copied'); }, 1500);
+          });
+        }
+      });
+      pb.appendChild(btn);
+      pb.appendChild(pt);
+      wrapper.appendChild(pb);
+    }
+
+    item.appendChild(cb);
+    item.appendChild(wrapper);
+    return item;
+  }
+
+  function renderParallelMap() {
+    var svg = document.getElementById('parallel-map-svg');
+    var phases = data.phases;
+    var COL_W = 160, ROW_H = 34, P_GAP = 36, B_GAP = 12, LEFT = 20;
+    var y = 30, phasePos = {};
+    var colors = { a: '#ef6f2e', b: '#4ecdc4', c: '#f59e0b', d: '#06b6d4' };
+    var bl = ['a', 'b', 'c', 'd'];
+    var maxX = 500;
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    var nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+    phases.forEach(function(phase, pi) {
+      phasePos[phase.id] = { startY: y };
+
+      var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'phase-node');
+      g.dataset.phaseId = phase.id;
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', LEFT); rect.setAttribute('y', y);
+      rect.setAttribute('width', 320); rect.setAttribute('height', 28);
+      rect.setAttribute('rx', 4); rect.setAttribute('fill', '#111');
+      rect.setAttribute('stroke', '#2a2a2a');
+      g.appendChild(rect);
+      var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', LEFT + 12); txt.setAttribute('y', y + 18);
+      txt.setAttribute('fill', '#eee'); txt.setAttribute('font-size', '10');
+      txt.setAttribute('font-family', 'monospace');
+      txt.textContent = 'P' + (pi + 1) + ': ' + phase.name;
+      g.appendChild(txt);
+      nodeGroup.appendChild(g);
+      y += 34;
+
+      phase.sequential.forEach(function(task) {
+        var tg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        tg.setAttribute('class', 'task-node');
+        tg.dataset.taskId = task.id; tg.dataset.phaseId = phase.id;
+        var tr = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        tr.setAttribute('x', LEFT + 16); tr.setAttribute('y', y);
+        tr.setAttribute('width', 288); tr.setAttribute('height', 24);
+        tr.setAttribute('rx', 3); tr.setAttribute('fill', '#0a0a0a');
+        tr.setAttribute('stroke', '#1a1a1a');
+        tg.appendChild(tr);
+        var tt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tt.setAttribute('x', LEFT + 28); tt.setAttribute('y', y + 16);
+        tt.setAttribute('fill', '#999'); tt.setAttribute('font-size', '8');
+        tt.setAttribute('font-family', 'monospace');
+        tt.textContent = task.title.length > 42 ? task.title.substring(0, 42) + '...' : task.title;
+        tg.appendChild(tt);
+        nodeGroup.appendChild(tg);
+        y += ROW_H;
+      });
+
+      if (phase.batches.length > 0) {
+        var bStart = y;
+        var maxBH = 0;
+        phase.batches.forEach(function(batch, bi) {
+          var bx = LEFT + 16 + bi * (COL_W + B_GAP);
+          var by = bStart;
+          var bc = colors[bl[bi]] || '#999';
+
+          var blbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          blbl.setAttribute('x', bx); blbl.setAttribute('y', by + 10);
+          blbl.setAttribute('fill', bc); blbl.setAttribute('font-size', '7');
+          blbl.setAttribute('font-family', 'monospace');
+          blbl.setAttribute('letter-spacing', '1');
+          blbl.textContent = batch.label.toUpperCase();
+          nodeGroup.appendChild(blbl);
+          by += 16;
+
+          batch.tasks.forEach(function(task) {
+            var tg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            tg.setAttribute('class', 'task-node');
+            tg.dataset.taskId = task.id; tg.dataset.phaseId = phase.id;
+            var tr = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            tr.setAttribute('x', bx); tr.setAttribute('y', by);
+            tr.setAttribute('width', COL_W); tr.setAttribute('height', 22);
+            tr.setAttribute('rx', 3); tr.setAttribute('fill', '#0a0a0a');
+            tr.setAttribute('stroke', bc); tr.setAttribute('stroke-opacity', '0.3');
+            tg.appendChild(tr);
+            var tt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            tt.setAttribute('x', bx + 6); tt.setAttribute('y', by + 15);
+            tt.setAttribute('fill', '#999'); tt.setAttribute('font-size', '7');
+            tt.setAttribute('font-family', 'monospace');
+            tt.textContent = task.title.length > 22 ? task.title.substring(0, 22) + '...' : task.title;
+            tg.appendChild(tt);
+            nodeGroup.appendChild(tg);
+            by += ROW_H;
+          });
+
+          var endX = bx + COL_W;
+          if (endX > maxX) maxX = endX;
+          if (by - bStart > maxBH) maxBH = by - bStart;
+        });
+        y = bStart + maxBH + 8;
+
+        if (pi < phases.length - 1) {
+          var sw = LEFT + 16 + phase.batches.length * (COL_W + B_GAP);
+          var sl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          sl.setAttribute('x1', LEFT + 16); sl.setAttribute('y1', y);
+          sl.setAttribute('x2', sw); sl.setAttribute('y2', y);
+          sl.setAttribute('class', 'sync-line-svg');
+          nodeGroup.appendChild(sl);
+          var st = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          st.setAttribute('x', (LEFT + 16 + sw) / 2); st.setAttribute('y', y + 12);
+          st.setAttribute('fill', '#666'); st.setAttribute('font-size', '7');
+          st.setAttribute('font-family', 'monospace'); st.setAttribute('text-anchor', 'middle');
+          st.textContent = 'SYNC';
+          nodeGroup.appendChild(st);
+          y += 18;
+        }
+      }
+
+      phasePos[phase.id].endY = y;
+      y += P_GAP;
+
+      phase.deps.forEach(function(depId) {
+        if (phasePos[depId]) {
+          var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('class', 'dep-edge animated');
+          path.dataset.from = depId; path.dataset.to = phase.id;
+          path.setAttribute('d', 'M' + (LEFT + 8) + ' ' + phasePos[depId].endY + ' L' + (LEFT + 8) + ' ' + phasePos[phase.id].startY);
+          edgeGroup.appendChild(path);
+        }
+      });
+    });
+
+    svg.appendChild(edgeGroup);
+    svg.appendChild(nodeGroup);
+    svg.setAttribute('viewBox', '0 0 ' + (maxX + 40) + ' ' + (y + 20));
+    svg.style.width = '100%';
+
+    svg.querySelectorAll('.task-node, .phase-node').forEach(function(node) {
+      node.style.cursor = 'pointer';
+      node.addEventListener('mouseenter', function() {
+        var pid = this.dataset.phaseId;
+        svg.querySelectorAll('.task-node, .phase-node').forEach(function(n) {
+          n.style.opacity = '0.15'; n.style.transition = 'opacity 0.2s';
+        });
+        svg.querySelectorAll('[data-phase-id="' + pid + '"]').forEach(function(n) { n.style.opacity = '1'; });
+        this.style.opacity = '1';
+        svg.querySelectorAll('.dep-edge').forEach(function(e) {
+          e.style.opacity = '0.1';
+          if (e.dataset.to === pid) { e.style.opacity = '1'; e.style.stroke = '#f59e0b'; }
+          if (e.dataset.from === pid) { e.style.opacity = '1'; e.style.stroke = '#4ecdc4'; }
+        });
+        var ph = data.phases.find(function(p) { return p.id === pid; });
+        if (ph) ph.deps.forEach(function(d) {
+          svg.querySelectorAll('[data-phase-id="' + d + '"]').forEach(function(n) { n.style.opacity = '0.7'; });
+        });
+        data.phases.forEach(function(p) {
+          if (p.deps.indexOf(pid) !== -1)
+            svg.querySelectorAll('[data-phase-id="' + p.id + '"]').forEach(function(n) { n.style.opacity = '0.7'; });
+        });
+      });
+      node.addEventListener('mouseleave', function() {
+        svg.querySelectorAll('.task-node, .phase-node, .dep-edge').forEach(function(n) {
+          n.style.opacity = ''; n.style.stroke = '';
+        });
+      });
+    });
+  }
+
+  function renderAssessment() {
+    var container = document.getElementById('assessment-container');
+    var a = data.assessment;
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    var sc = document.createElement('div');
+    sc.className = 'assessment-card strengths';
+    var sh = document.createElement('h4');
+    sh.textContent = 'What We Did Right';
+    sc.appendChild(sh);
+    a.strengths.forEach(function(s) {
+      var item = document.createElement('div');
+      item.className = 'assessment-item';
+      item.textContent = s;
+      sc.appendChild(item);
+    });
+    container.appendChild(sc);
+
+    var rc = document.createElement('div');
+    rc.className = 'assessment-card risks';
+    var rh = document.createElement('h4');
+    rh.textContent = 'Risks and Gaps';
+    rc.appendChild(rh);
+    a.risks.forEach(function(r) {
+      var item = document.createElement('div');
+      item.className = 'assessment-item';
+      var sev = document.createElement('span');
+      sev.className = 'severity ' + r.severity.toLowerCase();
+      sev.textContent = r.severity;
+      item.appendChild(sev);
+      item.appendChild(document.createTextNode(' ' + r.title));
+      rc.appendChild(item);
+    });
+    container.appendChild(rc);
+
+    var oc = document.createElement('div');
+    oc.className = 'assessment-card optimizations';
+    var oh = document.createElement('h4');
+    oh.textContent = 'High-Impact Optimizations';
+    oc.appendChild(oh);
+    a.optimizations.forEach(function(o) {
+      var item = document.createElement('div');
+      item.className = 'assessment-item';
+      var strong = document.createElement('strong');
+      strong.textContent = o.title;
+      item.appendChild(strong);
+      var br = document.createElement('br');
+      item.appendChild(br);
+      var impact = document.createElement('span');
+      impact.style.color = 'var(--text-muted)';
+      impact.style.fontSize = '12px';
+      impact.textContent = 'Impact: ' + o.impact;
+      item.appendChild(impact);
+      oc.appendChild(item);
+    });
+    container.appendChild(oc);
+  }
+
+  // ========== LIVE POLLING ==========
+  var POLL_URL = 'blueprint-state.json';
+  var POLL_INTERVAL = 2000;
+  var pollActive = false;
+  var lastPollHash = '';
+
+  var statusDot = document.createElement('div');
+  statusDot.style.cssText = 'position:fixed;bottom:20px;right:20px;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--base-card);border:1px solid var(--border-subtle);border-radius:4px;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.05em;z-index:999;';
+  var dot = document.createElement('span');
+  dot.id = 'poll-dot';
+  dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#666;transition:background 0.3s;';
+  var statusText = document.createElement('span');
+  statusText.id = 'poll-status';
+  statusText.textContent = 'CONNECTING...';
+  statusDot.appendChild(dot);
+  statusDot.appendChild(statusText);
+  document.body.appendChild(statusDot);
+
+  function pollState() {
+    fetch(POLL_URL + '?t=' + Date.now())
+      .then(function(res) {
+        if (!res.ok) throw new Error('not found');
+        return res.json();
+      })
+      .then(function(remoteState) {
+        pollActive = true;
+        document.getElementById('poll-dot').style.background = '#22c55e';
+        document.getElementById('poll-status').textContent = 'LIVE';
+
+        var hash = JSON.stringify(remoteState);
+        if (hash === lastPollHash) return;
+        lastPollHash = hash;
+
+        var local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        var changed = false;
+        Object.keys(remoteState).forEach(function(key) {
+          if (remoteState[key] && !local[key]) {
+            local[key] = true;
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+
+          document.getElementById('poll-dot').style.background = '#f59e0b';
+          setTimeout(function() {
+            document.getElementById('poll-dot').style.background = '#22c55e';
+          }, 600);
+
+          Object.keys(remoteState).forEach(function(key) {
+            if (remoteState[key]) {
+              var cb = document.getElementById(key);
+              if (cb && !cb.checked) {
+                cb.checked = true;
+                var item = cb.closest('.task-item');
+                if (item) item.classList.add('completed');
+              }
+            }
+          });
+
+          updateProgress();
+        }
+      })
+      .catch(function() {
+        if (!pollActive) {
+          document.getElementById('poll-dot').style.background = '#666';
+          document.getElementById('poll-status').textContent = 'OFFLINE (manual mode)';
+        } else {
+          document.getElementById('poll-dot').style.background = '#ef4444';
+          document.getElementById('poll-status').textContent = 'DISCONNECTED';
+        }
+      });
+  }
+
+  setInterval(pollState, POLL_INTERVAL);
+  pollState();
+
+  // ========== INIT ==========
+  // Seed localStorage from blueprint-data JSON (pre-completed tasks)
+  var state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  var seeded = false;
+  data.phases.forEach(function(p) {
+    p.sequential.forEach(function(t) { if (t.done && !state[t.id]) { state[t.id] = true; seeded = true; } });
+    p.batches.forEach(function(b) { b.tasks.forEach(function(t) { if (t.done && !state[t.id]) { state[t.id] = true; seeded = true; } }); });
+  });
+  if (seeded) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  renderPhases();
+  renderAssessment();
+  updateProgress();
+})();
+</script>
+</body>
+</html>
