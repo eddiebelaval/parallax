@@ -12,18 +12,31 @@
 - [V4: Strategy Arena](#v4-strategy-arena----backtesting-for-conflict-resolution) — Backtesting for conflict resolution
 
 ### Build Log (Chronological)
-- [Stage 5 Hardening](#stage-5-hardening-assessment-fixes) — Assessment fixes (Feb 11)
-- [Stage 7: Test Coverage](#stage-7-test-coverage--full-stack) — 475 tests across 47 files (Feb 11)
-- [Stage 8: In-Person Mode](#stage-8-in-person-mode--x-ray-glance-view) — X-Ray Glance View (Feb 11)
-- [ElevenLabs Voice](#elevenlabs-voice-integration) — TTS integration (Feb 11)
-- [Conversational Layer](#conversational-layer-parallax-speaks) — Explorer + Guide (Feb 11)
-- [Self-Narrating Landing Page](#self-narrating-landing-page) — Dynamic narration + visual redesign (Feb 11)
-- [Stage 9: Integration Audit](#stage-9-integration-audit--assessment-fixes) — Audit + fixes (Feb 12)
-- [Intelligence Network: Implementation](#intelligence-network-implementation-pr-27) — PR #27 (Feb 12)
-- [Intelligence Network: UI Integration](#intelligence-network-ui-integration--persona-architecture) — Persona architecture (Feb 12)
-- [Remote Session Redesign](#remote-session-redesign-ux-refinements) — TTS, coaching tabs, waiting chat (Feb 12)
-- [Branch Consolidation](#branch-consolidation--production-deployment-2026-02-12) — 3 PRs merged to main (Feb 12)
-- [Interview Page Rebuild](#interview-page-conversational-rebuild) — Conversational design parity (Feb 12)
+
+**Day 1 — Feb 10: The 10-Hour Sprint**
+- [Stage 4: Foundation Pour](#stage-4-foundation-pour) — PR #1, 8,832 lines, full app skeleton
+- [Stage 5: Feature Blocks](#stage-5-feature-blocks--the-core-build) — PRs #2, #3, #5: Opus Engine, The Melt, Voice + Flow
+- [Stage 6+8: Integration + Polish](#stage-68-integration--polish) — PR #6, error handling, mobile, cleanup
+- [First Ship: Day One](#first-ship-day-one-complete) — PRs #7-10: README, LICENSE, Opus 4.6 upgrade
+
+**Day 2 — Feb 11: Design System + Features**
+- [Ember Design System](#ember-design-system--audio-waveform-orbs) — PR #11, visual identity + audio waveform orbs
+- [In-Person Mode: First Build](#in-person-mode-first-implementation) — PR #12, shared device UI
+- [Light Mode + Theme Toggle](#light-mode--theme-toggle) — PR #14, peer-driven default change
+- [Stage 5 Hardening](#stage-5-hardening-assessment-fixes) — PR #18, assessment fixes
+- [Stage 7: Test Coverage](#stage-7-test-coverage--full-stack) — PR #25, 475 tests across 47 files
+- [Stage 8: In-Person Mode Redesign](#stage-8-in-person-mode--x-ray-glance-view) — PR #21, X-Ray Glance View
+- [ElevenLabs Voice](#elevenlabs-voice-integration) — TTS integration
+- [Conversational Layer](#conversational-layer-parallax-speaks) — PR #20, Explorer + Guide
+- [Self-Narrating Landing Page](#self-narrating-landing-page) — PR #26, dynamic narration + visual redesign
+
+**Day 3 — Feb 12: Polish + Ship**
+- [Stage 9: Integration Audit](#stage-9-integration-audit--assessment-fixes) — PRs #23-24, audit + fixes
+- [Intelligence Network: Implementation](#intelligence-network-implementation-pr-27) — PR #27
+- [Intelligence Network: UI Integration](#intelligence-network-ui-integration--persona-architecture) — Persona architecture
+- [Remote Session Redesign](#remote-session-redesign-ux-refinements) — PR #28, TTS, coaching tabs, waiting chat
+- [Branch Consolidation](#branch-consolidation--production-deployment-2026-02-12) — 3 PRs merged to main
+- [Interview Page Rebuild](#interview-page-conversational-rebuild) — PR #29, conversational design parity
 
 ---
 
@@ -73,6 +86,9 @@ _Entries are added automatically at each gate pass._
 - **Date:** 2026-02-10
 - **Evidence:**
   - Override: Retroactive — concept locked
+- **The One-Liner:** Real-time two-person conflict resolution powered by Claude.
+- **Origin:** Born from Pause (an earlier id8Labs product for relationship check-ins). The hackathon prompt: what if instead of checking in after fights, you could have Claude in the room during them?
+- **Name:** "Parallax" — seeing the same conflict from multiple angles simultaneously.
 
 ### Stage 2: Scope Fence
 - **Status:** In progress
@@ -85,6 +101,9 @@ _Entries are added automatically at each gate pass._
 - **Date:** 2026-02-10
 - **Evidence:**
   - Override: Scope locked
+- **Building:** Two-person mediation, NVC analysis, real-time messaging, voice input, temperature visualization
+- **NOT Building:** Group mediation (3+), mobile native app, payment/subscription, professional therapist tools, video/audio calling
+- **Key Decision:** Shared device mode first (two people, one screen), remote mode second. The shared screen creates a theatrical effect — both people watch Claude analyze their words in real time.
 
 ### Stage 3: Architecture Sketch
 - **Status:** In progress
@@ -97,6 +116,13 @@ _Entries are added automatically at each gate pass._
 - **Date:** 2026-02-10
 - **Evidence:**
   - Override: Architecture in CLAUDE.md + blueprint
+- **Stack:** Next.js 16 (App Router, TypeScript strict), Supabase (Postgres + Realtime), Claude Opus, Tailwind CSS, Vercel
+- **Key Architectural Bets:**
+  1. **Supabase Realtime for sync** — Both participants see messages, NVC analysis, and session state via Postgres INSERT/UPDATE events. No WebSocket server.
+  2. **Claude as mediator, not chatbot** — Claude never joins the conversation. It analyzes each message through NVC, surfacing subtext and blind spots as annotations.
+  3. **Temperature as data** — Emotional charge is a measured signal (0-1 float) that drives the entire visual system: glow color, intensity, orb animation.
+  4. **API routes over backend** — Next.js API routes keep everything same-origin. No CORS, no separate backend.
+- **Blueprint:** Interactive architecture map at `artifacts/parallax-build-plan-blueprint.html`
 
 ### Stage 4: Foundation Pour
 - **Status:** In progress
@@ -441,6 +467,173 @@ The Arena isn't just about running scenarios — it's a closed-loop system for i
 - Similarity search: retrieve relevant past Arena results during live conversations
 - Automated batch runs across all 90 scenarios (infrastructure exists — `runAllForMode()` + `store.ts`)
 - CI integration: run Arena on prompt changes to catch regressions (diagnose + refine modules ready)
+
+---
+
+## Stage 4: Foundation Pour
+
+**Date:** 2026-02-10 | **PR:** [#1](https://github.com/eddiebelaval/parallax/pull/1) (+8,832 lines, 35 files)
+**Gate:** "Does the skeleton stand?"
+
+The biggest single PR in the project — 8,832 lines of green. Built the entire application skeleton in one pass with a three-agent team (Luna on frontend, River on Realtime, Casey on QA).
+
+### What Was Built
+
+| Layer | Files | What It Does |
+|-------|-------|-------------|
+| **Supabase schema** | `supabase/config.toml`, migrations | `sessions` + `messages` tables with RLS, Realtime enabled, 6-char room code generation |
+| **API routes** | 4 routes in `src/app/api/` | Create session, get session, join session, send message |
+| **Realtime hooks** | `useSession.ts`, `useMessages.ts` | Session state updates + message INSERT/UPDATE events with turn logic |
+| **Landing page** | `src/app/page.tsx` | Create/join lobby with room code input |
+| **Session view** | `SessionView.tsx`, `PersonPanel.tsx` | Split-screen with name entry, waiting state, turn-based messaging |
+| **Message display** | `MessageCard.tsx` | NVC analysis expand/collapse stub, temperature indicator (wired in Stage 5) |
+| **Design system** | `globals.css`, `layout.tsx` | Factory-Inspired tokens (Geist fonts, warm grays, orange/amber/teal accents) |
+
+### Gate Verification
+
+- Two browser tabs can create/join session with room code
+- Messages appear in real-time on both tabs
+- Turn-based logic works (alternating turns)
+- Build passes, deployed to Vercel production
+
+---
+
+## Stage 5: Feature Blocks — The Core Build
+
+**Date:** 2026-02-10 | **PRs:** [#2](https://github.com/eddiebelaval/parallax/pull/2), [#3](https://github.com/eddiebelaval/parallax/pull/3), [#5](https://github.com/eddiebelaval/parallax/pull/5)
+
+Three PRs in 90 minutes. Each one added a core capability.
+
+### 5a: Opus Mediation Engine (PR #2, +647/-77)
+
+The beating heart of Parallax. Built the full 9-step reactive NVC analysis pipeline:
+
+1. User sends message → 2. Fire-and-forget mediation trigger → 3. Fetch conversation context → 4. Call Claude with dual-lens NVC prompt → 5. Parse `NvcAnalysis` response → 6. Patch Supabase row → 7. Realtime UPDATE fires → 8. Clear loading state → 9. Render analysis
+
+**The dual-lens system prompt** (core IP, in `src/lib/prompts.ts`):
+- **Classic NVC** (Marshall Rosenberg): Observations, feelings, needs, requests
+- **"Beneath the Surface"** (Parallax unique lens): Subtext, blind spots, unmet needs, what they actually mean
+
+Each message gets a temperature score (0-1 float) measuring emotional charge. Temperature drives the entire visual system — glow colors, border intensity, orb animation.
+
+### 5b: The Melt (PR #3, +402/-77)
+
+The signature animation. When NVC analysis arrives, the raw message "dissolves" and "crystallizes" into structured understanding:
+
+1. **Idle** → 2. **Dissolving** (particle scatter via Knuth hash) → 3. **Crystallizing** (analysis materializes) → 4. **Settled**
+
+`TheMelt.tsx` uses CSS custom properties bridge for GPU-accelerated animation. History messages skip to settled state. The Signal Rail (`SignalRail.tsx`) renders a temperature timeline — a 4px vertical bar where each segment glows the temperature color of that message. Latest segment pulses.
+
+### 5c: Voice + Flow (PR #5, +609/-30)
+
+Transformed Parallax from text-only to full conversation:
+
+- **VoiceInput.tsx** — Web Speech API push-to-talk. `finalTranscriptRef` pattern prevents duplicate emissions. `onMouseLeave` guard handles accidental release.
+- **SessionSummary.tsx** — End-of-session analysis: conversation arc, temperature trajectory, key moments, per-person insights. Discriminated union state management (`idle | loading | ready | error`).
+- **End Session flow** — POST endpoint → Realtime UPDATE → both participants see summary simultaneously.
+
+---
+
+## Stage 6+8: Integration + Polish
+
+**Date:** 2026-02-10 | **PR:** [#6](https://github.com/eddiebelaval/parallax/pull/6) (+557/-378, 19 files)
+**Gate:** "Do all the parts talk to each other?"
+
+Driven by automated code review + code simplifier audit of all 25 source files. This pass found and fixed every rough edge from the rapid feature build.
+
+| Category | Changes |
+|----------|---------|
+| **Error handling** | Env validation at init (fail fast, not mid-demo), mediation error UI (not silent), `useSession` race condition fix (subscribe before fetch) |
+| **Component extraction** | `SessionView` 328→204 lines. 5 inline SVGs→2 shared icon components. Nested ternary→5-line helper |
+| **Landing page** | "See the conversation you're actually having" headline, $300-500/hr problem statement, 3-step how-it-works pills |
+| **Mobile responsive** | 44px touch targets (Apple HIG), compact headers, responsive padding |
+| **Cleanup** | Shared helpers (`conversation.ts`), dead code removal, type reorganization, room code collision retry |
+
+---
+
+## First Ship: Day One Complete
+
+**Date:** 2026-02-10 | **PRs:** [#7](https://github.com/eddiebelaval/parallax/pull/7), [#8](https://github.com/eddiebelaval/parallax/pull/8), [#9](https://github.com/eddiebelaval/parallax/pull/9), [#10](https://github.com/eddiebelaval/parallax/pull/10)
+
+Four PRs in 2 hours completed the first ship cycle. Parallax went from first commit to production in 6 hours.
+
+| PR | What | Why |
+|----|------|-----|
+| **#7** | README (23→86 lines), BUILDING.md vision docs, Stage Mode blueprint artifact | Judges need to understand the project without running it |
+| **#8** | MIT LICENSE file | Hackathon OSS compliance. GitHub license detection now shows "MIT License" |
+| **#9** | Complete BUILDING.md build journal | Stage 6+8 and 9+10 sections, artifact table, commit history reading guide |
+| **#10** | Upgrade Sonnet 4.5 → Opus 4.6 | The file is literally called `opus.ts` — now it runs Opus. Hackathon scores 25% on Opus Use. |
+
+### Day One Stats
+
+- **6 PRs merged** (#1-#6) building the product
+- **4 PRs merged** (#7-#10) shipping it
+- **10,500+ lines of code** written
+- **Production deployed** to Vercel
+- **10 hours** from first commit to live product
+
+---
+
+## Ember Design System + Audio Waveform Orbs
+
+**Date:** 2026-02-11 | **PR:** [#11](https://github.com/eddiebelaval/parallax/pull/11) (+908/-166, 22 files)
+
+The visual identity transformation. Parallax went from generic dark mode (Factory-Inspired design system) to Ember — a warm, organic aesthetic that matches its purpose.
+
+### Ember: The Design Philosophy
+
+**"Light = Data."** Glow color and intensity encode emotional temperature. It's never decorative.
+
+| Before (Factory) | After (Ember) |
+|-------------------|---------------|
+| Near-black (#020202) | Deep chocolate (#0f0b08) |
+| Cool gray neutrals | Warm brown neutrals |
+| Geist + Geist Mono | Source Serif 4 + Source Sans 3 + IBM Plex Mono |
+| Orange/amber/teal accents | Same accents, now temperature-reactive with backlit glow borders |
+
+### Audio Waveform Orbs
+
+Real-time audio visualization via Web Audio API:
+
+- `useAudioAnalyser.ts` — `getUserMedia` → `AudioContext` → `AnalyserNode` → Float32Array waveform data at 60fps
+- `AudioWaveformOrb.tsx` — Downsamples 1024 points to 12 bezier control points, renders SVG path
+- `OrbStrip.tsx` — Three orbs (Person A warm, Claude teal, Person B hot) with turn-based mic routing
+- `useSyntheticWaveform.ts` — Multi-harmonic "thinking" pattern for Claude's orb during NVC analysis
+
+**Graceful degradation:** Mic denied → orbs fall back to CSS `orb-idle` breathing animation.
+
+---
+
+## In-Person Mode: First Implementation
+
+**Date:** 2026-02-11 | **PR:** [#12](https://github.com/eddiebelaval/parallax/pull/12) (+1,416/-631, 19 files)
+
+The pivot from remote-only to shared device. Two people sit at the same screen. Instead of split-panel messaging, they share a single conversation view with a turn indicator.
+
+### What Was Built
+
+| Component | Purpose |
+|-----------|---------|
+| `SessionView` branching | `mode === 'in_person'` routes to entirely different UI |
+| `OnboardingFlow` | 3-step guided setup: name entry → context mode selection → first speaker choice |
+| `XRayView` | Single-column conversation with turn-based input |
+| `XRayScoreboard` | Two-column issue board tracking extracted topics |
+| `IssueCard` | Individual issues with status color and grade badge |
+| `ActiveSpeakerBar` | Turn indicator + voice/text input with mode toggle |
+| Onboarding API | Server-side state machine (`/api/sessions/{code}/onboarding`) managing the 3-step flow |
+
+---
+
+## Light Mode + Theme Toggle
+
+**Date:** 2026-02-11 | **PR:** [#14](https://github.com/eddiebelaval/parallax/pull/14) (+104/-10, 3 files)
+
+Peer feedback drove this change — light themes resonate more for wellness/communication tools.
+
+- **Light mode default** — Warm parchment background (#f5efe6) instead of dark chocolate
+- **Theme toggle** — Monospace LIGHT/DARK label in header, localStorage persisted
+- **FOUC prevention** — Blocking `<script>` in `<head>` reads localStorage before first paint
+- **Adapted glow** — "Watercolor stain" technique for light backgrounds: higher opacity (0.22/0.45 vs 0.10/0.25), solid colored `border-left` anchor, wider 12px blur for soft wash
 
 ---
 
