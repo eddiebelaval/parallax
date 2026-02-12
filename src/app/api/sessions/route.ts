@@ -12,16 +12,24 @@ const VALID_CONTEXT_MODES = [
 export async function POST(request: Request) {
   const supabase = createServerClient()
   const body = await request.json()
-  const { person_a_name, mode, context_mode } = body
+  const { person_a_name, mode, context_mode, user_id } = body
 
   const insertData: Record<string, unknown> = {
     person_a_name: person_a_name || null,
   }
 
-  // In-person mode starts with onboarding; remote mode is the default
+  if (user_id) {
+    insertData.person_a_user_id = user_id
+  }
+
+  // In-person mode: skip form onboarding, conductor drives everything
   if (mode === 'in_person') {
     insertData.mode = 'in_person'
-    insertData.onboarding_step = 'introductions'
+    insertData.status = 'active'
+    insertData.onboarding_step = 'complete'
+    insertData.onboarding_context = {
+      conductorPhase: 'onboarding',
+    }
   }
 
   // V3: Context mode — validated, defaults to 'intimate'

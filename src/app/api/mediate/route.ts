@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { mediateMessage } from '@/lib/opus'
 import { parseConflictAnalysis } from '@/lib/prompts/index'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
-import type { Message, ContextMode } from '@/types/database'
+import { buildIntelligenceContext, buildIntelligencePromptSection } from '@/lib/context-injector'
+import type { Message, ContextMode, OnboardingContext } from '@/types/database'
 
 /**
  * POST /api/mediate
@@ -21,6 +23,9 @@ import type { Message, ContextMode } from '@/types/database'
  * Response: { analysis: ConflictAnalysis, temperature: number }
  */
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const body = await request.json()
   const { session_id, message_id } = body as {
     session_id: string
@@ -51,10 +56,10 @@ export async function POST(request: Request) {
     )
   }
 
-  // Fetch session for participant names + context mode
+  // Fetch session for participant names + context mode + user IDs
   const { data: session } = await supabase
     .from('sessions')
-    .select('person_a_name, person_b_name, context_mode')
+    .select('person_a_name, person_b_name, person_a_user_id, person_b_user_id, context_mode, onboarding_context')
     .eq('id', session_id)
     .single()
 
@@ -83,9 +88,25 @@ export async function POST(request: Request) {
     nameMap,
   )
 
+  // Build intelligence context from user profiles (if available)
+  const speakerUserId = targetMessage.sender === 'person_a'
+    ? session?.person_a_user_id
+    : session?.person_b_user_id
+  const otherUserId = targetMessage.sender === 'person_a'
+    ? session?.person_b_user_id
+    : session?.person_a_user_id
+
+  const intelligenceContext = await buildIntelligenceContext(
+    session_id,
+    speakerUserId ?? null,
+    otherUserId ?? null,
+  )
+  const intelligenceSection = buildIntelligencePromptSection(intelligenceContext)
+
   // Call Claude for Conflict Intelligence analysis
   let rawText: string
   try {
+    const onboarding = session?.onboarding_context as OnboardingContext | null
     rawText = await mediateMessage(
       targetMessage.content,
       targetMessage.sender,
@@ -93,6 +114,11 @@ export async function POST(request: Request) {
       otherPersonName,
       conversationHistory,
       contextMode,
+      onboarding?.sessionGoals ? {
+        goals: onboarding.sessionGoals,
+        contextSummary: onboarding.contextSummary,
+      } : undefined,
+      intelligenceSection || undefined,
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Claude API error'

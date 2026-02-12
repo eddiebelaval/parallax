@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Integration Audit</title>
+<style>
+:root {
+  --base-primary: #020202;
+  --base-secondary: #101010;
+  --base-card: #1f1d1c;
+  --text-primary: #eeeeee;
+  --text-secondary: #a49d9a;
+  --text-muted: #5c5855;
+  --border-subtle: #2e2c2b;
+  --border-visible: #3d3a39;
+  --accent: #ef6f2e;
+  --accent-hover: #ee6018;
+  --amber: #f59e0b;
+  --teal: #4ecdc4;
+  --red: #e74c3c;
+  --neutral-500: #8a8380;
+  --neutral-700: #4d4947;
+  --neutral-800: #3d3a39;
+  --neutral-900: #2e2c2b;
+  --neutral-1000: #1f1d1c;
+  --font-sans: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--base-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 36px; }
+
+h1 { font-family: var(--font-sans); font-size: 48px; font-weight: 400; letter-spacing: -2px; line-height: 1.0; color: var(--text-primary); }
+h2 { font-family: var(--font-sans); font-size: 36px; font-weight: 400; letter-spacing: -1.5px; line-height: 1.1; color: var(--text-primary); }
+h3 { font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: -0.5px; }
+h4 { font-family: var(--font-sans); font-size: 18px; font-weight: 400; letter-spacing: -0.3px; }
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+
+.section-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 10px;
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(239,111,46,0); }
+  50% { box-shadow: 0 0 6px rgba(239,111,46,0.15); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-entry {
+  opacity: 0;
+  animation: fadeSlideUp 0.7s ease-out forwards;
+}
+
+/* Header */
+.header {
+  padding: 60px 0 40px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.header .subtitle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+}
+
+.timestamp {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-card {
+  text-align: center;
+  padding: 16px 8px;
+}
+
+.stat-number {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  color: var(--text-primary);
+}
+
+.stat-number.teal { color: var(--teal); }
+.stat-number.amber { color: var(--amber); }
+.stat-number.accent { color: var(--accent); }
+.stat-number.red { color: var(--red); }
+.stat-number.muted { color: var(--neutral-500); }
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Tabs */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  padding: 24px 0 0;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  background: var(--base-primary);
+  z-index: 100;
+}
+
+.tab-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover { border-color: var(--border-visible); color: var(--text-primary); }
+.tab-btn.active { background: var(--accent); color: #020202; border-color: var(--accent); }
+
+.tab-content { display: none; padding: 40px 0 80px; }
+.tab-content.active { display: block; }
+
+/* Matrix table */
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.matrix-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 400;
+}
+
+.matrix-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.matrix-table tr:hover { background: rgba(255,255,255,0.02); }
+
+.matrix-table .feature-name {
+  color: var(--text-primary);
+  font-size: 13px;
+  min-width: 180px;
+}
+
+.cell-y { color: var(--teal); text-align: center; font-weight: 600; }
+.cell-n { color: var(--red); text-align: center; font-weight: 600; }
+.cell-p { color: var(--amber); text-align: center; font-weight: 600; }
+.cell-na { color: var(--text-muted); text-align: center; }
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+.status-complete { background: rgba(78,205,196,0.15); color: var(--teal); }
+.status-partial { background: rgba(245,158,11,0.15); color: var(--amber); }
+.status-frontend { background: rgba(239,111,46,0.15); color: var(--accent); }
+.status-backend { background: rgba(239,111,46,0.15); color: var(--accent); }
+.status-orphaned { background: rgba(231,76,60,0.15); color: var(--red); }
+.status-stub { background: rgba(138,131,128,0.15); color: var(--neutral-500); }
+
+/* Expandable rows */
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+.expand-btn:hover { color: var(--text-primary); background: var(--neutral-900); }
+
+.expand-row { display: none; }
+.expand-row.visible { display: table-row; }
+.expand-row td {
+  padding: 16px 24px;
+  background: var(--base-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.file-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--neutral-1000);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+/* Gap cards */
+.gap-card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.gap-card:hover { border-color: var(--border-visible); }
+
+.gap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.severity-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.severity-critical { background: rgba(231,76,60,0.2); color: #e74c3c; }
+.severity-high { background: rgba(239,111,46,0.2); color: var(--accent); }
+.severity-medium { background: rgba(245,158,11,0.2); color: var(--amber); }
+.severity-low { background: rgba(138,131,128,0.2); color: var(--neutral-500); }
+
+.effort-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.gap-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.gap-files {
+  margin-bottom: 12px;
+}
+
+.gap-files-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+/* Prompt block */
+.prompt-block {
+  background: var(--base-secondary);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  position: relative;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--border-subtle);
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.copy-btn:hover { background: var(--border-visible); color: var(--text-primary); }
+.copy-btn.copied { color: var(--teal); }
+
+/* Feature detail cards */
+.feature-card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.feature-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.feature-card-header:hover { background: rgba(255,255,255,0.02); }
+
+.feature-card-body {
+  display: none;
+  padding: 0 24px 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.feature-card.expanded .feature-card-body { display: block; padding-top: 20px; }
+
+.layer-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(46,44,43,0.5);
+  align-items: start;
+}
+
+.layer-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  padding-top: 2px;
+}
+
+.layer-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.layer-value code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--base-secondary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--text-primary);
+}
+
+/* Architecture SVG */
+.arch-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 20px 0;
+}
+
+.arch-svg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Assessment */
+.assess-section {
+  margin-bottom: 48px;
+}
+
+.assess-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.assess-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+
+.assess-dot.green { background: var(--teal); }
+.assess-dot.red { background: var(--red); }
+.assess-dot.orange { background: var(--accent); }
+.assess-dot.teal-dot { background: var(--teal); }
+
+.assessment-item { margin-bottom: 16px; }
+
+.assessment-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.assess-checkbox {
+  appearance: none;
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--border-visible);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.assess-checkbox:checked {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.assess-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 5px;
+  width: 4px; height: 8px;
+  border: solid #020202;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.assess-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.assess-body {
+  margin-left: 28px;
+  transition: opacity 0.3s ease;
+}
+
+.assess-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.assessment-item.completed .assess-label {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.assessment-item.completed .assess-body {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.assessment-item.completed .severity-badge { opacity: 0.3; }
+
+.win-card {
+  background: var(--base-card);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--teal);
+  border-radius: 4px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.win-card h4 { color: var(--teal); margin-bottom: 6px; font-size: 14px; }
+.win-card p { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+
+#assess-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+  h1 { font-size: 32px; }
+  .stats-bar { grid-template-columns: repeat(3, 1fr); }
+  .tab-btn { padding: 8px 12px; font-size: 10px; }
+  .matrix-table { font-size: 11px; }
+  .layer-row { grid-template-columns: 80px 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header animate-entry">
+    <div><span class="section-dot"></span><span class="label">Integration Audit</span></div>
+    <h1 style="margin-top: 16px;">Parallax</h1>
+    <div class="subtitle">Full-stack integration analysis across DB, API, Types, State, UI, and Pages</div>
+    <div class="timestamp">Scanned: 2026-02-11 at 17:55 EST | Branch: main | 94 files, 21,261+ lines</div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card animate-entry" style="animation-delay: 0.1s">
+      <div class="stat-number" id="stat-features">0</div>
+      <div class="stat-label">Features</div>
+    </div>
+    <div class="stat-card animate-entry" style="animation-delay: 0.22s">
+      <div class="stat-number teal" id="stat-complete">0</div>
+      <div class="stat-label">Complete</div>
+    </div>
+    <div class="stat-card animate-entry" style="animation-delay: 0.34s">
+      <div class="stat-number accent" id="stat-backend">0</div>
+      <div class="stat-label">Backend Only</div>
+    </div>
+    <div class="stat-card animate-entry" style="animation-delay: 0.46s">
+      <div class="stat-number red" id="stat-orphaned">0</div>
+      <div class="stat-label">Orphaned</div>
+    </div>
+    <div class="stat-card animate-entry" style="animation-delay: 0.58s">
+      <div class="stat-number amber" id="stat-gaps">0</div>
+      <div class="stat-label">Gaps Found</div>
+    </div>
+    <div class="stat-card animate-entry" style="animation-delay: 0.7s">
+      <div class="stat-number muted" id="stat-pct">0</div>
+      <div class="stat-label">% Integrated</div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="matrix">Matrix</button>
+    <button class="tab-btn" data-tab="architecture">Architecture</button>
+    <button class="tab-btn" data-tab="gaps">Gap Analysis</button>
+    <button class="tab-btn" data-tab="features">Feature Detail</button>
+    <button class="tab-btn" data-tab="assessment">Assessment</button>
+  </div>
+
+  <!-- TAB 1: Integration Matrix -->
+  <div class="tab-content active" id="tab-matrix">
+    <div style="margin-bottom: 24px;">
+      <h3>Integration Matrix</h3>
+      <p class="label" style="margin-top: 8px;">Y = wired | N = missing | P = partial | - = N/A</p>
+    </div>
+    <div style="overflow-x: auto;">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th style="text-align:center">DB</th>
+          <th style="text-align:center">API</th>
+          <th style="text-align:center">Auth</th>
+          <th style="text-align:center">Types</th>
+          <th style="text-align:center">State</th>
+          <th style="text-align:center">UI</th>
+          <th style="text-align:center">Page</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Session Management -->
+        <tr id="row-session">
+          <td class="feature-name">Session Management</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-session">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-session"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">sessions table (4 migrations)</span>
+            <span class="file-tag">api/sessions/route.ts</span>
+            <span class="file-tag">api/sessions/[code]/route.ts</span>
+            <span class="file-tag">api/sessions/[code]/join/route.ts</span>
+            <span class="file-tag">api/sessions/[code]/end/route.ts</span>
+            <span class="file-tag">types/database.ts</span>
+            <span class="file-tag">hooks/useSession.ts</span>
+            <span class="file-tag">SessionView.tsx</span>
+            <span class="file-tag">ContextModePicker.tsx</span>
+            <span class="file-tag">app/session/[code]/page.tsx</span>
+          </div>
+        </td></tr>
+
+        <!-- Messaging -->
+        <tr id="row-messaging">
+          <td class="feature-name">Messaging (Remote)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-messaging">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-messaging"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">messages table</span>
+            <span class="file-tag">api/messages/route.ts</span>
+            <span class="file-tag">types/database.ts (Message, MessageSender)</span>
+            <span class="file-tag">hooks/useMessages.ts (Realtime)</span>
+            <span class="file-tag">MessageArea.tsx</span>
+            <span class="file-tag">MessageCard.tsx</span>
+            <span class="file-tag">MessageInput.tsx</span>
+            <span class="file-tag">PersonPanel.tsx</span>
+          </div>
+        </td></tr>
+
+        <!-- NVC Analysis -->
+        <tr id="row-nvc">
+          <td class="feature-name">Conflict Intelligence (NVC)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-nvc">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-nvc"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">messages.nvc_analysis (JSONB)</span>
+            <span class="file-tag">api/mediate/route.ts</span>
+            <span class="file-tag">lib/opus.ts (Claude Opus)</span>
+            <span class="file-tag">lib/prompts/ (14 lens modules)</span>
+            <span class="file-tag">types/database.ts (ConflictAnalysis, 14 lens types)</span>
+            <span class="file-tag">hooks/useMessages.ts (UPDATE event)</span>
+            <span class="file-tag">MessageCard.tsx</span>
+            <span class="file-tag">TheMelt.tsx</span>
+            <span class="file-tag">LensBar.tsx + LensDetailPanel.tsx</span>
+            <span class="file-tag">SignalRail.tsx</span>
+          </div>
+        </td></tr>
+
+        <!-- Conductor -->
+        <tr id="row-conductor">
+          <td class="feature-name">Conductor (Onboarding)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-conductor">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-conductor"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">sessions.onboarding_context (JSONB)</span>
+            <span class="file-tag">api/conductor/route.ts (474 lines)</span>
+            <span class="file-tag">lib/prompts/conductor.ts</span>
+            <span class="file-tag">lib/conductor/interventions.ts</span>
+            <span class="file-tag">types/database.ts (ConductorPhase, OnboardingContext)</span>
+            <span class="file-tag">hooks/useSession.ts (phase derived)</span>
+            <span class="file-tag">SessionView.tsx (remote)</span>
+            <span class="file-tag">XRayGlanceView.tsx (in-person)</span>
+          </div>
+        </td></tr>
+
+        <!-- Issue Tracking -->
+        <tr id="row-issues">
+          <td class="feature-name">Issue Tracking (In-Person)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-issues">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-issues"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">issues table</span>
+            <span class="file-tag">api/issues/analyze/route.ts</span>
+            <span class="file-tag">types/database.ts (Issue, IssueStatus)</span>
+            <span class="file-tag">hooks/useIssues.ts (Realtime)</span>
+            <span class="file-tag">ActionPanel.tsx</span>
+            <span class="file-tag">IssueDrawer.tsx</span>
+            <span class="file-tag">XRayGlanceView.tsx</span>
+          </div>
+        </td></tr>
+
+        <!-- Session Summary -->
+        <tr id="row-summary">
+          <td class="feature-name">Session Summary</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-p">P</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-summary">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-summary"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">sessions + messages (read)</span>
+            <span class="file-tag">api/sessions/[code]/summary/route.ts</span>
+            <span class="file-tag">types/database.ts (SessionSummaryData)</span>
+            <span class="file-tag">SessionSummary.tsx (local fetch)</span>
+          </div>
+          <div style="margin-top: 8px; color: var(--amber); font-size: 12px;">Note: State is local (fetch on mount), not via hook. This is fine for a read-once endpoint.</div>
+        </td></tr>
+
+        <!-- Voice Input -->
+        <tr id="row-voice">
+          <td class="feature-name">Voice Input</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-p">P</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-voice">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-voice"><td colspan="9">
+          <div class="gap-files-label">Files in Chain</div>
+          <div class="file-list">
+            <span class="file-tag">VoiceInput.tsx (remote)</span>
+            <span class="file-tag">ActiveSpeakerBar.tsx (in-person)</span>
+            <span class="file-tag">Web Speech API (browser)</span>
+          </div>
+          <div style="margin-top: 8px; color: var(--text-secondary); font-size: 12px;">Browser-only feature. Types are local interfaces (SpeechRecognitionEvent). No DB/API needed.</div>
+        </td></tr>
+
+        <!-- Audio Waveform -->
+        <tr id="row-waveform">
+          <td class="feature-name">Audio Waveform Orbs</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-waveform">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-waveform"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">hooks/useAudioAnalyser.ts</span>
+            <span class="file-tag">hooks/useSyntheticWaveform.ts</span>
+            <span class="file-tag">AudioWaveformOrb.tsx</span>
+            <span class="file-tag">OrbStrip.tsx</span>
+            <span class="file-tag">ParallaxPresence.tsx</span>
+          </div>
+        </td></tr>
+
+        <!-- TTS -->
+        <tr id="row-tts">
+          <td class="feature-name">Text-to-Speech</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-tts">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-tts"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">hooks/useParallaxVoice.ts</span>
+            <span class="file-tag">XRayGlanceView.tsx (triggers on mediator messages)</span>
+          </div>
+        </td></tr>
+
+        <!-- Context Modes -->
+        <tr id="row-context">
+          <td class="feature-name">Context Mode Selection</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td><button class="expand-btn" data-target="detail-context">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-context"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">sessions.context_mode column</span>
+            <span class="file-tag">api/sessions/route.ts</span>
+            <span class="file-tag">lib/context-modes.ts (6 modes, 14 lenses)</span>
+            <span class="file-tag">ContextModePicker.tsx</span>
+            <span class="file-tag">Landing page (app/page.tsx)</span>
+          </div>
+        </td></tr>
+
+        <!-- Theme -->
+        <tr id="row-theme">
+          <td class="feature-name">Theme Toggle</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td><span class="status-badge status-complete">Complete</span></td>
+          <td></td>
+        </tr>
+
+        <!-- Health -->
+        <tr id="row-health">
+          <td class="feature-name">Health Check</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-n">N</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-backend">Backend Only</span></td>
+          <td></td>
+        </tr>
+
+        <!-- Arena -->
+        <tr id="row-arena">
+          <td class="feature-name">Strategy Arena</td>
+          <td class="cell-n">N</td>
+          <td class="cell-n">N</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-n">N</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-backend">Backend Only</span></td>
+          <td><button class="expand-btn" data-target="detail-arena">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-arena"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">lib/arena/evaluate.ts</span>
+            <span class="file-tag">lib/arena/runner.ts</span>
+            <span class="file-tag">lib/arena/scenarios/family.ts</span>
+            <span class="file-tag">lib/arena/types.ts</span>
+          </div>
+          <div style="margin-top: 8px; color: var(--text-secondary); font-size: 12px;">Backtesting framework for conflict resolution strategies. Has 36 unit tests. No API or UI — intentionally test-only for hackathon.</div>
+        </td></tr>
+
+        <!-- Orphaned: OnboardingFlow -->
+        <tr id="row-onboarding-legacy">
+          <td class="feature-name">OnboardingFlow (Legacy)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-orphaned">Orphaned</span></td>
+          <td><button class="expand-btn" data-target="detail-onboarding-legacy">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-onboarding-legacy"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">inperson/OnboardingFlow.tsx</span>
+            <span class="file-tag">api/sessions/[code]/onboarding/route.ts</span>
+          </div>
+          <div style="margin-top: 8px; color: var(--red); font-size: 12px;">Replaced by adaptive conductor in XRayGlanceView. Component + API route exist but nothing mounts them. The PATCH /api/sessions/[code]/onboarding route is unreachable from the UI.</div>
+        </td></tr>
+
+        <!-- Orphaned: XRayView -->
+        <tr id="row-xray-legacy">
+          <td class="feature-name">XRayView (Legacy)</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-p">P</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-orphaned">Orphaned</span></td>
+          <td><button class="expand-btn" data-target="detail-xray-legacy">+</button></td>
+        </tr>
+        <tr class="expand-row" id="detail-xray-legacy"><td colspan="9">
+          <div class="file-list">
+            <span class="file-tag">inperson/XRayView.tsx</span>
+            <span class="file-tag">inperson/XRayScoreboard.tsx</span>
+          </div>
+          <div style="margin-top: 8px; color: var(--red); font-size: 12px;">Replaced by XRayGlanceView. Both components exist but nothing imports XRayView. XRayScoreboard is only imported by XRayView.</div>
+        </td></tr>
+
+        <!-- Orphaned: InsightPanel -->
+        <tr id="row-insight-legacy">
+          <td class="feature-name">InsightPanel</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-p">P</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-orphaned">Orphaned</span></td>
+          <td></td>
+        </tr>
+
+        <!-- Orphaned: SignalCard -->
+        <tr id="row-signal-legacy">
+          <td class="feature-name">SignalCard</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-na">-</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td class="cell-y">Y</td>
+          <td class="cell-n">N</td>
+          <td><span class="status-badge status-orphaned">Orphaned</span></td>
+          <td></td>
+        </tr>
+
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: Architecture Flow -->
+  <div class="tab-content" id="tab-architecture">
+    <div style="margin-bottom: 24px;">
+      <h3>Architecture Flow</h3>
+      <p class="label" style="margin-top: 8px;">Data flow from database through API to UI</p>
+    </div>
+    <div class="arch-container">
+      <svg class="arch-svg" viewBox="0 0 1050 680" width="1050" height="680">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Layer labels -->
+        <text x="50" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10" text-transform="uppercase" letter-spacing="1.5">Database</text>
+        <text x="230" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10">API Routes</text>
+        <text x="440" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10">Lib / Prompts</text>
+        <text x="640" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10">Hooks / State</text>
+        <text x="850" y="30" fill="#5c5855" font-family="var(--font-mono)" font-size="10">UI Components</text>
+
+        <!-- DB: Sessions -->
+        <rect x="20" y="60" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="90" y="86" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="11">sessions</text>
+
+        <!-- DB: Messages -->
+        <rect x="20" y="130" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="90" y="156" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="11">messages</text>
+
+        <!-- DB: Issues -->
+        <rect x="20" y="200" width="140" height="44" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="90" y="226" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="11">issues</text>
+
+        <!-- API: Sessions group -->
+        <rect x="210" y="50" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="76" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/sessions/*</text>
+
+        <!-- API: Messages -->
+        <rect x="210" y="110" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="136" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/messages</text>
+
+        <!-- API: Mediate -->
+        <rect x="210" y="170" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="196" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/mediate</text>
+
+        <!-- API: Conductor -->
+        <rect x="210" y="230" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="256" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/conductor</text>
+
+        <!-- API: Issues -->
+        <rect x="210" y="290" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="316" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/issues/analyze</text>
+
+        <!-- API: Summary -->
+        <rect x="210" y="350" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="290" y="376" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">/api/summary</text>
+
+        <!-- Lib: Claude Opus -->
+        <rect x="420" y="170" width="160" height="44" rx="4" fill="none" stroke="#5c5855" stroke-width="1" stroke-dasharray="6 4"/>
+        <text x="500" y="196" text-anchor="middle" fill="#5c5855" font-family="var(--font-mono)" font-size="10">Claude Opus 4.6</text>
+
+        <!-- Lib: Prompts -->
+        <rect x="420" y="230" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#f59e0b" stroke-width="1"/>
+        <text x="500" y="256" text-anchor="middle" fill="#f59e0b" font-family="var(--font-mono)" font-size="10">14 Lens Prompts</text>
+
+        <!-- Lib: Interventions -->
+        <rect x="420" y="290" width="160" height="44" rx="4" fill="#1f1d1c" stroke="#f59e0b" stroke-width="1"/>
+        <text x="500" y="316" text-anchor="middle" fill="#f59e0b" font-family="var(--font-mono)" font-size="10">interventions.ts</text>
+
+        <!-- Hooks: useSession -->
+        <rect x="630" y="60" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="710" y="83" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">useSession</text>
+
+        <!-- Hooks: useMessages -->
+        <rect x="630" y="115" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="710" y="138" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">useMessages</text>
+
+        <!-- Hooks: useIssues -->
+        <rect x="630" y="170" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="710" y="193" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">useIssues</text>
+
+        <!-- Hooks: useParallaxVoice -->
+        <rect x="630" y="225" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="710" y="248" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">useParallaxVoice</text>
+
+        <!-- Hooks: useAudioAnalyser -->
+        <rect x="630" y="280" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#4ecdc4" stroke-width="1"/>
+        <text x="710" y="303" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">useAudioAnalyser</text>
+
+        <!-- UI: SessionView -->
+        <rect x="840" y="60" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="83" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">SessionView</text>
+
+        <!-- UI: XRayGlanceView -->
+        <rect x="840" y="115" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="138" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">XRayGlanceView</text>
+
+        <!-- UI: MessageCard -->
+        <rect x="840" y="170" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="193" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">MessageCard+Melt</text>
+
+        <!-- UI: ActionPanel -->
+        <rect x="840" y="225" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="248" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">ActionPanel+Drawer</text>
+
+        <!-- UI: ParallaxPresence -->
+        <rect x="840" y="280" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="303" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">ParallaxPresence</text>
+
+        <!-- UI: SessionSummary -->
+        <rect x="840" y="335" width="160" height="38" rx="4" fill="#1f1d1c" stroke="#ef6f2e" stroke-width="1"/>
+        <text x="920" y="358" text-anchor="middle" fill="#eeeeee" font-family="var(--font-mono)" font-size="10">SessionSummary</text>
+
+        <!-- Orphaned components (grayed) -->
+        <rect x="840" y="420" width="160" height="38" rx="4" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="920" y="443" text-anchor="middle" fill="#e74c3c" font-family="var(--font-mono)" font-size="10">OnboardingFlow</text>
+
+        <rect x="840" y="470" width="160" height="38" rx="4" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="920" y="493" text-anchor="middle" fill="#e74c3c" font-family="var(--font-mono)" font-size="10">XRayView+Scoreboard</text>
+
+        <rect x="840" y="520" width="160" height="38" rx="4" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="920" y="543" text-anchor="middle" fill="#e74c3c" font-family="var(--font-mono)" font-size="10">InsightPanel</text>
+
+        <rect x="840" y="570" width="160" height="38" rx="4" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="920" y="593" text-anchor="middle" fill="#e74c3c" font-family="var(--font-mono)" font-size="10">SignalCard</text>
+
+        <text x="920" y="410" text-anchor="middle" fill="#e74c3c" font-family="var(--font-mono)" font-size="9" letter-spacing="1.5" text-transform="uppercase">Orphaned</text>
+
+        <!-- Flow lines: DB → API -->
+        <path d="M160,82 L210,72" stroke="#3d3a39" stroke-width="1" fill="none"/>
+        <path d="M160,82 L210,72" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M160,152 L210,132" stroke="#3d3a39" stroke-width="1" fill="none"/>
+        <path d="M160,152 L210,132" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M160,222 L210,312" stroke="#3d3a39" stroke-width="1" fill="none"/>
+        <path d="M160,222 L210,312" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+
+        <!-- Flow lines: API → Lib -->
+        <path d="M370,192 L420,192" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M370,252 L420,252" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M370,312 L420,312" stroke="#ef6f2e" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+
+        <!-- Flow lines: Hooks → UI -->
+        <path d="M790,79 L840,79" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M790,134 L840,134" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M790,189 L840,244" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M790,244 L840,134" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+        <path d="M790,299 L840,299" stroke="#4ecdc4" stroke-width="1.5" fill="none" stroke-dasharray="6 8" class="flow-line"/>
+
+        <!-- Realtime arrows (DB → Hooks, bypassing API) -->
+        <path d="M90,104 C90,400 630,400 630,79" stroke="#4ecdc4" stroke-width="1" fill="none" stroke-dasharray="4 6" opacity="0.4"/>
+        <text x="360" y="420" text-anchor="middle" fill="#4ecdc4" font-family="var(--font-mono)" font-size="9" opacity="0.6">Supabase Realtime</text>
+        <path d="M90,174 C90,440 630,440 630,134" stroke="#4ecdc4" stroke-width="1" fill="none" stroke-dasharray="4 6" opacity="0.4"/>
+        <path d="M90,244 C90,480 630,480 630,189" stroke="#4ecdc4" stroke-width="1" fill="none" stroke-dasharray="4 6" opacity="0.4"/>
+
+        <!-- Orphaned lines (broken) -->
+        <path d="M210,350 L840,439" stroke="#e74c3c" stroke-width="1" fill="none" stroke-dasharray="3 6" opacity="0.3"/>
+
+        <!-- Legend -->
+        <rect x="20" y="620" width="12" height="3" fill="#4ecdc4"/>
+        <text x="40" y="624" fill="#a49d9a" font-family="var(--font-mono)" font-size="9">Active connection</text>
+        <rect x="180" y="620" width="12" height="3" fill="#e74c3c" opacity="0.5"/>
+        <text x="200" y="624" fill="#a49d9a" font-family="var(--font-mono)" font-size="9">Orphaned</text>
+        <rect x="320" y="620" width="12" height="3" fill="#4ecdc4" opacity="0.4" stroke-dasharray="3 3"/>
+        <text x="340" y="624" fill="#a49d9a" font-family="var(--font-mono)" font-size="9">Realtime subscription</text>
+      </svg>
+    </div>
+
+    <style>
+      .flow-line { animation: flowDash 1.5s linear infinite; }
+      @keyframes flowDash { to { stroke-dashoffset: -28; } }
+    </style>
+  </div>
+
+  <!-- TAB 3: Gap Analysis -->
+  <div class="tab-content" id="tab-gaps">
+    <div style="margin-bottom: 24px;">
+      <h3>Gap Analysis</h3>
+      <p class="label" style="margin-top: 8px;">8 integration gaps identified, grouped by severity</p>
+    </div>
+
+    <!-- MEDIUM -->
+    <div style="margin-bottom: 32px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <span class="section-dot" style="background:var(--amber)"></span>
+        <span class="label">Medium Severity</span>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>No Authentication on Any Route</h4>
+          <div><span class="severity-badge severity-medium">Medium</span><span class="effort-badge">Effort: L</span></div>
+        </div>
+        <div class="gap-desc">All 11 API routes are public. RLS policies are all permissive (<code>using (true)</code>). Room codes (6-char alphanumeric) are the only access control. For the hackathon this is acceptable, but Claude API routes (<code>/api/mediate</code>, <code>/api/conductor</code>, <code>/api/issues/analyze</code>, <code>/api/summary</code>) are expensive to call and have no rate limiting.</div>
+        <div class="gap-files">
+          <div class="gap-files-label">Affected Routes</div>
+          <div class="file-list">
+            <span class="file-tag">api/mediate/route.ts</span>
+            <span class="file-tag">api/conductor/route.ts</span>
+            <span class="file-tag">api/issues/analyze/route.ts</span>
+            <span class="file-tag">api/sessions/[code]/summary/route.ts</span>
+          </div>
+        </div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, add rate limiting to the 4 Claude API routes (mediate, conductor, issues/analyze, summary). Use a simple in-memory rate limiter (Map with IP → timestamp[]) that allows max 30 requests per minute per IP. Add a shared middleware function in src/lib/rate-limit.ts and import it in each route. Return 429 with { error: "Rate limit exceeded" } when triggered. Run npm run build to verify.</div>
+        </div>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>NVC Signal Cards Not Shown in In-Person Mode</h4>
+          <div><span class="severity-badge severity-medium">Medium</span><span class="effort-badge">Effort: M</span></div>
+        </div>
+        <div class="gap-desc">The plan called for SignalCard components on the left/right rails of XRayGlanceView, showing NVC analysis per message. Instead, the side rails show ActionPanel (issues only). The SignalCard component exists but is orphaned. In-person users only see issue tracking, not the rich NVC analysis visible in remote mode's MessageCard.</div>
+        <div class="gap-files">
+          <div class="gap-files-label">Files Involved</div>
+          <div class="file-list">
+            <span class="file-tag">inperson/SignalCard.tsx (exists, orphaned)</span>
+            <span class="file-tag">inperson/XRayGlanceView.tsx (needs integration)</span>
+          </div>
+        </div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, wire SignalCard into XRayGlanceView. In the message rendering loop, for each message that has nvc_analysis, render a SignalCard on the appropriate side rail (person_a messages get left rail, person_b messages get right rail). Import SignalCard in XRayGlanceView.tsx and render it alongside or below the ActionPanel. Run npm run build to verify.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOW -->
+    <div style="margin-bottom: 32px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <span class="section-dot" style="background:var(--neutral-500)"></span>
+        <span class="label">Low Severity</span>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>Orphaned: OnboardingFlow + PATCH API Route</h4>
+          <div><span class="severity-badge severity-low">Low</span><span class="effort-badge">Effort: S</span></div>
+        </div>
+        <div class="gap-desc">The form-based OnboardingFlow component and its PATCH /api/sessions/[code]/onboarding endpoint are no longer used. The adaptive conductor replaced form-based onboarding. Both files are dead code.</div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete the orphaned onboarding files: src/components/inperson/OnboardingFlow.tsx and src/app/api/sessions/[code]/onboarding/route.ts. Grep for any remaining imports of OnboardingFlow and remove them. Run npm run build to verify nothing breaks.</div>
+        </div>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>Orphaned: XRayView + XRayScoreboard</h4>
+          <div><span class="severity-badge severity-low">Low</span><span class="effort-badge">Effort: S</span></div>
+        </div>
+        <div class="gap-desc">XRayView.tsx and XRayScoreboard.tsx were the original in-person layout, replaced by XRayGlanceView. Nothing imports XRayView anymore. XRayScoreboard is only imported by XRayView.</div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete src/components/inperson/XRayView.tsx and src/components/inperson/XRayScoreboard.tsx. Grep for remaining imports and remove them. Run npm run build to verify.</div>
+        </div>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>Orphaned: InsightPanel</h4>
+          <div><span class="severity-badge severity-low">Low</span><span class="effort-badge">Effort: S</span></div>
+        </div>
+        <div class="gap-desc">InsightPanel.tsx was created for NVC signal display but never imported by any active component.</div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete src/components/inperson/InsightPanel.tsx. Verify no imports reference it with grep. Run npm run build.</div>
+        </div>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>Strategy Arena Has No API or UI</h4>
+          <div><span class="severity-badge severity-low">Low</span><span class="effort-badge">Effort: M</span></div>
+        </div>
+        <div class="gap-desc">The arena/ module (evaluate.ts, runner.ts, scenarios/) is a backtesting framework for conflict resolution quality. It has 36 unit tests but no API endpoint or UI. For hackathon judging, consider adding a simple /api/arena/run endpoint or documenting it in BUILDING.md as a test-only module.</div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, document the Strategy Arena in BUILDING.md under a "Quality Assurance" section. Explain that lib/arena/ is a backtesting framework that validates Conflict Intelligence output against planted conflict patterns, with 36 unit tests across 4 test files. Note it's intentionally test-only (no UI needed) and link to the test command: npx vitest run.</div>
+        </div>
+      </div>
+
+      <div class="gap-card">
+        <div class="gap-header">
+          <h4>messages Table Missing UPDATE RLS Policy</h4>
+          <div><span class="severity-badge severity-low">Low</span><span class="effort-badge">Effort: S</span></div>
+        </div>
+        <div class="gap-desc">The messages table has INSERT and SELECT RLS policies but no UPDATE policy. The /api/mediate route writes nvc_analysis via the service role key (bypasses RLS), so this works. But it means Realtime UPDATE events may not propagate correctly to anon-key clients in all configurations.</div>
+        <div class="prompt-block">
+          <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+          <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, create a new migration that adds an UPDATE RLS policy to the messages table: CREATE POLICY "Anyone can read message updates" ON messages FOR SELECT USING (true); -- this already exists. Add: CREATE POLICY "Service can update messages" ON messages FOR UPDATE USING (true); Save as supabase/migrations/20260212000000_add_messages_update_rls.sql and run supabase db push.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Feature Detail -->
+  <div class="tab-content" id="tab-features">
+    <div style="margin-bottom: 24px;">
+      <h3>Feature Detail</h3>
+      <p class="label" style="margin-top: 8px;">Click any feature to expand its full integration chain</p>
+    </div>
+
+    <!-- Session Management -->
+    <div class="feature-card" id="feat-session">
+      <div class="feature-card-header" onclick="toggleFeature('feat-session')">
+        <div><span class="status-badge status-complete">Complete</span> <span style="margin-left: 12px;">Session Management</span></div>
+        <span class="label">5 API routes, 3 hooks, 4 components</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Database</span><span class="layer-value"><code>sessions</code> table — id, room_code, person_a/b_name, status, mode, context_mode, onboarding_step, onboarding_context</span></div>
+        <div class="layer-row"><span class="layer-label">API</span><span class="layer-value"><code>POST /api/sessions</code> (create) | <code>GET /api/sessions/[code]</code> (fetch) | <code>POST .../join</code> | <code>POST .../end</code> | <code>PATCH .../onboarding</code></span></div>
+        <div class="layer-row"><span class="layer-label">Types</span><span class="layer-value"><code>Session</code>, <code>SessionStatus</code>, <code>SessionMode</code>, <code>OnboardingStep</code>, <code>OnboardingContext</code>, <code>ConductorPhase</code>, <code>ContextMode</code></span></div>
+        <div class="layer-row"><span class="layer-label">State</span><span class="layer-value"><code>useSession</code> hook — Realtime UPDATE subscription, create/join/advance/refresh methods</span></div>
+        <div class="layer-row"><span class="layer-label">UI</span><span class="layer-value"><code>SessionView</code> (orchestrator), <code>ContextModePicker</code>, <code>NameEntry</code>, <code>WaitingState</code></span></div>
+        <div class="layer-row"><span class="layer-label">Page</span><span class="layer-value"><code>/session/[code]</code> + Landing page <code>/</code></span></div>
+      </div>
+    </div>
+
+    <!-- Conflict Intelligence -->
+    <div class="feature-card" id="feat-nvc">
+      <div class="feature-card-header" onclick="toggleFeature('feat-nvc')">
+        <div><span class="status-badge status-complete">Complete</span> <span style="margin-left: 12px;">Conflict Intelligence (14-Lens NVC)</span></div>
+        <span class="label">Core IP — 14 lens modules, Claude Opus</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Database</span><span class="layer-value"><code>messages.nvc_analysis</code> (JSONB) — stores V1 NvcAnalysis or V3 ConflictAnalysis | <code>messages.emotional_temperature</code> (float)</span></div>
+        <div class="layer-row"><span class="layer-label">API</span><span class="layer-value"><code>POST /api/mediate</code> — fetches message + history, calls Claude Opus, writes analysis back to message row</span></div>
+        <div class="layer-row"><span class="layer-label">Claude</span><span class="layer-value"><code>opus.ts</code> > <code>mediateMessage()</code> — streaming call to <code>claude-opus-4-6</code> with context-mode-activated lens prompt</span></div>
+        <div class="layer-row"><span class="layer-label">Prompts</span><span class="layer-value"><code>prompts/index.ts</code> orchestrates 14 lens modules: NVC, Gottman, CBT, TKI, Drama Triangle, Narrative, Attachment, Restorative, SCARF, OrgJustice, PsychSafety, Jehns, Power, IBR</span></div>
+        <div class="layer-row"><span class="layer-label">Types</span><span class="layer-value"><code>ConflictAnalysis</code>, <code>NvcAnalysis</code>, <code>LensResults</code>, <code>AnalysisMeta</code>, 14 per-lens result types, <code>isConflictAnalysis()</code> guard</span></div>
+        <div class="layer-row"><span class="layer-label">State</span><span class="layer-value"><code>useMessages</code> — Realtime UPDATE event triggers re-render when nvc_analysis is written</span></div>
+        <div class="layer-row"><span class="layer-label">UI</span><span class="layer-value"><code>MessageCard</code> (expandable analysis + Melt animation) | <code>LensBar</code> + <code>LensDetailPanel</code> (13 lens renderers) | <code>SignalRail</code> (temperature timeline)</span></div>
+      </div>
+    </div>
+
+    <!-- Conductor -->
+    <div class="feature-card" id="feat-conductor">
+      <div class="feature-card-header" onclick="toggleFeature('feat-conductor')">
+        <div><span class="status-badge status-complete">Complete</span> <span style="margin-left: 12px;">Adaptive Conductor</span></div>
+        <span class="label">474-line API route, 4 triggers, intervention detection</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Database</span><span class="layer-value"><code>sessions.onboarding_context</code> (JSONB) — conductorPhase, personAContext, personBContext, sessionGoals, contextSummary</span></div>
+        <div class="layer-row"><span class="layer-label">API</span><span class="layer-value"><code>POST /api/conductor</code> — triggers: session_active, message_sent, check_intervention, in_person_message</span></div>
+        <div class="layer-row"><span class="layer-label">Prompts</span><span class="layer-value"><code>prompts/conductor.ts</code> — buildGreetingPrompt, buildAcknowledgeAPrompt, buildSynthesisPrompt, buildAdaptivePrompt, buildInterventionPrompt</span></div>
+        <div class="layer-row"><span class="layer-label">Logic</span><span class="layer-value"><code>conductor/interventions.ts</code> — escalation (temp >= 0.85), dominance (3+ same sender), breakthrough (temp drop), resolution (sustained low)</span></div>
+        <div class="layer-row"><span class="layer-label">State</span><span class="layer-value">Derived from <code>session.onboarding_context.conductorPhase</code> in SessionView + XRayGlanceView</span></div>
+        <div class="layer-row"><span class="layer-label">UI</span><span class="layer-value"><code>SessionView</code> (remote: fires on session_active, message_sent) | <code>XRayGlanceView</code> (in-person: fires in_person_message, check_intervention)</span></div>
+      </div>
+    </div>
+
+    <!-- Issue Tracking -->
+    <div class="feature-card" id="feat-issues">
+      <div class="feature-card-header" onclick="toggleFeature('feat-issues')">
+        <div><span class="status-badge status-complete">Complete</span> <span style="margin-left: 12px;">Issue Tracking (In-Person)</span></div>
+        <span class="label">Realtime extraction + grading, both-sided attribution</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Database</span><span class="layer-value"><code>issues</code> table — raised_by, label, description, status (unaddressed/well_addressed/poorly_addressed/deferred), grading_rationale, position</span></div>
+        <div class="layer-row"><span class="layer-label">API</span><span class="layer-value"><code>POST /api/issues/analyze</code> — extracts new issues + grades existing ones per message. Claude provides raised_by attribution.</span></div>
+        <div class="layer-row"><span class="layer-label">State</span><span class="layer-value"><code>useIssues</code> hook — Realtime INSERT/UPDATE, derives personAIssues/personBIssues, provides updateIssueStatus()</span></div>
+        <div class="layer-row"><span class="layer-label">UI</span><span class="layer-value"><code>ActionPanel</code> (priority tiers: Address Now / For Later / Resolved) | <code>IssueDrawer</code> (mobile overlay) | <code>IssueCard</code> (status-colored)</span></div>
+        <div class="layer-row"><span class="layer-label">Polling</span><span class="layer-value">8-second interval during active phase as Realtime backup. Retroactive analysis on onboarding->active transition.</span></div>
+      </div>
+    </div>
+
+    <!-- Waveform Orbs -->
+    <div class="feature-card" id="feat-orbs">
+      <div class="feature-card-header" onclick="toggleFeature('feat-orbs')">
+        <div><span class="status-badge status-complete">Complete</span> <span style="margin-left: 12px;">Audio Waveform Orbs + TTS</span></div>
+        <span class="label">Web Audio API, synthetic waveform, speech synthesis</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Mic</span><span class="layer-value"><code>useAudioAnalyser</code> — mic access, AudioContext -> AnalyserNode -> Float32Array at 60fps</span></div>
+        <div class="layer-row"><span class="layer-label">Synthetic</span><span class="layer-value"><code>useSyntheticWaveform</code> — multi-harmonic sine waves for Claude's orb during analysis</span></div>
+        <div class="layer-row"><span class="layer-label">TTS</span><span class="layer-value"><code>useParallaxVoice</code> — SpeechSynthesis API, voice selection (Samantha/Google UK), rate 0.95</span></div>
+        <div class="layer-row"><span class="layer-label">UI</span><span class="layer-value"><code>AudioWaveformOrb</code> (SVG bezier path) | <code>OrbStrip</code> (3 orbs, routes mic to active speaker) | <code>ParallaxPresence</code> (in-person orb)</span></div>
+      </div>
+    </div>
+
+    <!-- Arena -->
+    <div class="feature-card" id="feat-arena">
+      <div class="feature-card-header" onclick="toggleFeature('feat-arena')">
+        <div><span class="status-badge status-backend">Backend Only</span> <span style="margin-left: 12px;">Strategy Arena (Backtesting)</span></div>
+        <span class="label">36 unit tests, no API or UI</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="layer-row"><span class="layer-label">Logic</span><span class="layer-value"><code>arena/evaluate.ts</code> — scoring: deEscalation (0.25), blindSpotDetection (0.25), translationQuality (0.20), lensRelevance (0.15), insightDepth (0.15)</span></div>
+        <div class="layer-row"><span class="layer-label">Runner</span><span class="layer-value"><code>arena/runner.ts</code> — runs scenario turns through Claude, collects scores</span></div>
+        <div class="layer-row"><span class="layer-label">Scenarios</span><span class="layer-value"><code>arena/scenarios/family.ts</code> — 3 family conflict scenarios with planted patterns</span></div>
+        <div class="layer-row"><span class="layer-label">Tests</span><span class="layer-value">36 unit tests across 4 files (vitest)</span></div>
+        <div class="layer-row"><span class="layer-label">Gap</span><span class="layer-value" style="color:var(--amber)">No API endpoint. No UI. Test-only module for quality validation.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: Assessment -->
+  <div class="tab-content" id="tab-assessment">
+    <div style="margin-bottom: 8px;">
+      <h3>Senior Dev Assessment</h3>
+      <span id="assess-progress" class="label">0 of 8 addressed</span>
+    </div>
+
+    <!-- What We Did Right -->
+    <div class="assess-section">
+      <div class="assess-section-header">
+        <span class="assess-dot green"></span>
+        <span class="label">What We Did Right</span>
+      </div>
+
+      <div class="win-card">
+        <h4>Realtime Architecture</h4>
+        <p>All 3 tables have Supabase Realtime enabled. Hooks subscribe to INSERT/UPDATE events with session-scoped filters. Manual refresh functions serve as fallback. This dual strategy (Realtime + polling) is exactly right for a real-time collaborative app.</p>
+      </div>
+
+      <div class="win-card">
+        <h4>Type System Alignment</h4>
+        <p>Zero orphaned types. Every TypeScript interface maps to a database column or JSONB schema. The <code>isConflictAnalysis()</code> type guard cleanly handles V1/V3 format evolution. ConductorPhase, IssueStatus, and ContextMode enums mirror SQL CHECK constraints exactly.</p>
+      </div>
+
+      <div class="win-card">
+        <h4>Separation of Concerns</h4>
+        <p>Prompts are modular (14 lens files). Business logic lives in lib/ (interventions, context-modes, temperature). API routes are thin orchestrators. Hooks handle state + subscriptions. Components are presentational. Clean layering throughout.</p>
+      </div>
+
+      <div class="win-card">
+        <h4>Graceful Degradation</h4>
+        <p>Every Claude API call has error handling that doesn't block the user. Mediation failure? Message still sent. Conductor failure? Phase advances anyway. TTS fails? Silent fallback. Voice unsupported? Text input. This is production-quality resilience.</p>
+      </div>
+
+      <div class="win-card">
+        <h4>Feature Completeness</h4>
+        <p>11 of 15 intentional features are fully wired end-to-end (73%). The remaining 4 are orphaned code from iteration, not missing features. Both remote and in-person modes work with independent UX paths sharing the same backend infrastructure.</p>
+      </div>
+    </div>
+
+    <!-- What Needs Fixing -->
+    <div class="assess-section">
+      <div class="assess-section-header">
+        <span class="assess-dot red"></span>
+        <span class="label">What Needs Fixing</span>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+          <span class="assess-label">Add Rate Limiting to Claude API Routes</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge severity-medium">Medium</span>
+          <p class="assess-desc">4 routes call Claude Opus with no rate limiting or authentication. A bad actor could rack up API costs.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, add rate limiting to the 4 Claude API routes (mediate, conductor, issues/analyze, summary). Use a simple in-memory rate limiter (Map with IP -> timestamp[]) that allows max 30 requests per minute per IP. Create src/lib/rate-limit.ts with a checkRateLimit(req, limit, windowMs) function. Return 429 with { error: "Rate limit exceeded" } when triggered. Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+          <span class="assess-label">Wire SignalCard into In-Person View</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge severity-medium">Medium</span>
+          <p class="assess-desc">In-person users see issue tracking (ActionPanel) but not the rich NVC analysis that remote users get via MessageCard. SignalCard exists but is orphaned.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, wire SignalCard into XRayGlanceView. In the center column message loop, for each message with nvc_analysis, render a SignalCard. Person A messages get a SignalCard in the left column, Person B in the right. Import SignalCard in XRayGlanceView.tsx. This gives in-person users the same NVC insight visibility as remote users. Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+          <span class="assess-label">Remove Orphaned Components</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge severity-low">Low</span>
+          <p class="assess-desc">4 orphaned components add confusion: OnboardingFlow, XRayView, XRayScoreboard, InsightPanel. Plus 1 orphaned API route (PATCH onboarding).</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete these orphaned files: src/components/inperson/OnboardingFlow.tsx, src/components/inperson/XRayView.tsx, src/components/inperson/XRayScoreboard.tsx, src/components/inperson/InsightPanel.tsx, and src/app/api/sessions/[code]/onboarding/route.ts. Grep for any remaining imports and remove them. Run npm run build to verify nothing breaks.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-fix-4">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+          <span class="assess-label">Add messages UPDATE RLS Policy</span>
+        </label>
+        <div class="assess-body">
+          <span class="severity-badge severity-low">Low</span>
+          <p class="assess-desc">The messages table lacks an UPDATE RLS policy. Service role key bypasses this, but explicit policies are better practice.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, create supabase/migrations/20260212000000_add_messages_update_rls.sql with: CREATE POLICY "Anyone can receive message updates" ON messages FOR UPDATE USING (true); Then run supabase db push to apply.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- High-Impact Next Steps -->
+    <div class="assess-section">
+      <div class="assess-section-header">
+        <span class="assess-dot orange"></span>
+        <span class="label">High-Impact Next Steps</span>
+      </div>
+
+      <div class="assessment-item" id="assess-next-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-1">
+          <span class="assess-label">01 Clean Up Dead Code Before Submission</span>
+        </label>
+        <div class="assess-body">
+          <p class="assess-desc">Remove 5 orphaned files. Judges will read the codebase — dead code creates confusion about which components are active. Clean repo = credibility.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete orphaned files: OnboardingFlow.tsx, XRayView.tsx, XRayScoreboard.tsx, InsightPanel.tsx, and api/sessions/[code]/onboarding/route.ts. Remove any stale imports. Run npm run build && npx tsc --noEmit. Commit as "[Stage 9: Ship] refactor: remove orphaned components replaced by XRayGlanceView".</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-2">
+          <span class="assess-label">02 Wire NVC Signals into In-Person Mode</span>
+        </label>
+        <div class="assess-body">
+          <p class="assess-desc">The biggest feature gap: in-person users miss the rich NVC analysis. SignalCard already exists — just needs wiring. This completes the "X-Ray" promise for in-person mode.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/, import SignalCard in XRayGlanceView.tsx. In the message rendering loop, for messages with nvc_analysis, render a SignalCard in the appropriate side column (person_a -> left ActionPanel area, person_b -> right). Show it below the ActionPanel or interspersed with messages. Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-3">
+          <span class="assess-label">03 Document Arena in BUILDING.md</span>
+        </label>
+        <div class="assess-body">
+          <p class="assess-desc">The Strategy Arena is impressive IP (backtesting conflict resolution strategies) but judges won't find it without documentation. Add a section to BUILDING.md explaining the scoring system and 36 tests.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, add a "Quality Assurance: Strategy Arena" section to BUILDING.md. Explain the backtesting framework in lib/arena/ — how it validates Conflict Intelligence output against planted conflict patterns, the 5 scoring dimensions (deEscalation, blindSpotDetection, translationQuality, lensRelevance, insightDepth), the family scenario suite, and how to run tests (npx vitest run). Include the 36-test count as a credibility signal.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-next-4">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-4">
+          <span class="assess-label">04 Add Rate Limiting Before Demo</span>
+        </label>
+        <div class="assess-body">
+          <p class="assess-desc">If judges poke at the API, unprotected Claude routes could drain budget. Simple in-memory rate limiting is 30 minutes of work and shows production awareness.</p>
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/, create src/lib/rate-limit.ts: export function checkRateLimit(ip, limit=30, windowMs=60000). Use a Map&lt;string, number[]&gt; that tracks request timestamps per IP. In each Claude API route (mediate, conductor, issues/analyze, summary), call checkRateLimit at the top and return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 }) if exceeded. Run npm run build.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompts Summary -->
+    <div class="assess-section">
+      <div class="assess-section-header">
+        <span class="assess-dot teal-dot"></span>
+        <span class="label">All Prompts</span>
+      </div>
+
+      <div class="assessment-item" id="assess-prompt-1">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-3">
+          <span class="assess-label">01 Remove orphaned components</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In the Parallax project at ~/Development/id8/products/parallax/, delete orphaned files: OnboardingFlow.tsx, XRayView.tsx, XRayScoreboard.tsx, InsightPanel.tsx, and api/sessions/[code]/onboarding/route.ts. Remove any stale imports. Run npm run build && npx tsc --noEmit. Commit as "[Stage 9: Ship] refactor: remove orphaned components replaced by XRayGlanceView".</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-prompt-2">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-2">
+          <span class="assess-label">02 Wire SignalCard into XRayGlanceView</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In Parallax at ~/Development/id8/products/parallax/, import SignalCard in XRayGlanceView.tsx. In the message rendering loop, for messages with nvc_analysis, render a SignalCard in the appropriate side column (person_a -> left, person_b -> right). Run npm run build to verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-prompt-3">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="next-3">
+          <span class="assess-label">03 Document Strategy Arena in BUILDING.md</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In Parallax BUILDING.md, add a "Quality Assurance: Strategy Arena" section explaining the backtesting framework, 5 scoring dimensions, family scenarios, and how to run 36 tests with npx vitest run.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-prompt-4">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-1">
+          <span class="assess-label">04 Add rate limiting to Claude API routes</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">In Parallax, create src/lib/rate-limit.ts with in-memory rate limiter (Map with IP -> timestamps, 30 req/min). Add checkRateLimit() call at top of mediate, conductor, issues/analyze, and summary routes. Return 429 on exceed. Run npm run build.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment-item" id="assess-prompt-5">
+        <label class="assessment-check">
+          <input type="checkbox" class="assess-checkbox" data-key="fix-4">
+          <span class="assess-label">05 Add messages UPDATE RLS policy</span>
+        </label>
+        <div class="assess-body">
+          <div class="prompt-block">
+            <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+            <div class="prompt-text">Create supabase/migrations/20260212000000_add_messages_update_rls.sql with UPDATE policy for messages table. Run supabase db push.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/json" id="artifact-data">
+{
+  "type": "integration-audit",
+  "topic": "parallax-full-stack",
+  "project": "parallax",
+  "generated": "2026-02-11T22:55:00Z",
+  "features": [
+    { "id": "session-mgmt", "name": "Session Management", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "messaging", "name": "Messaging (Remote)", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "conflict-intel", "name": "Conflict Intelligence", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "conductor", "name": "Adaptive Conductor", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "issue-tracking", "name": "Issue Tracking", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "session-summary", "name": "Session Summary", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "voice-input", "name": "Voice Input", "status": "complete", "layers": ["types","state","ui","page"] },
+    { "id": "waveform-orbs", "name": "Audio Waveform Orbs", "status": "complete", "layers": ["state","ui","page"] },
+    { "id": "tts", "name": "Text-to-Speech", "status": "complete", "layers": ["state","ui","page"] },
+    { "id": "context-modes", "name": "Context Mode Selection", "status": "complete", "layers": ["db","api","types","state","ui","page"] },
+    { "id": "theme", "name": "Theme Toggle", "status": "complete", "layers": ["state","ui","page"] },
+    { "id": "health", "name": "Health Check", "status": "backend_only", "layers": ["api"] },
+    { "id": "arena", "name": "Strategy Arena", "status": "backend_only", "layers": ["types"] },
+    { "id": "onboarding-legacy", "name": "OnboardingFlow", "status": "orphaned", "layers": [] },
+    { "id": "xray-legacy", "name": "XRayView", "status": "orphaned", "layers": [] },
+    { "id": "insight-panel", "name": "InsightPanel", "status": "orphaned", "layers": [] },
+    { "id": "signal-card", "name": "SignalCard", "status": "orphaned", "layers": [] }
+  ],
+  "gaps": [
+    { "id": "fix-1", "title": "No rate limiting on Claude routes", "severity": "MEDIUM" },
+    { "id": "fix-2", "title": "SignalCard not wired in in-person mode", "severity": "MEDIUM" },
+    { "id": "fix-3", "title": "Orphaned components (5 files)", "severity": "LOW" },
+    { "id": "fix-4", "title": "messages UPDATE RLS missing", "severity": "LOW" }
+  ],
+  "assessment": {
+    "wins": ["Realtime architecture", "Type system alignment", "Separation of concerns", "Graceful degradation", "Feature completeness (73%)"],
+    "fixes": [
+      { "id": "fix-1", "title": "Rate limiting", "severity": "MEDIUM" },
+      { "id": "fix-2", "title": "Wire SignalCard", "severity": "MEDIUM" },
+      { "id": "fix-3", "title": "Remove orphans", "severity": "LOW" },
+      { "id": "fix-4", "title": "UPDATE RLS", "severity": "LOW" }
+    ],
+    "next_steps": [
+      { "id": "next-1", "title": "Clean dead code", "impact": "Submission credibility" },
+      { "id": "next-2", "title": "Wire NVC signals", "impact": "Feature completeness" },
+      { "id": "next-3", "title": "Document Arena", "impact": "Judge discovery" },
+      { "id": "next-4", "title": "Rate limiting", "impact": "Production readiness" }
+    ]
+  },
+  "stats": {
+    "totalFeatures": 17,
+    "complete": 11,
+    "backendOnly": 2,
+    "orphaned": 4,
+    "gaps": 8,
+    "pctIntegrated": 73
+  }
+}
+</script>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    // Stagger reveal children
+    var tab = document.getElementById('tab-' + btn.dataset.tab);
+    var items = tab.querySelectorAll('.gap-card, .feature-card, .assessment-item, .win-card');
+    items.forEach(function(item, i) {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(12px)';
+      item.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      setTimeout(function() {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+      }, 60 * i);
+    });
+  });
+});
+
+// Expand rows in matrix
+document.querySelectorAll('.expand-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var target = document.getElementById(btn.dataset.target);
+    target.classList.toggle('visible');
+    btn.textContent = target.classList.contains('visible') ? '-' : '+';
+  });
+});
+
+// Feature card toggle
+function toggleFeature(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+// Copy prompt
+function copyPrompt(btn) {
+  var text = btn.parentElement.querySelector('.prompt-text').textContent;
+  navigator.clipboard.writeText(text);
+  btn.textContent = 'COPIED';
+  btn.classList.add('copied');
+  setTimeout(function() { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+}
+
+// Assessment checkboxes with localStorage
+var ASSESS_KEY = 'visualize-assess-parallax-integration-audit';
+
+document.querySelectorAll('.assess-checkbox').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+    state[this.dataset.key] = this.checked;
+    localStorage.setItem(ASSESS_KEY, JSON.stringify(state));
+    var item = this.closest('.assessment-item');
+    if (this.checked) { item.classList.add('completed'); }
+    else { item.classList.remove('completed'); }
+    // Two-way sync
+    var key = this.dataset.key;
+    var checked = this.checked;
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(sibling) {
+      if (sibling !== cb) {
+        sibling.checked = checked;
+        var sibItem = sibling.closest('.assessment-item');
+        if (checked) { sibItem.classList.add('completed'); }
+        else { sibItem.classList.remove('completed'); }
+      }
+    });
+    updateAssessProgress();
+  });
+});
+
+// Restore state
+window.addEventListener('load', function() {
+  var state = JSON.parse(localStorage.getItem(ASSESS_KEY) || '{}');
+  Object.keys(state).forEach(function(key) {
+    document.querySelectorAll('.assess-checkbox[data-key="' + key + '"]').forEach(function(cb) {
+      cb.checked = state[key];
+      if (state[key]) cb.closest('.assessment-item').classList.add('completed');
+    });
+  });
+  updateAssessProgress();
+  animateStats();
+});
+
+function updateAssessProgress() {
+  var fixes = document.querySelectorAll('.assessment-item[id^="assess-fix-"], .assessment-item[id^="assess-next-"]');
+  var total = fixes.length;
+  var done = 0;
+  fixes.forEach(function(f) { if (f.classList.contains('completed')) done++; });
+  var counter = document.getElementById('assess-progress');
+  if (counter) {
+    counter.textContent = done + ' of ' + total + ' addressed';
+    counter.style.color = done === total ? 'var(--teal)' : 'var(--text-secondary)';
+  }
+}
+
+// Animate stat counters
+function animateStats() {
+  var targets = { 'stat-features': 17, 'stat-complete': 11, 'stat-backend': 2, 'stat-orphaned': 4, 'stat-gaps': 8, 'stat-pct': 73 };
+  var suffix = { 'stat-pct': '%' };
+  Object.keys(targets).forEach(function(id, idx) {
+    var el = document.getElementById(id);
+    var target = targets[id];
+    var suf = suffix[id] || '';
+    var start = performance.now();
+    var delay = idx * 120;
+    setTimeout(function() {
+      function step(now) {
+        var elapsed = now - start - delay;
+        if (elapsed < 0) { requestAnimationFrame(step); return; }
+        var progress = Math.min(elapsed / 600, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(target * eased) + suf;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }, delay);
+  });
+}
+</script>
+
+</body>
+</html>

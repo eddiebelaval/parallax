@@ -1,0 +1,428 @@
+"use client";
+
+import { useState, useCallback, useEffect, useRef } from "react";
+import { ParallaxPresence } from "./ParallaxPresence";
+import { SignalCard } from "./SignalCard";
+import { ActionPanel } from "./ActionPanel";
+import { IssueDrawer } from "./IssueDrawer";
+import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
+import { useMessages } from "@/hooks/useMessages";
+import { useSession } from "@/hooks/useSession";
+import { useIssues } from "@/hooks/useIssues";
+import { useParallaxVoice } from "@/hooks/useParallaxVoice";
+import type {
+  Session,
+  OnboardingContext,
+} from "@/types/database";
+
+interface XRayGlanceViewProps {
+  session: Session;
+  roomCode: string;
+}
+
+export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlanceViewProps) {
+  const { session, refreshSession } = useSession(roomCode);
+  const activeSession = session || initialSession;
+  const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
+  const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
+  const { speak, isSpeaking, cancel: cancelSpeech } = useParallaxVoice();
+
+  const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [conductorLoading, setConductorLoading] = useState(false);
+  const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
+  const [mediationError, setMediationError] = useState<string | null>(null);
+  const [isMicHot, setIsMicHot] = useState(false);
+
+  // Track last spoken mediator message to avoid double-speak
+  const lastSpokenRef = useRef<string | null>(null);
+  const conductorFired = useRef(false);
+  const prevPhaseRef = useRef<string | undefined>(undefined);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
+  const conductorPhase = onboarding.conductorPhase;
+  const isOnboarding = conductorPhase === "onboarding";
+  const isActive = conductorPhase === "active";
+
+  const personAName = activeSession.person_a_name ?? "Person A";
+  const personBName = activeSession.person_b_name ?? "Person B";
+
+  const activeSender = isOnboarding ? directedTo : currentTurn;
+  const activeSpeaker = activeSender === "person_a" ? personAName : personBName;
+
+  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
+
+  function senderColor(sender: string): string {
+    if (sender === "mediator") return "text-temp-cool";
+    if (sender === "person_a") return "text-temp-warm";
+    return "text-temp-hot";
+  }
+
+  function senderLabel(sender: string): string {
+    if (sender === "mediator") return "Parallax";
+    if (sender === "person_a") return personAName;
+    return personBName;
+  }
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages.length]);
+
+  // Fire conductor on mount (greeting) for in-person mode
+  // Wait for messagesLoading to finish so we know if messages already exist (reload case)
+  useEffect(() => {
+    if (messagesLoading) return; // Wait for initial fetch before deciding
+    if (conductorFired.current || !activeSession.id || !isOnboarding) return;
+    if (messages.length > 0) return; // Already have messages (reload), don't re-greet
+
+    conductorFired.current = true;
+    setConductorLoading(true);
+
+    fetch("/api/conductor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: activeSession.id,
+        trigger: "in_person_message",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.directed_to) setDirectedTo(data.directed_to);
+        refreshSession();
+        refreshMessages();
+      })
+      .catch(() => {
+        conductorFired.current = false;
+      })
+      .finally(() => setConductorLoading(false));
+  }, [activeSession.id, isOnboarding, messagesLoading, messages.length, refreshSession, refreshMessages]);
+
+  // When transitioning from onboarding → active, run retroactive issue analysis
+  // on the last human messages so the panels seed immediately
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = conductorPhase;
+
+    if (prev === "onboarding" && conductorPhase === "active") {
+      // Find the last 2 human messages to analyze retroactively
+      const humanMessages = messages.filter((m) => m.sender !== "mediator");
+      const toAnalyze = humanMessages.slice(-2);
+      for (const msg of toAnalyze) {
+        fetch("/api/issues/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: activeSession.id,
+            message_id: msg.id,
+          }),
+        })
+          .then(() => refreshIssues())
+          .catch(() => {});
+      }
+    }
+  }, [conductorPhase, activeSession.id, messages, refreshIssues]);
+
+  // Poll for new issues every 8 seconds during active phase
+  useEffect(() => {
+    if (!isActive) return;
+    const interval = setInterval(() => {
+      refreshIssues();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isActive, refreshIssues]);
+
+  // Speak new mediator messages via TTS
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const latest = messages[messages.length - 1];
+    if (latest.sender !== "mediator") return;
+    if (lastSpokenRef.current === latest.id) return;
+
+    lastSpokenRef.current = latest.id;
+    speak(latest.content);
+  }, [messages, speak]);
+
+  // Fire conductor or mediation on message send
+  const handleSend = useCallback(
+    async (content: string) => {
+      setMediationError(null);
+      const sent = await sendMessage(activeSender, content);
+      if (!sent) return;
+
+      if (isOnboarding) {
+        // During onboarding: fire adaptive conductor
+        setConductorLoading(true);
+        try {
+          const res = await fetch("/api/conductor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: activeSession.id,
+              trigger: "in_person_message",
+            }),
+          });
+          const data = await res.json();
+          if (data.directed_to) setDirectedTo(data.directed_to);
+          refreshSession();
+          await refreshMessages();
+        } catch {
+          setMediationError("Conductor unavailable -- message saved");
+        } finally {
+          setConductorLoading(false);
+        }
+      } else {
+        // During active phase: fire NVC mediation + issue analysis
+        setIsAnalyzing(true);
+        try {
+          const res = await fetch("/api/mediate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: activeSession.id,
+              message_id: sent.id,
+            }),
+          });
+          if (!res.ok) {
+            setMediationError("Analysis unavailable -- message saved");
+          }
+          // Refresh to pick up NVC analysis update + any mediator messages
+          await refreshMessages();
+        } catch {
+          setMediationError("Connection lost -- analysis skipped");
+        } finally {
+          setIsAnalyzing(false);
+        }
+
+        // Issue analysis — refresh issues when done
+        fetch("/api/issues/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: activeSession.id,
+            message_id: sent.id,
+          }),
+        })
+          .then(() => refreshIssues())
+          .catch(() => {});
+
+        // Intervention check after delay (includes resolution detection)
+        setTimeout(async () => {
+          try {
+            const intRes = await fetch("/api/conductor", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                session_id: activeSession.id,
+                trigger: "check_intervention",
+              }),
+            });
+            const intData = await intRes.json();
+            if (intData.intervened) {
+              await refreshMessages();
+              refreshIssues();
+            }
+          } catch {}
+        }, 5000);
+      }
+    },
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
+  );
+
+  const endSession = useCallback(async () => {
+    cancelSpeech();
+    try {
+      await fetch(`/api/sessions/${roomCode}/end`, { method: "POST" });
+      refreshSession();
+    } catch {}
+  }, [roomCode, refreshSession, cancelSpeech]);
+
+  const totalIssues = personAIssues.length + personBIssues.length;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Header */}
+      <div className="px-4 py-2 border-b border-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[10px] text-ember-700">{roomCode}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              {activeSpeaker}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {!isOnboarding && (
+            <button
+              onClick={() => setIssueDrawerOpen(true)}
+              className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+            >
+              Issues{totalIssues > 0 ? ` (${totalIssues})` : ""}
+            </button>
+          )}
+          <button
+            onClick={endSession}
+            className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+          >
+            End
+          </button>
+        </div>
+      </div>
+
+      {/* ParallaxPresence */}
+      <div className="flex-shrink-0 border-b border-border">
+        <ParallaxPresence
+          isAnalyzing={isAnalyzing || conductorLoading}
+          isSpeaking={isSpeaking}
+          statusLabel={isMicHot ? "Recording..." : undefined}
+        />
+      </div>
+
+      {/* Three-column layout: Insight panels + Messages */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left panel — Person A signals + issues (desktop only) */}
+        <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <div className="space-y-1 p-2">
+            {messages
+              .filter((m) => m.sender === "person_a" && m.nvc_analysis)
+              .map((m) => (
+                <SignalCard
+                  key={`signal-${m.id}`}
+                  analysis={m.nvc_analysis!}
+                  side="left"
+                />
+              ))}
+          </div>
+          <ActionPanel
+            personName={personAName}
+            issues={personAIssues}
+            side="left"
+            onUpdateStatus={updateIssueStatus}
+          />
+        </div>
+
+        {/* Center column — Messages */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+          <div className="max-w-2xl mx-auto px-3 py-3 space-y-2">
+            {messages.map((msg) => {
+              const isPersonA = msg.sender === "person_a";
+              const isMediator = msg.sender === "mediator";
+
+              return (
+                <div key={msg.id} className="signal-card-enter">
+                  <div
+                    className={`px-3 py-2 rounded ${
+                      isMediator ? "bg-transparent" : "bg-surface"
+                    }`}
+                  >
+                    {/* Sender label */}
+                    <span
+                      className={`font-mono text-[9px] uppercase tracking-widest ${
+                        senderColor(msg.sender)
+                      }`}
+                    >
+                      {senderLabel(msg.sender)}
+                    </span>
+                    <p
+                      className={`text-sm mt-0.5 leading-relaxed ${
+                        isMediator
+                          ? "text-temp-cool/80 italic"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {msg.content}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Loading indicator */}
+            {(conductorLoading || isAnalyzing) && (
+              <div className="flex justify-center py-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-temp-cool animate-pulse" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right panel — Person B signals + issues (desktop only) */}
+        <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <div className="space-y-1 p-2">
+            {messages
+              .filter((m) => m.sender === "person_b" && m.nvc_analysis)
+              .map((m) => (
+                <SignalCard
+                  key={`signal-${m.id}`}
+                  analysis={m.nvc_analysis!}
+                  side="right"
+                />
+              ))}
+          </div>
+          <ActionPanel
+            personName={personBName}
+            issues={personBIssues}
+            side="right"
+            onUpdateStatus={updateIssueStatus}
+          />
+        </div>
+      </div>
+
+      {/* Mobile: issue panels below messages */}
+      {hasIssues && (
+        <div className="md:hidden flex-shrink-0 border-t border-border">
+          <div className="grid grid-cols-2 divide-x divide-border">
+            <div className="max-h-40 overflow-y-auto">
+              <ActionPanel
+                personName={personAName}
+                issues={personAIssues}
+                side="left"
+                onUpdateStatus={updateIssueStatus}
+              />
+            </div>
+            <div className="max-h-40 overflow-y-auto">
+              <ActionPanel
+                personName={personBName}
+                issues={personBIssues}
+                side="right"
+                onUpdateStatus={updateIssueStatus}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mediation error */}
+      {mediationError && (
+        <div className="px-4 py-1.5 border-t border-border flex-shrink-0">
+          <p className="font-mono text-xs text-accent">{mediationError}</p>
+        </div>
+      )}
+
+      {/* Input bar */}
+      <div className="flex-shrink-0">
+        <ActiveSpeakerBar
+          activeSpeakerName={activeSpeaker}
+          onSend={handleSend}
+          disabled={conductorLoading}
+          onMicStateChange={setIsMicHot}
+        />
+      </div>
+
+      {/* Issue drawer */}
+      <IssueDrawer
+        open={issueDrawerOpen}
+        onClose={() => setIssueDrawerOpen(false)}
+        personAIssues={personAIssues}
+        personBIssues={personBIssues}
+        personAName={personAName}
+        personBName={personBName}
+      />
+    </div>
+  );
+}

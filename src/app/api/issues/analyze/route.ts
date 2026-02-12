@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { analyzeIssues } from '@/lib/opus'
 import { parseIssueAnalysis } from '@/lib/prompts'
 import { buildNameMap, toConversationHistory } from '@/lib/conversation'
@@ -7,6 +8,9 @@ import type { Message, MessageSender } from '@/types/database'
 
 // POST /api/issues/analyze — extract issues + grade existing ones
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const supabase = createServerClient()
   const { session_id, message_id } = await request.json()
 
@@ -69,10 +73,13 @@ export async function POST(request: Request) {
       (max, i) => Math.max(max, (i as unknown as { position: number }).position ?? 0),
       0
     )
-    const raisedBy: 'person_a' | 'person_b' = targetMessage.sender === 'person_a' ? 'person_a' : 'person_b'
-    const inserts = result.newIssues.map((issue: { label: string; description: string }, i: number) => ({
+    const defaultRaisedBy: 'person_a' | 'person_b' = targetMessage.sender === 'person_a' ? 'person_a' : 'person_b'
+    const inserts = result.newIssues.map((issue: { label: string; description: string; raised_by?: string }, i: number) => ({
       session_id,
-      raised_by: raisedBy,
+      // Use Claude's attribution if valid, otherwise default to the speaker
+      raised_by: (issue.raised_by === 'person_a' || issue.raised_by === 'person_b')
+        ? issue.raised_by
+        : defaultRaisedBy,
       source_message_id: message_id,
       label: issue.label,
       description: issue.description,

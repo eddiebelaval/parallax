@@ -26,7 +26,14 @@ export function useSession(roomCode: string) {
           filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
-          if (!cancelled) setSession(payload.new as Session)
+          if (!cancelled) {
+            // Merge with existing state — Realtime payloads may omit columns
+            // when REPLICA IDENTITY FULL is not set on the table
+            setSession(prev => {
+              if (!prev) return payload.new as Session
+              return { ...prev, ...(payload.new as Partial<Session>) }
+            })
+          }
         }
       )
       .subscribe()
@@ -53,12 +60,12 @@ export function useSession(roomCode: string) {
   }, [roomCode])
 
   // Create a new session
-  const createSession = useCallback(async (personAName?: string) => {
+  const createSession = useCallback(async (personAName?: string, userId?: string) => {
     setError(null)
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ person_a_name: personAName }),
+      body: JSON.stringify({ person_a_name: personAName, ...(userId ? { user_id: userId } : {}) }),
     })
     if (!res.ok) {
       const data = await res.json()
@@ -71,18 +78,28 @@ export function useSession(roomCode: string) {
   }, [])
 
   // Join a session as person A or B
-  const joinSession = useCallback(async (name: string, side: 'a' | 'b') => {
+  const joinSession = useCallback(async (name: string, side: 'a' | 'b', userId?: string) => {
     setError(null)
     const res = await fetch(`/api/sessions/${roomCode}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, side }),
+      body: JSON.stringify({ name, side, ...(userId ? { user_id: userId } : {}) }),
     })
     if (!res.ok) {
       const data = await res.json()
       setError(data.error || 'Failed to join session')
       return null
     }
+    const data = await res.json()
+    setSession(data)
+    return data as Session
+  }, [roomCode])
+
+  // Re-fetch session from the server — use when Realtime may not deliver
+  // (e.g., after conductor API calls that update onboarding_context)
+  const refreshSession = useCallback(async () => {
+    const res = await fetch(`/api/sessions/${roomCode}`)
+    if (!res.ok) return null
     const data = await res.json()
     setSession(data)
     return data as Session
@@ -106,5 +123,5 @@ export function useSession(roomCode: string) {
     return data as Session
   }, [roomCode])
 
-  return { session, loading, error, createSession, joinSession, advanceOnboarding }
+  return { session, loading, error, createSession, joinSession, advanceOnboarding, refreshSession }
 }

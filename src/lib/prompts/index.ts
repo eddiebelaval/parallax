@@ -52,7 +52,10 @@ CONTEXT: You will receive the conversation history and the latest message. Analy
  * Builds the complete system prompt for a given context mode.
  * Concatenates preamble + context framing + active lens sections + response schema.
  */
-export function buildConflictIntelligencePrompt(contextMode: ContextMode): string {
+export function buildConflictIntelligencePrompt(
+  contextMode: ContextMode,
+  sessionContext?: { goals?: string[]; contextSummary?: string },
+): string {
   const activeLenses = CONTEXT_MODE_LENSES[contextMode]
 
   const lensInstructions = activeLenses
@@ -64,12 +67,20 @@ export function buildConflictIntelligencePrompt(contextMode: ContextMode): strin
     .map((id) => LENS_MODULES[id].responseSchema)
     .join(',\n    ')
 
+  let sessionContextBlock = ''
+  if (sessionContext?.goals && sessionContext.goals.length > 0) {
+    sessionContextBlock += `\n\nSESSION GOALS (established during onboarding):\n${sessionContext.goals.map((g, i) => `${i + 1}. ${g}`).join('\n')}\n\nWhen analyzing, note if this message advances or undermines these goals in your primaryInsight.`
+  }
+  if (sessionContext?.contextSummary) {
+    sessionContextBlock += `\n\nSESSION CONTEXT (mediator's synthesis of both perspectives):\n${sessionContext.contextSummary}`
+  }
+
   return `${PREAMBLE}
 
 CONTEXT MODE: ${contextMode}
 The following lenses are active for this context. Analyze through each one:
 
-${lensInstructions}
+${lensInstructions}${sessionContextBlock}
 
 ---
 

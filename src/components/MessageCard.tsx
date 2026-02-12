@@ -110,7 +110,7 @@ export function MessageCard({
           <span
             className={`font-mono text-xs uppercase tracking-wider ${style.nameColor}`}
           >
-            {sender === "mediator" ? "Claude" : senderName}
+            {sender === "mediator" ? "Parallax" : senderName}
           </span>
           <span className="font-mono text-xs text-ember-700">
             {timestamp}

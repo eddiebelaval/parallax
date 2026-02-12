@@ -20,6 +20,7 @@ interface PersonPanelProps {
   roomCode: string;
   bothJoined: boolean;
   onEndSession: () => void;
+  endingSession?: boolean;
   messages: Message[];
   personAName: string;
   personBName: string;
@@ -40,6 +41,7 @@ export function PersonPanel({
   roomCode,
   bothJoined,
   onEndSession,
+  endingSession = false,
   messages,
   personAName,
   personBName,
@@ -69,9 +71,10 @@ export function PersonPanel({
           {bothJoined && (
             <button
               onClick={onEndSession}
-              className="font-mono text-xs uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+              disabled={endingSession}
+              className="font-mono text-xs uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors disabled:opacity-40"
             >
-              End
+              {endingSession ? "Ending..." : "End"}
             </button>
           )}
         </div>

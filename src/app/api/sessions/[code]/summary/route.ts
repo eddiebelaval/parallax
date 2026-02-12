@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { summarizeSession } from '@/lib/opus'
+import type { V3MessageContext } from '@/lib/opus'
 import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
-import type { Message, SessionSummaryData } from '@/types/database'
+import { isConflictAnalysis } from '@/types/database'
+import type { Message, ConflictAnalysis, NvcAnalysis, SessionSummaryData, OnboardingContext } from '@/types/database'
 
 function parseSessionSummary(raw: string): SessionSummaryData | null {
   try {
@@ -24,10 +27,32 @@ function parseSessionSummary(raw: string): SessionSummaryData | null {
       personAStrength: String(parsed.personAStrength || ''),
       personBStrength: String(parsed.personBStrength || ''),
       overallInsight: String(parsed.overallInsight),
+      lensInsights: Array.isArray(parsed.lensInsights)
+        ? parsed.lensInsights.map(String)
+        : [],
+      resolutionTrajectory: String(parsed.resolutionTrajectory || ''),
     }
   } catch {
     return null
   }
+}
+
+/**
+ * Extract V3 context from messages that have ConflictAnalysis data.
+ */
+function extractV3Context(messages: Message[]): V3MessageContext[] {
+  const contexts: V3MessageContext[] = []
+  for (const msg of messages) {
+    if (msg.nvc_analysis && isConflictAnalysis(msg.nvc_analysis as NvcAnalysis | ConflictAnalysis)) {
+      const analysis = msg.nvc_analysis as ConflictAnalysis
+      contexts.push({
+        primaryInsight: analysis.meta.primaryInsight,
+        resolutionDirection: analysis.meta.resolutionDirection,
+        activeLenses: analysis.meta.activeLenses,
+      })
+    }
+  }
+  return contexts
 }
 
 /**
@@ -39,9 +64,12 @@ function parseSessionSummary(raw: string): SessionSummaryData | null {
  * Response: { summary: SessionSummary }
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const { code } = await params
   const supabase = createServerClient()
 
@@ -80,13 +108,23 @@ export async function POST(
     nameMap,
   )
 
+  // Extract V3 lens context from messages (if any have ConflictAnalysis)
+  const v3Context = extractV3Context(messages as Message[])
+
   // Call Claude for session summary
   let rawText: string
   try {
+    const onboarding = session.onboarding_context as OnboardingContext | null
     rawText = await summarizeSession(
       nameMap.person_a,
       nameMap.person_b,
       conversationHistory,
+      v3Context.length > 0 ? v3Context : undefined,
+      onboarding?.sessionGoals,
+      {
+        personA: !!session.person_a_user_id,
+        personB: !!session.person_b_user_id,
+      },
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Claude API error'
