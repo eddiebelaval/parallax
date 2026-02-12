@@ -1,4 +1,31 @@
-# Building parallax
+# Building Parallax
+
+## Table of Contents
+
+### Methodology
+- [ID8 Pipeline](#methodology-id8-pipeline) — The 11-stage build methodology
+- [Gate Log](#gate-log) — Stage 1-5 gate passes and overrides
+
+### Design Documents
+- [V2: User Intelligence Layer](#v2-user-intelligence-layer) — Interview-built behavioral profiles
+- [V3: Conflict Intelligence Engine](#v3-conflict-intelligence-engine) — 14 analytical lenses, 6 context modes
+- [V4: Strategy Arena](#v4-strategy-arena----backtesting-for-conflict-resolution) — Backtesting for conflict resolution
+
+### Build Log (Chronological)
+- [Stage 5 Hardening](#stage-5-hardening-assessment-fixes) — Assessment fixes (Feb 11)
+- [Stage 7: Test Coverage](#stage-7-test-coverage--full-stack) — 475 tests across 47 files (Feb 11)
+- [Stage 8: In-Person Mode](#stage-8-in-person-mode--x-ray-glance-view) — X-Ray Glance View (Feb 11)
+- [ElevenLabs Voice](#elevenlabs-voice-integration) — TTS integration (Feb 11)
+- [Conversational Layer](#conversational-layer-parallax-speaks) — Explorer + Guide (Feb 11)
+- [Self-Narrating Landing Page](#self-narrating-landing-page) — Dynamic narration + visual redesign (Feb 11)
+- [Stage 9: Integration Audit](#stage-9-integration-audit--assessment-fixes) — Audit + fixes (Feb 12)
+- [Intelligence Network: Implementation](#intelligence-network-implementation-pr-27) — PR #27 (Feb 12)
+- [Intelligence Network: UI Integration](#intelligence-network-ui-integration--persona-architecture) — Persona architecture (Feb 12)
+- [Remote Session Redesign](#remote-session-redesign-ux-refinements) — TTS, coaching tabs, waiting chat (Feb 12)
+- [Branch Consolidation](#branch-consolidation--production-deployment-2026-02-12) — 3 PRs merged to main (Feb 12)
+- [Interview Page Rebuild](#interview-page-conversational-rebuild) — Conversational design parity (Feb 12)
+
+---
 
 ## Methodology: ID8 Pipeline
 
@@ -674,12 +701,16 @@ Minimal but functional:
 
 ### Interview UI
 
-Chat-style interface with phase progress indicator:
+Conversational interface with full session parity (rebuilt in Stage 9):
 
-- **Phase progress bar** — 4 segments, color-coded (completed = teal, current = accent, future = border)
-- **Message bubbles** — User messages right-aligned with accent tint, Parallax messages left-aligned with surface background and teal dot indicator
-- **Loading state** — Pulsing teal dot with "Parallax is thinking..." label
-- **Completion screen** — Signal count, links to profile and session start
+- **ParallaxPresence orb** — Teal orb with synthetic waveform while thinking, real audio waveform during TTS
+- **Typewriter + TTS** — Each Parallax response reveals character-by-character with synchronized ElevenLabs voice
+- **Backlit glow messages** — `backlit-cool` for Parallax, `backlit-warm` for user, matching session design language
+- **ActiveSpeakerBar** — Voice-first input (Web Speech API) with text fallback, replaces form input
+- **Turn-taking** — Input disabled while Parallax is thinking, typing, or speaking (`isBusy` gate)
+- **Phase indicator** — Minimal monospace line ("Phase 1 of 4 · Context Setting"), no progress bar
+- **Phase transitions** — 150ms opacity fade, cancel in-progress TTS/typewriter, reset tracking refs
+- **Completion screen** — Parallax orb (idle breathing), signal count, profile/session CTAs
 - **Auth-gated** — Redirects to `/auth` if not logged in
 
 ### Profile Dashboard
@@ -1236,6 +1267,8 @@ When she finishes, the header slides in with a mini Listen pill. A "Talk to Para
 If they replay three times, Parallax opens with a joke about them coming back. If it's midnight, she acknowledges they're burning the midnight oil. If it's Monday morning, she's bright and energized.
 
 The product introduces itself. Differently. Every time.
+
+---
 
 ## Remote Session Redesign: UX Refinements
 
