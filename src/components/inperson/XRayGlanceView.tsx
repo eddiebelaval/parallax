@@ -25,7 +25,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const activeSession = session || initialSession;
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
-  const { speak, isSpeaking, cancel: cancelSpeech } = useParallaxVoice();
+  const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -280,6 +280,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           isAnalyzing={isAnalyzing || conductorLoading}
           isSpeaking={isSpeaking}
           statusLabel={isMicHot ? "Recording..." : undefined}
+          voiceWaveform={voiceWaveform}
+          voiceEnergy={voiceEnergy}
         />
       </div>
 

@@ -5,7 +5,10 @@ import { conductorMessage } from '@/lib/opus'
 import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
 import {
   buildGreetingPrompt,
-  buildAcknowledgeAPrompt,
+  buildGreetingAPrompt,
+  buildProcessAPrompt,
+  buildWaitingChatPrompt,
+  buildGreetingBPrompt,
   buildSynthesisPrompt,
   buildInterventionPrompt,
   buildAdaptivePrompt,
@@ -13,15 +16,21 @@ import {
 import { checkForIntervention } from '@/lib/conductor/interventions'
 import type { Message, ContextMode, ConductorPhase, ConflictAnalysis, OnboardingContext } from '@/types/database'
 
-type ConductorTrigger = 'session_active' | 'message_sent' | 'check_intervention' | 'in_person_message'
+type ConductorTrigger =
+  | 'session_active'
+  | 'person_a_ready'
+  | 'person_b_joined'
+  | 'message_sent'
+  | 'check_intervention'
+  | 'in_person_message'
 
 /**
  * POST /api/conductor
  *
  * Orchestrates the Parallax conductor — manages conversational onboarding
- * and in-session interventions for remote mode.
+ * and in-session interventions for both remote and in-person modes.
  *
- * Body: { session_id, trigger, message_id?, analysis? }
+ * Body: { session_id, trigger, message_id? }
  */
 export async function POST(request: Request) {
   const rateLimited = checkRateLimit(request)
@@ -60,9 +69,10 @@ export async function POST(request: Request) {
   const onboarding = (session.onboarding_context as OnboardingContext) || {}
   const phase: ConductorPhase | undefined = onboarding.conductorPhase
 
-  // --- Trigger: session_active ---
-  // Both people joined. Send the greeting and advance to gather_a.
-  if (trigger === 'session_active') {
+  // --- Trigger: person_a_ready ---
+  // Person A just arrived at the session page (remote mode, conversational onboarding).
+  // Parallax greets them, asks for name + situation.
+  if (trigger === 'person_a_ready') {
     // Set greeting phase IMMEDIATELY so the client blocks input while Claude thinks
     await supabase
       .from('sessions')
@@ -74,13 +84,12 @@ export async function POST(request: Request) {
       })
       .eq('id', session_id)
 
-    const { system, user } = buildGreetingPrompt(personAName, personBName, contextMode)
+    const { system, user } = buildGreetingAPrompt(contextMode)
 
     let greeting: string
     try {
       greeting = await conductorMessage(system, user)
     } catch {
-      // Graceful degradation: advance to active if greeting fails
       await supabase
         .from('sessions')
         .update({
@@ -100,7 +109,112 @@ export async function POST(request: Request) {
       content: greeting,
     })
 
-    // Advance phase to gather_a — Sarah can now type
+    // Advance phase to gather_a — Person A can now type
+    await supabase
+      .from('sessions')
+      .update({
+        onboarding_context: {
+          ...onboarding,
+          conductorPhase: 'gather_a',
+        },
+      })
+      .eq('id', session_id)
+
+    return NextResponse.json({ phase: 'gather_a', message: greeting })
+  }
+
+  // --- Trigger: person_b_joined ---
+  // Person B just arrived at the session page (remote mode).
+  // Parallax greets them, mentions A has already shared.
+  if (trigger === 'person_b_joined') {
+    // Set greeting phase — blocks input while Claude thinks
+    await supabase
+      .from('sessions')
+      .update({
+        onboarding_context: {
+          ...onboarding,
+          conductorPhase: 'greeting',
+        },
+      })
+      .eq('id', session_id)
+
+    const { system, user } = buildGreetingBPrompt(personAName, contextMode)
+
+    let greeting: string
+    try {
+      greeting = await conductorMessage(system, user)
+    } catch {
+      await supabase
+        .from('sessions')
+        .update({
+          onboarding_context: {
+            ...onboarding,
+            conductorPhase: 'active',
+          },
+        })
+        .eq('id', session_id)
+      return NextResponse.json({ error: 'Conductor greeting failed', phase: 'active' }, { status: 502 })
+    }
+
+    // Insert mediator message
+    await supabase.from('messages').insert({
+      session_id,
+      sender: 'mediator',
+      content: greeting,
+    })
+
+    // Advance phase to gather_b — Person B can now type
+    await supabase
+      .from('sessions')
+      .update({
+        onboarding_context: {
+          ...onboarding,
+          conductorPhase: 'gather_b',
+        },
+      })
+      .eq('id', session_id)
+
+    return NextResponse.json({ phase: 'gather_b', message: greeting })
+  }
+
+  // --- Trigger: session_active ---
+  // Legacy fallback: both people joined simultaneously before conductor fired for A.
+  // Uses the old greeting prompt that addresses both people.
+  if (trigger === 'session_active') {
+    await supabase
+      .from('sessions')
+      .update({
+        onboarding_context: {
+          ...onboarding,
+          conductorPhase: 'greeting',
+        },
+      })
+      .eq('id', session_id)
+
+    const { system, user } = buildGreetingPrompt(personAName, personBName, contextMode)
+
+    let greeting: string
+    try {
+      greeting = await conductorMessage(system, user)
+    } catch {
+      await supabase
+        .from('sessions')
+        .update({
+          onboarding_context: {
+            ...onboarding,
+            conductorPhase: 'active',
+          },
+        })
+        .eq('id', session_id)
+      return NextResponse.json({ error: 'Conductor greeting failed', phase: 'active' }, { status: 502 })
+    }
+
+    await supabase.from('messages').insert({
+      session_id,
+      sender: 'mediator',
+      content: greeting,
+    })
+
     await supabase
       .from('sessions')
       .update({
@@ -117,7 +231,6 @@ export async function POST(request: Request) {
   // --- Trigger: message_sent ---
   // A person sent a message during onboarding. Process based on current phase.
   if (trigger === 'message_sent') {
-    // Fetch the message that was sent
     if (!message_id) {
       return NextResponse.json({ error: 'message_id required for message_sent' }, { status: 400 })
     }
@@ -132,16 +245,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
-    // Phase: gather_a -> Person A just shared context
+    // Phase: gather_a -> Person A just shared context (with name extraction)
     if (phase === 'gather_a') {
       const personAContext = msg.content
 
-      // Acknowledge A and invite B
-      const { system, user } = buildAcknowledgeAPrompt(personAName, personBName, personAContext)
+      const { system, user } = buildProcessAPrompt(personAContext, session.room_code)
 
-      let acknowledgment: string
+      let responseText: string
       try {
-        acknowledgment = await conductorMessage(system, user)
+        responseText = await conductorMessage(system, user)
       } catch {
         // Graceful degradation: advance phase even if Claude fails
         await supabase
@@ -149,12 +261,23 @@ export async function POST(request: Request) {
           .update({
             onboarding_context: {
               ...onboarding,
-              conductorPhase: 'gather_b',
+              conductorPhase: 'waiting_for_b',
               personAContext,
             },
           })
           .eq('id', session_id)
-        return NextResponse.json({ phase: 'gather_b', error: 'Acknowledgment failed' })
+        return NextResponse.json({ phase: 'waiting_for_b', error: 'Process A failed' })
+      }
+
+      // Parse JSON response to extract name
+      let acknowledgment: string
+      let extractedName = 'Person A'
+      try {
+        const parsed = JSON.parse(stripCodeFences(responseText))
+        acknowledgment = parsed.message || responseText
+        extractedName = parsed.name || 'Person A'
+      } catch {
+        acknowledgment = responseText
       }
 
       // Insert mediator acknowledgment
@@ -164,22 +287,64 @@ export async function POST(request: Request) {
         content: acknowledgment,
       })
 
-      // Update phase + store Person A's context
+      // Update session: store A's name + context, advance to waiting_for_b
       await supabase
         .from('sessions')
         .update({
+          person_a_name: extractedName,
           onboarding_context: {
             ...onboarding,
-            conductorPhase: 'gather_b',
+            conductorPhase: 'waiting_for_b',
             personAContext,
           },
         })
         .eq('id', session_id)
 
-      return NextResponse.json({ phase: 'gather_b', message: acknowledgment })
+      return NextResponse.json({ phase: 'waiting_for_b', message: acknowledgment, name: extractedName })
     }
 
-    // Phase: gather_b -> Person B just shared context
+    // Phase: waiting_for_b -> Person A is chatting while waiting for B
+    if (phase === 'waiting_for_b') {
+      // Fetch conversation history for context
+      const { data: allMessages } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', session_id)
+        .order('created_at', { ascending: true })
+
+      const nameMap: Record<string, string> = {
+        person_a: personAName,
+        mediator: 'Parallax',
+      }
+      const history = (allMessages || [])
+        .map((m: Message) => `${nameMap[m.sender] || m.sender}: ${m.content}`)
+        .join('\n')
+
+      const { system, user } = buildWaitingChatPrompt(
+        personAName,
+        onboarding.personAContext || '',
+        history,
+        msg.content,
+      )
+
+      let responseText: string
+      try {
+        responseText = await conductorMessage(system, user)
+      } catch {
+        return NextResponse.json({ phase: 'waiting_for_b', error: 'Waiting chat failed' })
+      }
+
+      // Insert mediator response — phase stays at waiting_for_b
+      await supabase.from('messages').insert({
+        session_id,
+        sender: 'mediator',
+        content: responseText,
+      })
+
+      return NextResponse.json({ phase: 'waiting_for_b', message: responseText })
+    }
+
+    // Phase: gather_b -> Person B just shared context (with name extraction via synthesis)
     if (phase === 'gather_b') {
       const personBContext = msg.content
       const personAContext = onboarding.personAContext || ''
@@ -196,10 +361,10 @@ export async function POST(request: Request) {
         })
         .eq('id', session_id)
 
-      // Call Claude for synthesis (returns JSON with message, goals, contextSummary)
+      // Call Claude for synthesis — now also extracts Person B's name
       const { system, user } = buildSynthesisPrompt(
         personAName,
-        personBName,
+        'Person B', // B's name not yet known — synthesis will extract it
         personAContext,
         personBContext,
         contextMode,
@@ -209,7 +374,6 @@ export async function POST(request: Request) {
       try {
         synthesisText = await conductorMessage(system, user)
       } catch {
-        // Graceful degradation: advance to active even if synthesis fails
         await supabase
           .from('sessions')
           .update({
@@ -227,14 +391,15 @@ export async function POST(request: Request) {
       let synthesisMessage: string
       let goals: string[] = []
       let contextSummary = ''
+      let personBExtractedName = 'Person B'
 
       try {
         const parsed = JSON.parse(stripCodeFences(synthesisText))
         synthesisMessage = parsed.message || synthesisText
         goals = Array.isArray(parsed.goals) ? parsed.goals : []
         contextSummary = parsed.contextSummary || ''
+        personBExtractedName = parsed.name || 'Person B'
       } catch {
-        // If JSON parsing fails, use raw text as message
         synthesisMessage = synthesisText
       }
 
@@ -245,10 +410,11 @@ export async function POST(request: Request) {
         content: synthesisMessage,
       })
 
-      // Update to active phase with goals
+      // Update to active phase with goals + Person B's name
       await supabase
         .from('sessions')
         .update({
+          person_b_name: personBExtractedName,
           onboarding_context: {
             ...onboarding,
             conductorPhase: 'active',
@@ -264,6 +430,7 @@ export async function POST(request: Request) {
         message: synthesisMessage,
         goals,
         contextSummary,
+        name: personBExtractedName,
       })
     }
 

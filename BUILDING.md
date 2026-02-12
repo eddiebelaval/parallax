@@ -1236,3 +1236,68 @@ When she finishes, the header slides in with a mini Listen pill. A "Talk to Para
 If they replay three times, Parallax opens with a joke about them coming back. If it's midnight, she acknowledges they're burning the midnight oil. If it's Monday morning, she's bright and energized.
 
 The product introduces itself. Differently. Every time.
+
+## Remote Session Redesign: UX Refinements
+
+**Date:** 2026-02-12
+**Branch:** `parallax/remote-session-redesign`
+
+### What Changed
+
+The initial remote session redesign commit shipped the core architecture — single-pane layout, conversational onboarding, private coaching, conductor triggers. This round focused on UX polish: making Parallax feel alive, keeping the conversation flowing, and fixing the coaching interaction model.
+
+### 1. TTS Voice + ParallaxPresence Orb
+
+Remote sessions now hear Parallax speak — same ElevenLabs voice (Ava) used in the landing page narration. Every mediator message and coaching response auto-plays via `useParallaxVoice`.
+
+**The waveform orb** sits between the header and message area, showing Parallax's presence visually. When speaking, it renders real audio waveform data from ElevenLabs; when thinking, it uses the synthetic waveform for a gentle breathing animation.
+
+**Pattern (canonical, applies everywhere):**
+- Speaking → pipe real `voiceWaveform` + `voiceEnergy` from `useParallaxVoice()` into `ParallaxPresence`
+- Analyzing/thinking → synthetic waveform via `useSyntheticWaveform()` (internal to ParallaxPresence)
+- NEVER use synthetic during speech — always real audio data
+
+This fix also applied to `XRayGlanceView` (in-person mode), which had the same issue.
+
+### 2. Continued Chat During `waiting_for_b`
+
+Previously, when Person A finished sharing and was waiting for Person B, the input locked — `waiting_for_b` was treated as a mediator turn. Now Person A can keep talking to Parallax while waiting.
+
+**Changes:**
+- Turn logic: `waiting_for_b` moved from the "mediator" group to "person_a"
+- New prompt: `buildWaitingChatPrompt()` — Parallax continues the conversation naturally without redirecting to "we're still waiting"
+- Conductor route: `waiting_for_b` phase handler routes through conductor with full conversation history
+- Private coaching also available during this phase
+
+### 3. Tabbed Input UI: Conversation vs Private Coach
+
+The coaching button was originally in the header — easy to miss and spatially disconnected from where you type. Moved to folder-style tabs directly above the `ActiveSpeakerBar`:
+
+```
+┌─────────────┬──────────────────┐
+│ Conversation │ [lock] Private   │  ← folder tabs
+├─────────────┴──────────────────┤
+│  [Tap to talk or type...]      │  ← ActiveSpeakerBar (always present)
+└────────────────────────────────┘
+```
+
+**Key decisions:**
+- ActiveSpeakerBar always renders — switching tabs changes who receives the message (main conversation vs coaching API), not the input mechanism
+- Lock icon on the private coach tab signals privacy
+- Tabs only visible during `active` and `waiting_for_b` phases
+- CoachingPanel renders with `hideInput` prop; the shared ActiveSpeakerBar handles all input
+
+### 4. Coaching Voice Responses
+
+Parallax speaks coaching responses aloud — same TTS pipeline as mediator messages. Separate `lastSpokenCoachRef` prevents double-speak. The experience: tap Coach tab → tap to talk → Parallax responds privately in your ear.
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/RemoteView.tsx` | TTS voice, ParallaxPresence orb, tabbed coaching, coaching voice, waiting_for_b chat |
+| `src/components/CoachingPanel.tsx` | Added `hideInput` prop for external input delegation |
+| `src/components/inperson/ParallaxPresence.tsx` | Added `voiceWaveform`/`voiceEnergy` props for real audio |
+| `src/components/inperson/XRayGlanceView.tsx` | Pass real waveform data to ParallaxPresence |
+| `src/lib/prompts/conductor.ts` | Added `buildWaitingChatPrompt` for continued A conversation |
+| `src/app/api/conductor/route.ts` | Added `waiting_for_b` handler, imported new prompt builder |
