@@ -1301,3 +1301,66 @@ Parallax speaks coaching responses aloud — same TTS pipeline as mediator messa
 | `src/components/inperson/XRayGlanceView.tsx` | Pass real waveform data to ParallaxPresence |
 | `src/lib/prompts/conductor.ts` | Added `buildWaitingChatPrompt` for continued A conversation |
 | `src/app/api/conductor/route.ts` | Added `waiting_for_b` handler, imported new prompt builder |
+
+---
+
+## Branch Consolidation & Production Deployment (2026-02-12)
+
+Three feature branches had accumulated without merging to main. This created a situation where production was deploying from a feature branch (`parallax/intelligence-network`) instead of main — a problem Eddie caught: "Shouldn't all of this be from main?"
+
+### The Three Branches
+
+| PR | Branch | What It Added |
+|----|--------|---------------|
+| #27 | `parallax/intelligence-network` | Intelligence Network UI, persona architecture, behavioral signals schema |
+| #28 | `parallax/remote-session-redesign` | Single-pane RemoteView, conversational onboarding, private coaching, TTS voice |
+| #16 | `parallax/v3-conflict-intelligence-engine` | 14 analytical lenses, 6 context modes, multi-lens prompt system |
+
+### Merge Strategy: Cleanest First
+
+Merged in dependency order to minimize conflicts:
+
+**1. PR #27 — Intelligence Network (clean merge)**
+No conflicts. Merged directly via `gh pr merge 27 --merge`.
+
+**2. PR #28 — Remote Session Redesign (3 conflicts)**
+
+After #27 merged to main, #28 had conflicts in 3 files:
+
+- **`src/app/layout.tsx`** — HEAD needed `usePathname` (hide Listen button on session pages), main added `Link` (auth navigation). Resolution: keep both imports.
+
+- **`src/components/SessionView.tsx`** — The critical conflict. Main (post-#27) had the old two-panel remote layout with useMessages, handleSendA/B, triggerMediation, etc. HEAD had the simplified pure router that delegates everything to RemoteView. Resolution: take HEAD's simplified router — RemoteView owns all remote session logic now.
+
+- **`src/types/database.ts`** — HEAD added `coaching_messages` table type. Main (post-#27) added `user_profiles`, `behavioral_signals`, `signal_consent`, `signal_access_log`. Resolution: include ALL tables from both sides. No overlap, just additive.
+
+**3. PR #16 — V3 Conflict Intelligence Engine (2 conflicts)**
+
+- **`README.md`** — v3 branch had more detailed architecture descriptions. Resolution: keep v3's comprehensive version (`git checkout --ours`).
+
+- **`src/components/SessionView.tsx`** — v3 had ContextModeBadge and lens expansion features built into the old two-panel layout. Main now has the simplified router. Resolution: take main's version (`git checkout main --`). The lens features from v3 still exist in the analysis pipeline — they just render through RemoteView/XRayGlanceView now, not SessionView.
+
+### Lockfile Fix
+
+The `parallax/intelligence-network` branch had 11 new dependencies in `package.json` without a regenerated `pnpm-lock.yaml`. Vercel's `--frozen-lockfile` flag (CI default) refused to build. Fixed with `pnpm install --no-frozen-lockfile` and committed the regenerated lockfile.
+
+### Key Architectural Decision
+
+**SessionView is now a pure router.** The remote redesign moved ALL remote session logic (messages, mediation, coaching, auth, TTS, issue tracking) into `RemoteView.tsx`. When merging v3's lens features that were built into the old two-panel SessionView layout, we chose to take main's simplified version rather than try to port v3's UI into the new architecture. The lens *analysis* code (14 lenses, 6 context modes) was already on main via PR #27 — only the old UI rendering was discarded.
+
+### Production Deployment
+
+After all 3 PRs merged to main with 0 open PRs remaining:
+```
+npx vercel --prod --yes
+```
+Production URL: https://parallax-ebon-three.vercel.app
+
+### Files Affected
+
+| Category | Count |
+|----------|-------|
+| PRs merged | 3 |
+| Conflict files resolved | 5 (across 2 PRs) |
+| Total files changed (cumulative) | 14+ |
+| Net lines added | ~1,500+ |
+| Open PRs remaining | 0 |
