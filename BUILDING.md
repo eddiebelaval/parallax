@@ -337,9 +337,9 @@ The result: **empirical validation of which lens combinations work best for whic
 
 The runner calls the **exact same pipeline** that live users hit. No mocks, no shortcuts. The "market data" (conversations) is fixed; the strategy (lens analysis) is what we're evaluating.
 
-### 6 Category Stubs
+### 90 Scenarios Across 6 Categories
 
-Each category gets 15 scenarios across 5 sub-types (3 scenarios per sub-type):
+Each category has 15 scenarios across 5 sub-types (3 scenarios per sub-type). All 90 are fully authored with personas, backstories, conversation turns, and planted patterns:
 
 | Category | Sub-types | Key Lenses | Status |
 |----------|-----------|------------|--------|
@@ -409,11 +409,11 @@ The Arena isn't just about running scenarios — it's a closed-loop system for i
 
 ### What's Next (Post-Hackathon)
 
-- Dynamic conversation generation (Claude plays both sides)
-- Supabase storage for simulation results (currently file-based)
+- Dynamic conversation generation (Claude plays both sides — V5)
+- Supabase storage for simulation results (currently file-based via `arena/store.ts`)
 - Similarity search: retrieve relevant past Arena results during live conversations
-- Automated batch runs across all 90 scenarios
-- CI integration: run Arena on prompt changes to catch regressions
+- Automated batch runs across all 90 scenarios (infrastructure exists — `runAllForMode()` + `store.ts`)
+- CI integration: run Arena on prompt changes to catch regressions (diagnose + refine modules ready)
 
 ---
 
@@ -522,7 +522,8 @@ The Strategy Arena (`src/lib/arena/`) is Parallax's empirical validation system.
 
 - **What it does:** Replays pre-authored conflict scenarios through the exact same analysis pipeline used in live sessions
 - **Scoring:** 5 dimensions — de-escalation effectiveness (25%), blind spot detection (25%), NVC translation quality (20%), lens activation relevance (15%), insight depth (15%)
-- **Coverage:** 15 family scenarios across 5 sub-types (parent-adult child, siblings, in-laws, blended family, generational)
+- **Coverage:** 90 scenarios across 6 context modes (15 each, 5 sub-types per mode, 3 scenarios per sub-type)
+- **Feedback loop:** AI-assisted diagnosis (Claude meta-analyst) + prompt patch generation + baseline comparison
 - **Tests:** 36 unit tests across 4 test files — all passing
 - **Run:** `npx vitest run`
 - **Intentionally test-only** — no API routes or UI. The Arena validates the analysis pipeline; results are used to tune prompts, not displayed to users.
@@ -707,6 +708,25 @@ Each card shows the signal label and confidence percentage. The page shows inter
 4. **Flexible schema for CBT and narrative signals.** These signal types use `Record<string, unknown>` rather than strict interfaces because the extraction format is still evolving. The 7 other signal types have strict interfaces because their schemas are well-defined by their source instruments (ECR-RS, TKI, DERS-16, etc.).
 
 5. **Per-session consent, not global.** A user grants consent for signal sharing on a per-session basis. This means they can share signals with their partner but not their coworker, or vice versa. Consent is revocable — setting `revoked_at` immediately blocks further signal access for that session.
+
+### Type System Integration
+
+The Intelligence Network tables were initially defined as standalone TypeScript interfaces (`UserProfile`, `BehavioralSignal`, etc.) but were not registered in the Supabase `Database` type — the interface that powers `.from()` type inference. This caused all queries to those tables to resolve as `never`.
+
+**Fix:** Added all 4 tables (`user_profiles`, `behavioral_signals`, `signal_consent`, `signal_access_log`) inline to `Database.public.Tables` using primitive types. The standalone interfaces are kept for application-level use, but the `Database` type uses inline definitions to avoid breaking Supabase SDK's deep conditional type resolution.
+
+Additional fixes:
+- **tsconfig.json** — Excluded `playwright.config.ts` from type checking (it was outside the `e2e/` exclude but still matched `**/*.ts`)
+- **Profile page** — Fixed `unknown && JSX.Element` pattern (React can't render `unknown`; narrowed with `!= null`)
+- **Interview route** — Cast `signal_value` from `SignalValue` union to `Record<string, unknown>` for DB insert compatibility
+
+### Verification
+
+- `npm run build` — production build succeeds (clean)
+- All 27 files committed to `parallax/intelligence-network` branch
+- Arena: 90 scenarios across 6 context modes (15 each) — all importable and type-safe
+- Feedback loop: 5 modules (store, compare, diagnose, refine, report) — all compile clean
+- Intelligence Network: auth, interview, profile, signal extraction, context injection — all wired
 
 ### What's Not Yet Built
 
