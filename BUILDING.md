@@ -344,11 +344,11 @@ Each category gets 15 scenarios across 5 sub-types (3 scenarios per sub-type):
 | Category | Sub-types | Key Lenses | Status |
 |----------|-----------|------------|--------|
 | **Family** | Parent-adult child, siblings, in-laws, blended family, generational | NVC, Gottman, Narrative, Drama Triangle, Attachment, Power, Restorative | **15 scenarios authored** |
-| Intimate | Jealousy/trust, household labor, intimacy mismatch, long-distance, co-parenting | Gottman, Attachment, Drama Triangle, CBT | Stubbed |
-| Professional Peer | Co-founder disputes, credit/blame, workload, communication, remote friction | SCARF, Jehn's, TKI, Psych Safety | Stubbed |
-| Professional Hierarchy | Performance reviews, promotions, micromanagement, whistleblowing, mentorship | Power, Org Justice, Psych Safety, SCARF | Stubbed |
-| Transactional | Service failures, scope creep, payment disputes, contracts, neighbors | IBR, TKI, CBT, SCARF | Stubbed |
-| Civil/Structural | HOA, landlord-tenant, school board, resource allocation, discrimination | Power, Narrative, Org Justice, Restorative, IBR | Stubbed |
+| **Intimate** | Jealousy/trust, household labor, intimacy mismatch, long-distance, co-parenting | Gottman, Attachment, Drama Triangle, CBT | **15 scenarios authored** |
+| **Professional Peer** | Co-founder disputes, credit/blame, workload, communication, remote friction | SCARF, Jehn's, TKI, Psych Safety | **15 scenarios authored** |
+| **Professional Hierarchy** | Performance reviews, promotions, micromanagement, ethics, mentorship | Power, Org Justice, Psych Safety, SCARF | **15 scenarios authored** |
+| **Transactional** | Service failures, scope creep, payment disputes, contracts, neighbors | IBR, TKI, CBT, SCARF | **15 scenarios authored** |
+| **Civil/Structural** | HOA, landlord-tenant, school board, resource allocation, discrimination | Power, Narrative, Org Justice, Restorative, IBR | **15 scenarios authored** |
 
 ### Evaluation Dimensions
 
@@ -393,13 +393,27 @@ Example planted patterns from the Family pilot:
 
 5. **No database storage yet.** Simulation results live in memory during hackathon scope. Post-hackathon: store in Supabase for trend analysis and retrieval during live conversations.
 
+### Arena Feedback Loop (AI-Assisted)
+
+The Arena isn't just about running scenarios — it's a closed-loop system for improving the Conflict Intelligence pipeline. Four modules work together:
+
+| Module | File | What It Does |
+|--------|------|-------------|
+| **Store** | `arena/store.ts` | Persists SimulationRun results to disk (JSON). Retrieves runs by scenario, context mode, or date range. |
+| **Compare** | `arena/compare.ts` | Diffs two runs against the same scenario. Highlights score regressions, lens activation changes, and pattern detection shifts. |
+| **Diagnose** | `arena/diagnose.ts` | Sends a failing run to Claude (meta-analyst role) to identify root cause — prompt gaps, lens blind spots, or scoring miscalibration. Returns structured diagnosis with confidence. |
+| **Refine** | `arena/refine.ts` | Takes a diagnosis and generates prompt patches — specific system prompt modifications targeting the identified weakness. Patches can be applied and re-tested. |
+| **Report** | `arena/report.ts` | Aggregates results across multiple runs into a human-readable summary: overall health, category breakdowns, trending issues, recommended actions. |
+
+**The cycle:** Run scenario → Score → Compare to baseline → Diagnose regressions → Generate patches → Re-run → Compare again. This is how Parallax's prompts improve empirically, not by intuition.
+
 ### What's Next (Post-Hackathon)
 
 - Dynamic conversation generation (Claude plays both sides)
-- Supabase storage for simulation results
+- Supabase storage for simulation results (currently file-based)
 - Similarity search: retrieve relevant past Arena results during live conversations
-- Remaining 5 category scenario sets (75 more scenarios)
-- Automated batch runs across all scenarios
+- Automated batch runs across all 90 scenarios
+- CI integration: run Arena on prompt changes to catch regressions
 
 ---
 
@@ -521,6 +535,197 @@ The Strategy Arena (`src/lib/arena/`) is Parallax's empirical validation system.
 - No orphaned components remaining
 - SignalCard visible in three-column layout
 - Rate limiting active on all Claude API routes
+
+---
+
+## Intelligence Network: Implementation (PR #27)
+
+**Date:** 2026-02-12
+**Branch:** `parallax/intelligence-network`
+
+### From Vision to Code
+
+The V2 section above describes the *why* and the *what*. This section documents what was actually built in PR #27 — the first implementation of the Intelligence Network.
+
+### What Was Built
+
+**8 implementation tasks, executed in dependency order:**
+
+| # | Task | Files | Lines |
+|---|------|-------|-------|
+| 1 | Database Migration | `supabase/migrations/20260212100000_add_intelligence_network.sql` | 168 |
+| 2 | TypeScript Types | `src/types/database.ts` (modified) | +247 |
+| 3 | Auth System | `src/lib/auth.ts`, `src/hooks/useAuth.ts`, `src/app/auth/page.tsx` | 225 |
+| 4 | Interview Prompts + Signal Extractor | `src/lib/interview-prompts.ts`, `src/lib/signal-extractor.ts` | 440 |
+| 5 | Interview API | `src/app/api/interview/route.ts` | 164 |
+| 6 | Interview UI | `src/hooks/useInterview.ts`, `src/app/interview/page.tsx` | 335 |
+| 7 | Signal Injection into Mediation | `src/lib/context-injector.ts`, modified `src/app/api/mediate/route.ts` + `src/lib/opus.ts` | 225 |
+| 8 | Profile Dashboard | `src/app/profile/page.tsx` | 214 |
+
+### Database Schema
+
+Four new tables with Row-Level Security:
+
+```sql
+user_profiles          -- One per user. Stores interview state + raw responses.
+behavioral_signals     -- Typed signal extractions (9 types). Unique per user+signal_type.
+signal_consent         -- Per-session consent records. Default: self_only.
+signal_access_log      -- Audit trail. Every signal read is logged.
+```
+
+The `sessions` table gains `person_a_user_id` and `person_b_user_id` — nullable foreign keys to `auth.users`. This is the bridge between anonymous room-code sessions and persistent user profiles.
+
+RLS policies enforce strict isolation: users can only read/update their own profile and signals. Consent records are scoped to session participants. The access log is insert-only from the service role.
+
+### The 9 Signal Types
+
+Extracted from interviews via Claude, each with a confidence score (0-1):
+
+| Signal | Type Interface | What It Captures |
+|--------|---------------|-----------------|
+| `attachment_style` | `AttachmentSignal` | Primary + secondary attachment (secure/anxious/avoidant/disorganized) |
+| `conflict_mode` | `ConflictModeSignal` | TKI mode + assertiveness/cooperativeness axes |
+| `gottman_risk` | `GottmanRiskSignal` | Which of the Four Horsemen are present + repair capacity |
+| `regulation_pattern` | `RegulationSignal` | Regulated/dysregulated/over-regulated + flooding onset |
+| `scarf_sensitivity` | `ScarfSignal` | Primary domain + per-domain sensitivity scores |
+| `drama_triangle` | `DramaTriangleSignal` | Default role + rescuer trap risk |
+| `values` | `ValuesSignal` | Core values, communication values, unmet needs |
+| `cbt_patterns` | `Record<string, unknown>` | Cognitive distortion patterns (flexible schema) |
+| `narrative_themes` | `Record<string, unknown>` | Dominant narratives, identity claims (flexible schema) |
+
+### Interview Prompt Architecture
+
+Four phases, each with a tailored system prompt. Claude acts as a warm, conversational interviewer — never clinical, never robotic. Each phase extracts structured data via a JSON block appended after a `[PHASE_COMPLETE]` sentinel.
+
+**Phase 1: Context Setting**
+Who they are, what brings them here, what kind of relationship is involved. This auto-selects the context mode for Phase 3. Also establishes trust — Claude explains what the interview is for and how the data will be used.
+
+**Phase 2: Communication Profiling**
+Scenario-based questions mapped to ECR-RS (attachment), TKI (conflict modes), and DERS-16 (emotional regulation). Not clinical scales — Claude wraps validated instrument items in natural conversation. Example: "When things get tense in a relationship, what's your instinct — do you move toward the other person, or do you need space first?"
+
+**Phase 3: Context-Specific Deep Dive**
+Adapts based on the context mode from Phase 1:
+- **Intimate** → Gottman Four Horsemen, pursuit-withdrawal dynamics
+- **Professional** → SCARF sensitivity, psychological safety signals
+- **Family** → Intergenerational patterns, loyalty binds, Drama Triangle roles
+
+**Phase 4: Narrative Capture**
+Open-ended storytelling. "Tell me about a conflict that still bothers you." Claude extracts values, growth edges, and narrative themes from free-form responses.
+
+### The Anonymization Boundary
+
+This is the core architectural insight: **signals are classifications, not summaries.**
+
+When Claude extracts "anxious-preoccupied attachment style" from someone's story about their father leaving, the signal contains `{ primary: "anxious", confidence: 0.72 }` — not "my father left when I was 12." The signal is a categorical label derived from a pattern, not a condensed version of the narrative.
+
+This is a **one-way function.** You cannot reconstruct the source narrative from the signal. Multiple completely different life experiences can produce the same attachment classification. This is what makes cross-party sharing safe — sharing "avoidant conflict mode" reveals a behavioral tendency, not a personal story.
+
+### Signal Extraction Pipeline
+
+```
+Claude interview response
+        ↓
+[PHASE_COMPLETE] sentinel detection
+        ↓
+JSON block extraction (regex parse)
+        ↓
+Phase-specific signal mapping (switch on phase number)
+        ↓
+Typed ExtractedSignal[] array
+        ↓
+Upsert to behavioral_signals (onConflict: user_id + signal_type)
+        ↓
+Raw extraction saved to user_profiles.raw_responses[]
+```
+
+Key design decisions:
+- **Upsert, not insert.** Re-interviewing updates existing signals rather than creating duplicates.
+- **Raw preservation.** The full extraction JSON is appended to `raw_responses` for audit and potential re-processing.
+- **Phase-complete gating.** Signals are only extracted when a phase completes — partial conversations don't pollute the profile.
+
+### Cross-Party Signal Injection
+
+When two people with profiles enter a mediation session:
+
+1. `buildIntelligenceContext()` fetches both parties' behavioral signals
+2. `checkMutualConsent()` verifies both have `anonymous_signals` consent for this session (not revoked)
+3. `formatSignalsForClaude()` renders signals as human-readable text (e.g., "Conflict Mode: competing (assertiveness: 0.8, cooperativeness: 0.3)")
+4. `buildIntelligencePromptSection()` wraps with instructions:
+   - "Predict, don't diagnose"
+   - "Tailor your language to their communication style"
+   - "Name patterns by framework, not by label"
+   - "Never reveal one party's signals to the other"
+5. The intelligence section is appended to Claude's mediation system prompt
+
+**Zero-disruption guarantee:** When no profiles exist (the common case during hackathon), the intelligence section is an empty string. The system prompt is identical to V1. No behavioral change, no edge cases, no risk.
+
+**Audit trail:** Every signal access is logged to `signal_access_log` with the signal owner, accessor session, signal type, consent level, and timestamp.
+
+### Auth System
+
+Minimal but functional:
+
+| File | What It Does |
+|------|-------------|
+| `src/lib/auth.ts` | Wraps Supabase Auth: `signUp()`, `signIn()`, `signOut()`, `getUser()`, `getUserProfile()`. Sign-up auto-creates a `user_profiles` row. |
+| `src/hooks/useAuth.ts` | React hook returning `{ user, loading }` with auth state subscription via `onAuthStateChange`. |
+| `src/app/auth/page.tsx` | Sign up / sign in toggle form. Ember design system. Privacy notice about encryption and RLS. Redirects to `/interview` on success. |
+
+### Interview UI
+
+Chat-style interface with phase progress indicator:
+
+- **Phase progress bar** — 4 segments, color-coded (completed = teal, current = accent, future = border)
+- **Message bubbles** — User messages right-aligned with accent tint, Parallax messages left-aligned with surface background and teal dot indicator
+- **Loading state** — Pulsing teal dot with "Parallax is thinking..." label
+- **Completion screen** — Signal count, links to profile and session start
+- **Auth-gated** — Redirects to `/auth` if not logged in
+
+### Profile Dashboard
+
+Displays behavioral signals in type-specific cards:
+
+| Signal Type | Rendering |
+|-------------|-----------|
+| `attachment_style` | Primary style (capitalized) + optional secondary |
+| `conflict_mode` | Mode + assertiveness/cooperativeness scores |
+| `gottman_risk` | Horsemen as colored tags, repair capacity score |
+| `regulation_pattern` | Style label + flooding onset |
+| `values` | Core values as teal tags |
+| Default | Raw JSON (monospace, for unrecognized types) |
+
+Each card shows the signal label and confidence percentage. The page shows interview completion status and total signal count.
+
+### Architecture Decisions
+
+1. **Supabase Auth, not custom.** Supabase provides auth out of the box with RLS integration. Adding a custom auth layer would be over-engineering for hackathon scope and would require managing JWTs, password hashing, and session tokens manually.
+
+2. **Sentinel-based phase detection.** Claude's response includes `[PHASE_COMPLETE]` or `[INTERVIEW_COMPLETE]` markers. The `cleanResponseForDisplay()` function strips these before showing the response to the user. This is simpler than structured output parsing for phase transitions because the phase boundary is a conversation-level decision, not a data extraction.
+
+3. **System prompt append for intelligence context.** The mediation route passes an optional `intelligenceContext` string to `mediateMessage()`, which simply concatenates it to the system prompt. No new API parameter, no structural change to the Claude call. Minimal diff, maximum impact.
+
+4. **Flexible schema for CBT and narrative signals.** These signal types use `Record<string, unknown>` rather than strict interfaces because the extraction format is still evolving. The 7 other signal types have strict interfaces because their schemas are well-defined by their source instruments (ECR-RS, TKI, DERS-16, etc.).
+
+5. **Per-session consent, not global.** A user grants consent for signal sharing on a per-session basis. This means they can share signals with their partner but not their coworker, or vice versa. Consent is revocable — setting `revoked_at` immediately blocks further signal access for that session.
+
+### What's Not Yet Built
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Supabase migration applied | Pending | SQL written, needs `supabase db push` or dashboard apply |
+| Email Auth enabled | Pending | Toggle in Supabase dashboard |
+| Voice input in interview | Enhancement | Text works; voice input infra exists but isn't wired to interview page |
+| Auth state in nav | Enhancement | Show user email + sign out in header when logged in |
+| "Enrich Profile" CTA | Enhancement | Landing page and post-session prompts to complete interview |
+| Profile evolution | V3 | Post-session observation extraction, confidence reinforcement/decay |
+| Progressive disclosure | V3 | Context injection that deepens with conversation length and intensity |
+| Blind analysis first | V3 | Analyze without profile, then with — prevents tunnel vision |
+
+### Visualization
+
+Interactive architecture artifact: `artifacts/parallax/parallax-intelligence-network.html`
+
+7-tab visualization covering: Vision, Interview Flow, Privacy Wall, Cross-Party Flow, Three Modes, Security, and Assessment. The Assessment tab includes 8 actionable items with copy-paste Claude Code prompts and localStorage-persistent checkboxes.
 
 ---
 
