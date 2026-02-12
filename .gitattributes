@@ -1,0 +1,4 @@
+# Tell GitHub Linguist to treat artifacts as documentation, not code.
+# Without this, the large HTML artifacts skew the language stats
+# and the repo shows "HTML" instead of "TypeScript" as primary language.
+artifacts/** linguist-documentation
