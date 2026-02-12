@@ -7,13 +7,6 @@ import { useInterview } from '@/hooks/useInterview'
 import { TOTAL_PHASES, getPhaseConfig } from '@/lib/interview-prompts'
 import type { InterviewPhase } from '@/types/database'
 
-const PHASE_NAMES: Record<Exclude<InterviewPhase, 0>, string> = {
-  1: 'Context Setting',
-  2: 'Communication Profiling',
-  3: 'Context-Specific Deep Dive',
-  4: 'Narrative Capture',
-}
-
 export default function InterviewPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
@@ -123,22 +116,22 @@ export default function InterviewPage() {
             Phase {phase} of {TOTAL_PHASES}
           </span>
           <span className="font-mono text-xs text-accent">
-            {PHASE_NAMES[phase as Exclude<InterviewPhase, 0>]}
+            {getPhaseConfig(phase as Exclude<InterviewPhase, 0>).name}
           </span>
         </div>
         <div className="flex gap-1.5">
-          {[1, 2, 3, 4].map((p) => (
-            <div
-              key={p}
-              className={`h-1 rounded-full flex-1 transition-colors duration-500 ${
-                p < phase
-                  ? 'bg-[var(--ember-teal)]'
-                  : p === phase
-                    ? 'bg-accent'
-                    : 'bg-border'
-              }`}
-            />
-          ))}
+          {[1, 2, 3, 4].map((p) => {
+            let barColor = 'bg-border'
+            if (p < phase) barColor = 'bg-[var(--ember-teal)]'
+            else if (p === phase) barColor = 'bg-accent'
+
+            return (
+              <div
+                key={p}
+                className={`h-1 rounded-full flex-1 transition-colors duration-500 ${barColor}`}
+              />
+            )
+          })}
         </div>
       </div>
 

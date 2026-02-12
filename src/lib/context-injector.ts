@@ -52,15 +52,14 @@ export async function buildIntelligenceContext(
           'Other Party (anonymized)',
         )
 
-        // Log the access
-        for (const signal of otherSignals) {
-          await supabase.from('signal_access_log').insert({
+        await supabase.from('signal_access_log').insert(
+          otherSignals.map((signal) => ({
             signal_owner_id: otherPartyUserId,
             accessor_session_id: sessionId,
             signal_type: (signal as BehavioralSignal).signal_type,
             consent_level: 'anonymous_signals' as ConsentLevel,
-          })
-        }
+          })),
+        )
       }
     }
   }

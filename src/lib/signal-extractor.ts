@@ -10,7 +10,6 @@ import type {
   ValuesSignal,
   InterviewPhase,
 } from '@/types/database'
-import { stripCodeFences } from '@/lib/conversation'
 
 interface ExtractedSignal {
   signal_type: SignalType
@@ -28,12 +27,11 @@ interface PhaseExtraction {
  * Returns null if no valid JSON found.
  */
 export function parseInterviewExtraction(response: string): PhaseExtraction | null {
-  // Find JSON block in response (between ```json and ```)
   const jsonMatch = response.match(/```json\s*([\s\S]*?)```/)
   if (!jsonMatch) return null
 
   try {
-    return JSON.parse(stripCodeFences(jsonMatch[0])) as PhaseExtraction
+    return JSON.parse(jsonMatch[1]) as PhaseExtraction
   } catch {
     return null
   }

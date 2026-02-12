@@ -10,7 +10,7 @@ import {
   isInterviewComplete,
   cleanResponseForDisplay,
 } from '@/lib/signal-extractor'
-import type { InterviewPhase } from '@/types/database'
+import type { ContextMode, InterviewPhase } from '@/types/database'
 
 function getClient(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -19,40 +19,20 @@ function getClient(): Anthropic {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 }
 
-/**
- * POST /api/interview
- *
- * Conversational interview endpoint for building user intelligence profiles.
- * Each call is one exchange: user message in, AI response out.
- *
- * Body: {
- *   user_id: string,
- *   phase: 1 | 2 | 3 | 4,
- *   message: string,
- *   conversation_history: Array<{ role: 'user' | 'assistant', content: string }>,
- *   context_mode?: ContextMode
- * }
- *
- * Response: {
- *   response: string,          // Claude's response (cleaned for display)
- *   phase_complete: boolean,   // Did this response complete the current phase?
- *   interview_complete: boolean,
- *   next_phase: number | null,
- *   signals_extracted: number  // How many behavioral signals were extracted
- * }
- */
-export async function POST(request: Request) {
+interface InterviewRequestBody {
+  user_id: string
+  phase: Exclude<InterviewPhase, 0>
+  message: string
+  conversation_history: Array<{ role: 'user' | 'assistant'; content: string }>
+  context_mode?: ContextMode
+}
+
+export async function POST(request: Request): Promise<NextResponse> {
   const rateLimited = checkRateLimit(request, 20, 60_000)
   if (rateLimited) return rateLimited
 
-  const body = await request.json()
-  const { user_id, phase, message, conversation_history, context_mode } = body as {
-    user_id: string
-    phase: Exclude<InterviewPhase, 0>
-    message: string
-    conversation_history: Array<{ role: 'user' | 'assistant'; content: string }>
-    context_mode?: string
-  }
+  const body = await request.json() as InterviewRequestBody
+  const { user_id, phase, message, conversation_history, context_mode } = body
 
   if (!user_id || !phase || !message) {
     return NextResponse.json(
@@ -70,26 +50,19 @@ export async function POST(request: Request) {
 
   const supabase = createServerClient()
 
-  // Build previous context from earlier phases
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('raw_responses')
     .eq('user_id', user_id)
     .single()
 
-  const previousContext = (profile?.raw_responses as unknown[])
-    ?.map((r: unknown) => JSON.stringify(r))
-    .join('\n') ?? ''
+  const rawResponses = (profile?.raw_responses as unknown[]) ?? []
+  const previousContext = rawResponses.map((r) => JSON.stringify(r)).join('\n')
 
-  const systemPrompt = getInterviewPrompt(
-    phase,
-    previousContext,
-    context_mode as Parameters<typeof getInterviewPrompt>[2],
-  )
+  const systemPrompt = getInterviewPrompt(phase, previousContext, context_mode)
 
-  // Build messages array: history + current message
   const messages: Anthropic.MessageParam[] = [
-    ...(conversation_history || []).map((h) => ({
+    ...(conversation_history ?? []).map((h) => ({
       role: h.role as 'user' | 'assistant',
       content: h.content,
     })),
@@ -117,14 +90,12 @@ export async function POST(request: Request) {
   const phaseComplete = isPhaseComplete(rawText)
   const interviewDone = isInterviewComplete(rawText)
 
-  // Extract signals if phase is completing
   let signalsExtracted = 0
   if (phaseComplete || interviewDone) {
     const extraction = parseInterviewExtraction(rawText)
     if (extraction) {
       const signals = extractSignals(extraction)
 
-      // Save signals to database
       for (const signal of signals) {
         await supabase
           .from('behavioral_signals')
@@ -140,12 +111,10 @@ export async function POST(request: Request) {
       }
       signalsExtracted = signals.length
 
-      // Save raw extraction to profile
-      const existingResponses = (profile?.raw_responses as unknown[]) ?? []
       await supabase
         .from('user_profiles')
         .update({
-          raw_responses: [...existingResponses, extraction],
+          raw_responses: [...rawResponses, extraction],
           interview_phase: interviewDone ? 4 : phase,
           interview_completed: interviewDone,
           interview_completed_at: interviewDone ? new Date().toISOString() : undefined,
