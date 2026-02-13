@@ -35,6 +35,10 @@ interface ActiveSpeakerBarProps {
   onSend: (content: string) => void;
   disabled?: boolean;
   onMicStateChange?: (hot: boolean) => void;
+  /** Show "Not your turn" message when false */
+  isYourTurn?: boolean;
+  /** Time remaining in current turn (ms), optional visual indicator */
+  timeRemaining?: number;
 }
 
 function isSpeechSupported(): boolean {
@@ -47,6 +51,8 @@ export function ActiveSpeakerBar({
   onSend,
   disabled = false,
   onMicStateChange,
+  isYourTurn = true,
+  timeRemaining,
 }: ActiveSpeakerBarProps) {
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
@@ -224,6 +230,10 @@ export function ActiveSpeakerBar({
 
   const isRecording = micHot || dictating;
 
+  // Format time remaining
+  const timeRemainingSeconds = timeRemaining ? Math.ceil(timeRemaining / 1000) : null;
+  const showUrgentWarning = timeRemainingSeconds !== null && timeRemainingSeconds <= 30;
+
   // If voice not supported, default to text
   useEffect(() => {
     if (!supported && mode === "voice") {
@@ -236,9 +246,20 @@ export function ActiveSpeakerBar({
       className={`border-t transition-all duration-300 ${
         isRecording
           ? "border-temp-cool mic-hot-glow"
+          : showUrgentWarning
+          ? "border-temp-hot"
           : "border-border"
       }`}
     >
+      {/* Urgent time warning */}
+      {showUrgentWarning && (
+        <div className="px-4 py-1 bg-temp-hot/10 border-b border-temp-hot/20">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-temp-hot animate-pulse">
+            {timeRemainingSeconds}s remaining — wrap up your point
+          </span>
+        </div>
+      )}
+
       {mode === "voice" ? (
         // ─── VOICE MODE: Tap to Talk ───
         <div className="px-4 py-3">

@@ -6,10 +6,13 @@ import { SignalCard } from "./SignalCard";
 import { ActionPanel } from "./ActionPanel";
 import { IssueDrawer } from "./IssueDrawer";
 import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
+import { TurnTimer } from "./TurnTimer";
+import { TimerSettings } from "./TimerSettings";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
+import { useTurnTimer } from "@/hooks/useTurnTimer";
 import type {
   Session,
   OnboardingContext,
@@ -33,6 +36,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
   const [mediationError, setMediationError] = useState<string | null>(null);
   const [isMicHot, setIsMicHot] = useState(false);
+  const [turnBasedMode, setTurnBasedMode] = useState(true); // Enable turn-based timer mode
+  const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -52,6 +57,42 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const activeSpeaker = activeSender === "person_a" ? personAName : personBName;
 
   const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
+
+  // Turn-based timer: configurable duration (defaults to 3 minutes)
+  const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000; // 3 minutes
+  const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
+
+  const handleTurnExpire = useCallback(() => {
+    // Switch to next speaker
+    const nextSender = activeSender === "person_a" ? "person_b" : "person_a";
+    setDirectedTo(nextSender);
+  }, [activeSender]);
+
+  const handleTimerDurationChange = useCallback(async (newDuration: number) => {
+    try {
+      await fetch(`/api/sessions/${roomCode}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timer_duration_ms: newDuration }),
+      });
+      refreshSession();
+    } catch (error) {
+      console.error("Failed to update timer duration:", error);
+    }
+  }, [roomCode, refreshSession]);
+
+  const { timeRemaining, progress, reset: resetTimer } = useTurnTimer({
+    durationMs: timerDuration,
+    onExpire: handleTurnExpire,
+    enabled: turnBasedMode && isActive,
+  });
+
+  // Reset timer when turn changes
+  useEffect(() => {
+    if (turnBasedMode && isActive) {
+      resetTimer();
+    }
+  }, [activeSender, turnBasedMode, isActive, resetTimer]);
 
   function senderColor(sender: string): string {
     if (sender === "mediator") return "text-temp-cool";
@@ -246,15 +287,29 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-4 py-2 border-b border-border flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-4">
           <span className="font-mono text-[10px] text-ember-700">{roomCode}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              {activeSpeaker}
-            </span>
-          </div>
+
+          {/* Turn Timer (active phase only) */}
+          {turnBasedMode && isActive && (
+            <TurnTimer
+              timeRemaining={timeRemaining}
+              progress={progress}
+              speakerName={activeSpeaker}
+              isActive={true}
+            />
+          )}
+
+          {/* Fallback indicator (onboarding phase) */}
+          {isOnboarding && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+                {activeSpeaker}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {!isOnboarding && (
@@ -265,6 +320,21 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
               Issues{totalIssues > 0 ? ` (${totalIssues})` : ""}
             </button>
           )}
+          {turnBasedMode && isActive && (
+            <button
+              onClick={() => setTimerSettingsOpen(true)}
+              className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+              title="Timer settings"
+            >
+              ⚙
+            </button>
+          )}
+          <button
+            onClick={() => setTurnBasedMode(!turnBasedMode)}
+            className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+          >
+            Timer: {turnBasedMode ? "ON" : "OFF"}
+          </button>
           <button
             onClick={endSession}
             className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
@@ -413,6 +483,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onSend={handleSend}
           disabled={conductorLoading}
           onMicStateChange={setIsMicHot}
+          isYourTurn={true} // Always allow input (in-person mode = both at same device)
+          timeRemaining={turnBasedMode && isActive ? timeRemaining : undefined}
         />
       </div>
 
@@ -425,6 +497,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         personAName={personAName}
         personBName={personBName}
       />
+
+      {/* Timer settings */}
+      {timerSettingsOpen && (
+        <TimerSettings
+          currentDuration={timerDuration}
+          onChange={handleTimerDurationChange}
+          onClose={() => setTimerSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }
