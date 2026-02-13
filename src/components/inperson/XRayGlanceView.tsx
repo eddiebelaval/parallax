@@ -36,7 +36,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
-  const { insights: conversationInsights } = useConversationInsights(messages);
+  const { insights: personAInsights } = useConversationInsights(messages, 'person_a');
+  const { insights: personBInsights } = useConversationInsights(messages, 'person_b');
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -519,9 +520,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Three-column layout: Insight panels + Messages */}
       <div className="flex-1 flex min-h-0">
-        {/* Left panel — Conversation insights + Person A signals (desktop only) */}
+        {/* Left panel — Person A insights + signals (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
-          <SoloSidebar insights={conversationInsights} />
+          <SoloSidebar insights={personAInsights} />
           <div className="space-y-1 p-2">
             {messages
               .filter((m) => m.sender === "person_a" && m.nvc_analysis)
@@ -586,8 +587,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           </div>
         </div>
 
-        {/* Right panel — Person B signals + issues (desktop only) */}
+        {/* Right panel — Person B insights + signals + issues (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <SoloSidebar insights={personBInsights} />
           <div className="space-y-1 p-2">
             {messages
               .filter((m) => m.sender === "person_b" && m.nvc_analysis)

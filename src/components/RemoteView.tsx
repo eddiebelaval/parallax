@@ -79,10 +79,10 @@ export function RemoteView({
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
-  const { insights: conversationInsights } = useConversationInsights(messages);
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
+  const { insights: conversationInsights } = useConversationInsights(messages, localPerson);
   const coaching = useCoaching(activeSession.id, localPerson);
 
   const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(
