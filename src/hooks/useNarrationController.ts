@@ -12,9 +12,18 @@ const INTRO_SEEN_KEY = 'parallax-intro-seen'
 const API_TIMEOUT_MS = 5000
 const EXPAND_DURATION_MS = 300
 const COLLAPSE_DURATION_MS = 400
+const STEP_MAX_TIMEOUT_MS = 25000 // Safety net: force-proceed if a step hangs
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** Race a promise against a timeout. Resolves with 'timeout' if the deadline hits. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | 'timeout'> {
+  return Promise.race([
+    promise,
+    new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), ms)),
+  ])
 }
 
 export function useNarrationController() {
@@ -42,6 +51,7 @@ export function useNarrationController() {
   const mutedRef = useRef(false)
   const replayCountRef = useRef(0)
   const firstSectionRevealedRef = useRef(false)
+  const lastRevealedSectionRef = useRef<string | null>(null)
 
   const registerSection = useCallback((id: string, el: HTMLElement | null) => {
     if (el) {
@@ -54,10 +64,26 @@ export function useNarrationController() {
   const revealSection = useCallback((sectionId: string) => {
     const el = sectionRefs.current.get(sectionId)
     if (!el) return
+
+    // Blur all previously revealed sections — focus on the new one
+    sectionRefs.current.forEach((sectionEl, id) => {
+      if (id !== sectionId && sectionEl.classList.contains('section-visible')) {
+        sectionEl.classList.add('section-defocused')
+      }
+    })
+    // Also blur the hero (always visible, never hidden)
+    const heroEl = sectionRefs.current.get('hero')
+    if (heroEl && sectionId !== 'hero') {
+      heroEl.classList.add('section-defocused')
+    }
+
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.remove('section-defocused')
     setTimeout(() => {
       el.classList.add('section-visible')
     }, 400)
+
+    lastRevealedSectionRef.current = sectionId
 
     // After the first section reveals, signal the panel to slide up
     if (!firstSectionRevealedRef.current) {
@@ -79,6 +105,7 @@ export function useNarrationController() {
     localStorage.setItem(INTRO_SEEN_KEY, '1')
     sectionRefs.current.forEach((el) => {
       el.classList.add('section-visible')
+      el.classList.remove('section-defocused')
     })
     voice.cancel()
     typewriter.reset()
@@ -117,11 +144,9 @@ export function useNarrationController() {
 
       let text: string
       if (step.type === 'api') {
-        // Greeting — has its own dedicated prompt + API call
         const prompt = getIntroPrompt(replayCountRef.current)
         text = await fetchExplorerIntro(prompt)
       } else {
-        // Static text
         text = step.text
       }
 
@@ -131,12 +156,23 @@ export function useNarrationController() {
         revealSection(step.revealsSection)
       }
 
+      // Race typewriter + TTS against a safety timeout.
+      // If TTS hangs (e.g. short audio not firing onended), we still proceed.
       const typePromise = typewriter.start(text)
       const voicePromise = mutedRef.current
         ? Promise.resolve()
         : voice.speakChunked(text)
 
-      await Promise.all([typePromise, voicePromise])
+      const result = await withTimeout(
+        Promise.all([typePromise, voicePromise]),
+        STEP_MAX_TIMEOUT_MS,
+      )
+
+      if (result === 'timeout') {
+        // Force cleanup — TTS or typewriter hung
+        voice.cancel()
+        typewriter.skipToEnd()
+      }
 
       if (abortRef.current) return
 
@@ -150,12 +186,12 @@ export function useNarrationController() {
   const startNarration = useCallback(async () => {
     abortRef.current = false
     firstSectionRevealedRef.current = false
+    lastRevealedSectionRef.current = null
     setSlidUp(false)
 
     // Phase 1: Expanding — morph pill to panel
     setPhase('expanding')
 
-    // Check for reduced motion preference
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     await sleep(prefersReduced ? 0 : EXPAND_DURATION_MS)
 
@@ -206,6 +242,7 @@ export function useNarrationController() {
     // Re-hide all sections so they reveal again during narration
     sectionRefs.current.forEach((el) => {
       el.classList.remove('section-visible')
+      el.classList.remove('section-defocused')
     })
     setCurrentStep(-1)
     // Small delay to let abort propagate, then start fresh

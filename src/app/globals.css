@@ -677,6 +677,20 @@
   transform: translateY(0);
 }
 
+/* Defocused state: blur + dim previous sections during narration */
+.section-defocused {
+  filter: blur(6px) brightness(0.7);
+  opacity: 0.4;
+  transition: filter 0.8s ease-out, opacity 0.8s ease-out;
+  pointer-events: none;
+}
+
+/* Remove defocus smoothly when narration completes */
+.section-visible:not(.section-defocused) {
+  filter: none;
+  transition: filter 0.6s ease-out, opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
 /* Typewriter cursor blink */
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
