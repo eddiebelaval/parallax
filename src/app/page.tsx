@@ -9,6 +9,7 @@ import { NarrationPanel } from "@/components/landing/NarrationPanel";
 import { NarrationStage } from "@/components/landing/NarrationStage";
 import { GlowChatInterface } from "@/components/landing/GlowChatInterface";
 import { TheDoor } from "@/components/landing/TheDoor";
+import { AntMarchBadge } from "@/components/landing/AntMarchBadge";
 import { HeroPreview } from "@/components/landing/HeroPreview";
 import { LensGrid } from "@/components/landing/LensGrid";
 import { ContextModeCards } from "@/components/landing/ContextModeCards";
@@ -693,12 +694,13 @@ export default function Home() {
           isComplete={isComplete}
           registerSection={narration.registerSection}
         >
-          <TheDoor onTalkToParallax={narration.enterChat} />
+          <TheDoor />
         </NarrationSection>
 
         {/* ─── Footer ─── */}
         <section className="px-6 py-12 border-t border-border">
           <div className="max-w-2xl mx-auto text-center space-y-2">
+            <AntMarchBadge onClick={narration.enterChat} />
             <p className="text-ember-600 text-xs font-mono uppercase tracking-wider">
               Built for the Claude Code Hackathon, February 2026
             </p>

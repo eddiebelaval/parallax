@@ -258,9 +258,9 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Chat: chat interface */}
+      {/* Chat: chat interface — full height for flex layout */}
       {showChatContent && (
-        <div className="relative z-10">
+        <div className="relative z-10 h-full">
           {chatContent}
         </div>
       )}

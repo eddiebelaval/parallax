@@ -8,8 +8,6 @@ import { ModeCardScene } from '@/components/landing/ModeCardScene'
 import { useAuth } from '@/hooks/useAuth'
 import type { SessionMode, ContextMode } from '@/types/database'
 
-const SHOW_EXPLORER = process.env.NEXT_PUBLIC_SHOW_EXPLORER !== 'false'
-
 function ModeCard({
   title,
   description,
@@ -61,11 +59,7 @@ function ModeCard({
   )
 }
 
-interface TheDoorProps {
-  onTalkToParallax?: () => void
-}
-
-export function TheDoor({ onTalkToParallax }: TheDoorProps) {
+export function TheDoor() {
   const router = useRouter()
   const { user } = useAuth()
   const [joinCode, setJoinCode] = useState('')
@@ -415,32 +409,6 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
           </button>
         </div>
 
-        {/* Talk to Parallax divider */}
-        {SHOW_EXPLORER && onTalkToParallax && (
-          <>
-            <div className="flex items-center gap-4 mb-12">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-              <span className="text-muted font-mono text-xs uppercase tracking-[0.2em]">
-                or just ask me anything
-              </span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={onTalkToParallax}
-                className="group relative inline-flex items-center gap-3 px-10 py-5 border border-success text-success hover:bg-success/10 font-mono text-sm uppercase tracking-wider transition-all talk-to-parallax-glow"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-success group-hover:animate-pulse" />
-                <span>Talk to Parallax</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-success group-hover:animate-pulse" />
-              </button>
-              <p className="text-ember-700 text-[10px] font-mono uppercase tracking-widest mt-4">
-                Powered by Claude Opus 4.6
-              </p>
-            </div>
-          </>
-        )}
       </div>
     </div>
   )
