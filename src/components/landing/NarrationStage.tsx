@@ -1,36 +1,76 @@
 'use client'
 
-import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
+import { useRef, useEffect } from 'react'
+import { ParallaxOrb } from '@/components/ParallaxOrb'
 
 interface NarrationStageProps {
   text: string
   isTyping: boolean
   isSpeaking: boolean
-  waveform: Float32Array | null
   energy: number
+  isMuted: boolean
+  onSkip: () => void
+  onToggleMute: () => void
 }
 
-export function NarrationStage({ text, isTyping, isSpeaking, waveform, energy }: NarrationStageProps) {
+export function NarrationStage({
+  text,
+  isTyping,
+  isSpeaking,
+  energy,
+  isMuted,
+  onSkip,
+  onToggleMute,
+}: NarrationStageProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom as text grows (teleprompter effect)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [text])
+
   return (
-    <div className="max-w-xl mx-auto text-center narration-enter">
-      {/* Parallax voice orb — shows real waveform when speaking */}
-      <div className="mb-6 flex justify-center">
-        <AudioWaveformOrb
-          name="Parallax"
-          role="claude"
-          waveform={waveform}
+    <div className="flex flex-col items-center w-full">
+      {/* Global Parallax orb — floats above the pill, half sticking out */}
+      <div className="-mt-12 mb-1">
+        <ParallaxOrb
+          size={72}
           energy={energy}
-          active={isSpeaking}
-          size={56}
+          isSpeaking={isSpeaking}
+          particles={isSpeaking}
         />
       </div>
 
-      <p className="font-serif text-lg sm:text-xl md:text-2xl leading-relaxed text-foreground">
-        {text}
-        {isTyping && (
-          <span className="typewriter-cursor inline-block w-[2px] h-[1.1em] bg-accent ml-0.5 align-text-bottom" />
-        )}
-      </p>
+      {/* Teleprompter text — 2 lines, scrolling with fade */}
+      <div className="teleprompter w-full">
+        <div ref={scrollRef} className="teleprompter__inner">
+          <p className="font-serif text-base sm:text-lg leading-[1.6] text-foreground/90 text-center">
+            {text}
+            {isTyping && (
+              <span className="typewriter-cursor inline-block w-[2px] h-[1.1em] bg-accent ml-0.5 align-text-bottom" />
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Compact controls */}
+      <div className="flex items-center gap-3 mt-1">
+        <button
+          onClick={onToggleMute}
+          className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+          aria-label={isMuted ? 'Unmute voice' : 'Mute voice'}
+        >
+          {isMuted ? 'Unmute' : 'Mute'}
+        </button>
+        <button
+          onClick={onSkip}
+          className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+        >
+          Skip
+        </button>
+      </div>
     </div>
   )
 }

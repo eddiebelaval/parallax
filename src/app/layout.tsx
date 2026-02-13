@@ -9,7 +9,6 @@ import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { FloatingHelpButton } from "@/components/FloatingHelpButton";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -90,7 +89,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("parallax-narration-phase", handlePhase);
   }, []);
 
-  const isLandingNarrating = narrationPhase === "idle" || narrationPhase === "narrating" || narrationPhase === "chat";
+  const isLandingNarrating = narrationPhase === "idle" || narrationPhase === "expanding" || narrationPhase === "narrating" || narrationPhase === "collapsing" || narrationPhase === "chat";
 
   const { user } = useAuth();
   const isAuthenticated = !!user;
@@ -138,19 +137,8 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Center: Listen (landing only) */}
-        <div className="flex justify-center">
-          {narrationPhase === "complete" && isLandingPage && (
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("parallax-replay-narration"))}
-              className="liquid-glass liquid-glass--sm rounded-full font-serif text-sm text-foreground/80 hover:text-foreground transition-colors"
-            >
-              <span className="liquid-glass__bg" />
-              <span className="liquid-glass__fresnel" />
-              <span className="relative z-10 px-5 py-1.5">Listen</span>
-            </button>
-          )}
-        </div>
+        {/* Center: spacer (NarrationPanel owns the pill in complete state) */}
+        <div className="flex justify-center" />
 
         {/* Right: Auth + Theme */}
         <div className="flex items-center gap-3">
@@ -159,7 +147,6 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 overflow-y-auto">{children}</main>
-      <FloatingHelpButton />
       {/* Footer — visible on non-session pages */}
       {!isSessionPage && (
         <footer className="border-t border-border px-6 py-3 flex items-center justify-between flex-shrink-0">

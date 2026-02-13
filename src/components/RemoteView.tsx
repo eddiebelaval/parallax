@@ -6,13 +6,15 @@ import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
 import { CoachingPanel } from "./CoachingPanel";
-import { AudioWaveformOrb } from "./AudioWaveformOrb";
+import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
+import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import ConfirmationModal from "./ConfirmationModal";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type {
   Session,
@@ -74,6 +76,7 @@ export function RemoteView({
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const profileConcierge = useProfileConcierge();
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
@@ -84,6 +87,13 @@ export function RemoteView({
   );
   const [conductorLoading, setConductorLoading] = useState(false);
   const [mediationError, setMediationError] = useState<string | null>(null);
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  } | null>(null);
   const [endingSession, setEndingSession] = useState(false);
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
   const [handsFree, setHandsFree] = useState(true);
@@ -325,6 +335,37 @@ export function RemoteView({
   const handleSend = useCallback(
     async (content: string) => {
       setMediationError(null);
+
+      // Intercept profile concierge voice commands before sending to Claude
+      if (profileConcierge.isCommand(content)) {
+        try {
+          const response = await profileConcierge.processCommand(content);
+          if (response.requires_confirmation) {
+            // Show confirmation modal
+            setConfirmationModal({
+              isOpen: true,
+              title: 'Confirm Action',
+              message: response.confirmation_prompt || 'Are you sure?',
+              isDangerous: content.toLowerCase().includes('delete'),
+              onConfirm: async () => {
+                const result = await profileConcierge.confirm();
+                setConfirmationModal(null);
+                setMediationError(
+                  result.success ? `✓ ${result.message}` : `✗ ${result.message}`,
+                );
+              },
+            });
+          } else if (response.success) {
+            setMediationError(`✓ ${response.message}`);
+          } else {
+            setMediationError(`✗ ${response.message}`);
+          }
+        } catch {
+          setMediationError('✗ Failed to process profile command');
+        }
+        return; // Don't send to Claude
+      }
+
       const sent = await sendMessage(localPerson, content);
       if (!sent) return;
 
@@ -361,6 +402,7 @@ export function RemoteView({
       triggerMediation,
       triggerInterventionCheck,
       refreshIssues,
+      profileConcierge,
     ],
   );
 
@@ -682,6 +724,17 @@ export function RemoteView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmationModal && (
+        <ConfirmationModal
+          {...confirmationModal}
+          onCancel={() => {
+            profileConcierge.cancel();
+            setConfirmationModal(null);
+          }}
+        />
       )}
     </div>
   );

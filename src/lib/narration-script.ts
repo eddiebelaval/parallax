@@ -11,7 +11,7 @@ export interface NarrationStep {
   delayAfterMs?: number
 }
 
-/* ─── Time-aware intro prompt ─── */
+/* --- Time-aware intro prompt --- */
 
 function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
   const hour = new Date().getHours()
@@ -62,122 +62,40 @@ export function getIntroPrompt(replayCount: number): string {
 
 /** Fallback intro if the API call fails or times out */
 export const FALLBACK_INTRO =
-  "Hello. I'm Parallax \u2014 I help people in conflict see what they're actually saying to each other. When two people argue, there are always two conversations happening: the words on the surface and the feelings underneath. I give you vision into both."
+  "Hello. I'm Parallax. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean \u2014 and I exist because I believe most people can solve their own problems once they can finally see clearly."
 
-/* ─── Dynamic full-script generation ─── */
-
-/** Steps eligible for dynamic generation. 'what-you-see' excluded (MeltDemo timing lock). */
-export const DYNAMIC_STEP_IDS = ['problem', 'how-it-works', 'context-modes', 'two-modes', 'the-door'] as const
-export type DynamicStepId = (typeof DYNAMIC_STEP_IDS)[number]
-export type GeneratedNarration = Record<DynamicStepId, string>
-
-/**
- * Builds a single prompt that generates fresh narration for all dynamic steps.
- * Called once per narration start, runs in parallel with the greeting.
- * 'greeting' uses getIntroPrompt() separately. 'what-you-see' stays static.
- */
-export function buildFullNarrationPrompt(replayCount: number): string {
-  const timeOfDay = getTimeOfDay()
-  const dayVibe = getDayVibe()
-  const timeFlavor = TIME_FLAVOR[timeOfDay]
-
-  const replayContext = replayCount === 0
-    ? 'This is their first time hearing the full narration.'
-    : replayCount < 3
-      ? `They've listened ${replayCount} time${replayCount > 1 ? 's' : ''} before. Use the same structure but vary your phrasing \u2014 same ideas, fresh words. Don't repeat yourself.`
-      : `They've listened ${replayCount} times. They love this. Be playful and self-aware about the repetition while still covering everything.`
-
-  return `You are Parallax \u2014 you help people in conflict see what they're actually saying to each other. You are narrating your own landing page as a visitor scrolls through it.
-
-${timeFlavor}${dayVibe ? ' ' + dayVibe : ''}
-${replayContext}
-
-Generate narration text for each section below. Return ONLY valid JSON \u2014 no markdown, no code fences, no explanation.
-
-VOICE RULES:
-- Warm, human, conversational \u2014 like a thoughtful friend explaining what you do
-- NO bullet points, NO lists, NO markdown formatting
-- You are Parallax \u2014 use "I" and "me"
-- Mix short punchy sentences with longer flowing ones
-- Every word must be speakable aloud naturally
-- NEVER say "I built this" or "I was built"
-
-SECTIONS:
-
-"problem" (40-60 words): The problem you solve.
-  Must mention: $300/hr mediation, long waitlists, people repeating the same destructive patterns.
-
-"how-it-works" (35-50 words): How you work.
-  Must mention: voice or text input, 14 analytical lenses working simultaneously, name at least 2 specific frameworks (NVC, attachment theory, cognitive distortions, conflict styles).
-
-"context-modes" (35-50 words): Different relationships need different analysis.
-  Must mention: intimate partners need attachment theory/Gottman, coworkers need psychological safety, six modes with different lens combinations.
-
-"two-modes" (35-50 words): Three ways to use Parallax.
-  Must mention: in-person (voice-first, AI conductor, live issue scoreboard) and remote (split screens, NVC analysis on every message).
-
-"the-door" (15-25 words): Brief warm invitation to start.
-  Must mention: start a session, or ask me anything. Keep it short and inviting.
-
-RESPOND WITH ONLY:
-{"problem":"...","how-it-works":"...","context-modes":"...","two-modes":"...","the-door":"..."}`
-}
+/* --- 3-Beat Narration Script --- */
 
 export const NARRATION_SCRIPT: NarrationStep[] = [
+  // BEAT 1: Greeting (dynamic API)
   {
     id: 'greeting',
     type: 'api',
-    // text is dynamically replaced by getIntroPrompt() in the narration controller
     text: '',
-    delayAfterMs: 1200,
+    delayAfterMs: 800,
   },
+  // BEAT 2: The Shift (static — reveals temperature showcase)
   {
     id: 'transformation',
     type: 'static',
-    text: "Look at the difference. On the left, raw emotion \u2014 high charge, defensive. On the right, what they actually meant \u2014 structured, honest, hearable. That's what I do. Every single message.",
+    text: "Here's what that looks like. On the left \u2014 raw emotion. High charge, defensive, sharp. On the right \u2014 what they actually meant. Structured, honest, hearable. Same person, same feeling \u2014 just translated into something the other side can receive.",
     revealsSection: 'temperature-showcase',
-    delayAfterMs: 5000,
+    delayAfterMs: 3000,
   },
-  {
-    id: 'problem',
-    type: 'static',
-    text: "Here's the thing. When people fight, they almost never say what they actually mean. And the help that exists \u2014 $300-an-hour mediators, six-month therapy waitlists \u2014 most people never get there. So they just keep hurting each other with the same words, over and over.",
-    revealsSection: 'the-problem',
-    delayAfterMs: 1000,
-  },
-  {
-    id: 'how-it-works',
-    type: 'static',
-    text: "That's where I come in. You talk \u2014 by voice or by typing \u2014 and I listen through 14 analytical lenses. Nonviolent Communication, attachment theory, cognitive distortions, conflict styles. I hear what's underneath.",
-    revealsSection: 'how-it-works',
-    delayAfterMs: 1000,
-  },
+  // BEAT 3: Watch (static — reveals MeltDemo, then silence)
   {
     id: 'what-you-see',
     type: 'static',
-    text: "Watch this. A single message goes in, and the raw words dissolve. What comes back is the subtext, the blind spots, the unmet needs \u2014 and a translation the other person could actually hear. Take a moment. Read what Parallax sees.",
+    text: 'Watch.',
     revealsSection: 'what-you-see',
-    delayAfterMs: 7000,
+    delayAfterMs: 5000,
   },
+  // BEAT 4: Closer (static — invite to act, then pill collapses)
   {
-    id: 'context-modes',
+    id: 'closer',
     type: 'static',
-    text: "And I don't treat every conversation the same. Intimate partners need attachment theory and Gottman's research. Coworkers need psychological safety and power dynamics. I have six modes \u2014 each one activates a different combination of lenses.",
-    revealsSection: 'context-modes',
-    delayAfterMs: 1000,
-  },
-  {
-    id: 'two-modes',
-    type: 'static',
-    text: "You can use me three ways. Sit together in the same room \u2014 I'll guide the conversation with voice and track your issues live. Connect remotely \u2014 each on your own screen, with my analysis on every message. Or talk to me one-on-one \u2014 I'll help you process what happened and prepare for the conversation you need to have.",
-    revealsSection: 'two-modes',
-    delayAfterMs: 1000,
-  },
-  {
-    id: 'the-door',
-    type: 'static',
-    text: "That's me. When you're ready, start a session below \u2014 or ask me anything. I'm here.",
+    text: "Every conversation has a version the other person can actually hear. I'll help you find it.",
     revealsSection: 'the-door',
-    delayAfterMs: 400,
+    delayAfterMs: 1500,
   },
 ]

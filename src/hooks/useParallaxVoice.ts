@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef } from 'react'
 
+const TTS_TIMEOUT_MS = 15000
+
 /**
  * useParallaxVoice — ElevenLabs TTS via /api/tts server proxy.
  *
@@ -24,6 +26,7 @@ export function useParallaxVoice(): {
   const blobUrlRef = useRef<string | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
   const rafRef = useRef<number>(0)
   const dataArrayRef = useRef<Float32Array<ArrayBuffer> | null>(null)
 
@@ -51,8 +54,22 @@ export function useParallaxVoice(): {
     setEnergy(0)
   }, [])
 
+  /** Disconnect audio graph nodes to prevent accumulation across calls */
+  const disconnectNodes = useCallback(() => {
+    if (sourceRef.current) {
+      try { sourceRef.current.disconnect() } catch { /* already disconnected */ }
+      sourceRef.current = null
+    }
+    if (analyserRef.current) {
+      try { analyserRef.current.disconnect() } catch { /* already disconnected */ }
+      analyserRef.current = null
+    }
+    dataArrayRef.current = null
+  }, [])
+
   const cleanup = useCallback(() => {
     stopAnalysis()
+    disconnectNodes()
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.removeAttribute('src')
@@ -62,11 +79,10 @@ export function useParallaxVoice(): {
       URL.revokeObjectURL(blobUrlRef.current)
       blobUrlRef.current = null
     }
-  }, [stopAnalysis])
+  }, [stopAnalysis, disconnectNodes])
 
   const cancel = useCallback(() => {
     cleanup()
-    // Also cancel browser fallback if active
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
@@ -104,11 +120,17 @@ export function useParallaxVoice(): {
     async (text: string): Promise<void> => {
       cleanup()
 
+      // Fetch with timeout
+      const abortCtrl = new AbortController()
+      const timeoutId = setTimeout(() => abortCtrl.abort(), TTS_TIMEOUT_MS)
+
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
+        signal: abortCtrl.signal,
       })
+      clearTimeout(timeoutId)
 
       if (!res.ok) {
         throw new Error(`TTS API returned ${res.status}`)
@@ -125,7 +147,6 @@ export function useParallaxVoice(): {
         audio.onplay = () => {
           setIsSpeaking(true)
 
-          // Connect audio element to AnalyserNode for waveform visualization
           try {
             if (!audioCtxRef.current) {
               audioCtxRef.current = new AudioContext()
@@ -138,6 +159,7 @@ export function useParallaxVoice(): {
             analyser.smoothingTimeConstant = 0.8
 
             const source = ctx.createMediaElementSource(audio)
+            sourceRef.current = source
             source.connect(analyser)
             analyser.connect(ctx.destination)
 
@@ -151,7 +173,11 @@ export function useParallaxVoice(): {
         audio.onended = () => {
           setIsSpeaking(false)
           stopAnalysis()
-          cleanup()
+          disconnectNodes()
+          if (blobUrlRef.current) {
+            URL.revokeObjectURL(blobUrlRef.current)
+            blobUrlRef.current = null
+          }
           resolve()
         }
         audio.onerror = () => {
@@ -187,7 +213,6 @@ export function useParallaxVoice(): {
       try {
         await playElevenLabs(text)
       } catch {
-        // Fallback to browser TTS with a promise wrapper
         return new Promise<void>((resolve) => {
           speakFallback(text, resolve)
         })

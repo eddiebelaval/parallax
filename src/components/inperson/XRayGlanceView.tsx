@@ -15,6 +15,8 @@ import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 import { useAutoListen } from "@/hooks/useAutoListen";
+import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import ConfirmationModal from "../ConfirmationModal";
 import type {
   Session,
   OnboardingContext,
@@ -31,6 +33,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const profileConcierge = useProfileConcierge();
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -43,6 +46,13 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
   const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
   const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  } | null>(null);
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -219,6 +229,39 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
     async (content: string) => {
+      // Intercept profile voice commands before sending to session
+      if (profileConcierge.isCommand(content)) {
+        try {
+          const response = await profileConcierge.processCommand(content);
+          if (response.requires_confirmation) {
+            // Show confirmation modal
+            setConfirmationModal({
+              isOpen: true,
+              title: 'Confirm Action',
+              message: response.confirmation_prompt || 'Are you sure?',
+              isDangerous: content.toLowerCase().includes('delete'),
+              onConfirm: async () => {
+                const result = await profileConcierge.confirm();
+                setConfirmationModal(null);
+                setMediationError(result.success ? `✓ ${result.message}` : `✗ ${result.message}`);
+                speak(result.message);
+              },
+            });
+          } else if (response.success) {
+            setMediationError(`✓ ${response.message}`);
+            speak(response.message);
+          } else {
+            setMediationError(`✗ ${response.message}`);
+            speak(response.message);
+          }
+        } catch {
+          const errorMsg = '✗ Failed to process profile command';
+          setMediationError(errorMsg);
+          speak(errorMsg);
+        }
+        return;
+      }
+
       setMediationError(null);
       const sent = await sendMessage(activeSender, content);
       if (!sent) return;
@@ -299,7 +342,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }, 5000);
       }
     },
-    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak],
   );
 
   // Auto-listen: hands-free from session start (togglable)
@@ -643,6 +686,17 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Full-screen red flash when timer expires */}
       {timerFlash && <div className="timer-expire-overlay" />}
+
+      {/* Confirmation Modal */}
+      {confirmationModal && (
+        <ConfirmationModal
+          {...confirmationModal}
+          onCancel={() => {
+            profileConcierge.cancel();
+            setConfirmationModal(null);
+          }}
+        />
+      )}
     </div>
   );
 }

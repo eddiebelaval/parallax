@@ -391,6 +391,28 @@ export interface Database {
           solo_memory: SoloMemory | Record<string, never>
           created_at: string
           updated_at: string
+          // Profile Concierge Settings
+          preferred_name: string | null
+          pronouns: string | null
+          email_notifications: boolean
+          sms_notifications: boolean
+          push_notifications: boolean
+          default_session_mode: string
+          auto_record_sessions: boolean
+          enable_live_transcription: boolean
+          share_behavioral_signals: boolean
+          allow_research_data_use: boolean
+          public_profile: boolean
+          voice_speed: number
+          voice_enabled: boolean
+          preferred_voice_id: string | null
+          allow_reinterview: boolean
+          last_interview_date: string | null
+          high_contrast_mode: boolean
+          reduce_motion: boolean
+          screen_reader_mode: boolean
+          experimental_features: boolean
+          beta_access: boolean
         }
         Insert: {
           id?: string
@@ -405,6 +427,28 @@ export interface Database {
           solo_memory?: SoloMemory | Record<string, never>
           created_at?: string
           updated_at?: string
+          // Profile Concierge Settings
+          preferred_name?: string | null
+          pronouns?: string | null
+          email_notifications?: boolean
+          sms_notifications?: boolean
+          push_notifications?: boolean
+          default_session_mode?: string
+          auto_record_sessions?: boolean
+          enable_live_transcription?: boolean
+          share_behavioral_signals?: boolean
+          allow_research_data_use?: boolean
+          public_profile?: boolean
+          voice_speed?: number
+          voice_enabled?: boolean
+          preferred_voice_id?: string | null
+          allow_reinterview?: boolean
+          last_interview_date?: string | null
+          high_contrast_mode?: boolean
+          reduce_motion?: boolean
+          screen_reader_mode?: boolean
+          experimental_features?: boolean
+          beta_access?: boolean
         }
         Update: {
           id?: string
@@ -419,6 +463,28 @@ export interface Database {
           solo_memory?: SoloMemory | Record<string, never>
           created_at?: string
           updated_at?: string
+          // Profile Concierge Settings
+          preferred_name?: string | null
+          pronouns?: string | null
+          email_notifications?: boolean
+          sms_notifications?: boolean
+          push_notifications?: boolean
+          default_session_mode?: string
+          auto_record_sessions?: boolean
+          enable_live_transcription?: boolean
+          share_behavioral_signals?: boolean
+          allow_research_data_use?: boolean
+          public_profile?: boolean
+          voice_speed?: number
+          voice_enabled?: boolean
+          preferred_voice_id?: string | null
+          allow_reinterview?: boolean
+          last_interview_date?: string | null
+          high_contrast_mode?: boolean
+          reduce_motion?: boolean
+          screen_reader_mode?: boolean
+          experimental_features?: boolean
+          beta_access?: boolean
         }
         Relationships: []
       }

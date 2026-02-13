@@ -8,6 +8,8 @@ import { useSoloChat } from "@/hooks/useSoloChat";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import ConfirmationModal from "./ConfirmationModal";
 import { buildExportHtml } from "@/lib/export-html";
 import type { Session } from "@/types/database";
 
@@ -55,6 +57,15 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [handsFree, setHandsFree] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [commandFeedback, setCommandFeedback] = useState<string | null>(null);
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  } | null>(null);
+  const profileConcierge = useProfileConcierge();
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -87,9 +98,37 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
     }
   }, [messages, speak]);
 
-  const handleSend = useCallback((content: string) => {
+  const handleSend = useCallback(async (content: string) => {
+    // Voice command interception: check for profile commands before sending
+    if (profileConcierge.isCommand(content)) {
+      try {
+        const response = await profileConcierge.processCommand(content);
+        if (response.requires_confirmation) {
+          // Show confirmation modal
+          setConfirmationModal({
+            isOpen: true,
+            title: 'Confirm Action',
+            message: response.confirmation_prompt || 'Are you sure?',
+            isDangerous: content.toLowerCase().includes('delete'),
+            onConfirm: async () => {
+              const result = await profileConcierge.confirm();
+              setConfirmationModal(null);
+              setCommandFeedback(result.success ? `✓ ${result.message}` : `✗ ${result.message}`);
+              setTimeout(() => setCommandFeedback(null), 5000);
+            },
+          });
+        } else {
+          setCommandFeedback(response.success ? `✓ ${response.message}` : `✗ ${response.message}`);
+          setTimeout(() => setCommandFeedback(null), 5000);
+        }
+      } catch {
+        setCommandFeedback('✗ Failed to process profile command');
+        setTimeout(() => setCommandFeedback(null), 5000);
+      }
+      return;
+    }
     sendMessage(content);
-  }, [sendMessage]);
+  }, [sendMessage, profileConcierge]);
 
   // Auto-listen: hands-free mode for solo therapy
   const autoListen = useAutoListen({
@@ -191,6 +230,12 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
               <p className="font-mono text-xs text-accent">{error}</p>
             </div>
           )}
+
+          {commandFeedback && (
+            <div className="px-4 py-2 border border-temp-cool/30 bg-temp-cool/5 rounded">
+              <p className="font-mono text-xs text-temp-cool">{commandFeedback}</p>
+            </div>
+          )}
         </div>
 
         {/* Input Bar */}
@@ -248,6 +293,17 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
             <SoloSidebar insights={insights} />
           </div>
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmationModal && (
+        <ConfirmationModal
+          {...confirmationModal}
+          onCancel={() => {
+            profileConcierge.cancel();
+            setConfirmationModal(null);
+          }}
+        />
       )}
     </div>
   );
