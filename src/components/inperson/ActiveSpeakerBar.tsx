@@ -28,7 +28,14 @@ declare global {
   }
 }
 
-type BarMode = "voice" | "text";
+type BarMode = "voice" | "text" | "auto";
+
+interface AutoListenState {
+  isListening: boolean;
+  interimText: string;
+  isSpeechActive: boolean;
+  silenceCountdown: number;
+}
 
 interface ActiveSpeakerBarProps {
   activeSpeakerName: string;
@@ -39,6 +46,14 @@ interface ActiveSpeakerBarProps {
   isYourTurn?: boolean;
   /** Time remaining in current turn (ms), optional visual indicator */
   timeRemaining?: number;
+  /** Enable hands-free auto-listen mode (overrides voice/text toggle) */
+  autoListen?: boolean;
+  /** State from useAutoListen hook when autoListen is true */
+  autoListenState?: AutoListenState;
+  /** Whether Parallax TTS is currently speaking */
+  isTTSSpeaking?: boolean;
+  /** Whether any processing is happening (analyzing/loading) */
+  isProcessing?: boolean;
 }
 
 function isSpeechSupported(): boolean {
@@ -53,6 +68,10 @@ export function ActiveSpeakerBar({
   onMicStateChange,
   isYourTurn = true,
   timeRemaining,
+  autoListen = false,
+  autoListenState,
+  isTTSSpeaking = false,
+  isProcessing = false,
 }: ActiveSpeakerBarProps) {
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
@@ -230,6 +249,16 @@ export function ActiveSpeakerBar({
 
   const isRecording = micHot || dictating;
 
+  // Auto mode: determine effective mode
+  const effectiveMode: BarMode = autoListen && supported ? "auto" : mode;
+
+  // In auto mode, notify parent about mic state from auto-listen
+  useEffect(() => {
+    if (effectiveMode === "auto" && autoListenState) {
+      onMicStateChange?.(autoListenState.isListening);
+    }
+  }, [effectiveMode, autoListenState, onMicStateChange]);
+
   // Format time remaining
   const timeRemainingSeconds = timeRemaining ? Math.ceil(timeRemaining / 1000) : null;
   const showUrgentWarning = timeRemainingSeconds !== null && timeRemainingSeconds <= 30;
@@ -241,10 +270,30 @@ export function ActiveSpeakerBar({
     }
   }, [supported, mode]);
 
+  // Auto-listen visual state determination
+  const autoState = autoListenState;
+  const isAutoListening = autoState?.isListening ?? false;
+  const autoInterim = autoState?.interimText ?? "";
+  const isSpeechActive = autoState?.isSpeechActive ?? false;
+  const silenceCountdown = autoState?.silenceCountdown ?? 0;
+
+  // Border color for auto mode
+  const autoBorderClass = isAutoListening
+    ? isSpeechActive
+      ? "border-temp-cool mic-hot-glow"
+      : silenceCountdown > 0
+      ? "border-temp-warm"
+      : "border-temp-cool/30"
+    : isTTSSpeaking
+    ? "border-accent/20"
+    : "border-border";
+
   return (
     <div
       className={`border-t transition-all duration-300 flex-shrink-0 ${
-        isRecording
+        effectiveMode === "auto"
+          ? autoBorderClass
+          : isRecording
           ? "border-temp-cool mic-hot-glow"
           : showUrgentWarning
           ? "border-temp-hot"
@@ -260,7 +309,116 @@ export function ActiveSpeakerBar({
         </div>
       )}
 
-      {mode === "voice" ? (
+      {effectiveMode === "auto" ? (
+        // ─── AUTO MODE: Claude mobile-style hands-free listening ───
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Mic indicator with energy ring (like Claude mobile) */}
+            <div className="flex items-center justify-center min-w-[44px] min-h-[44px]">
+              <div className="relative">
+                {/* Ping ring only when actively hearing speech */}
+                {isAutoListening && isSpeechActive && (
+                  <span className="absolute inset-[-8px] rounded-full border-2 border-temp-cool animate-ping opacity-25" />
+                )}
+                {/* Warm pulse ring during silence countdown */}
+                {isAutoListening && !isSpeechActive && silenceCountdown > 0 && (
+                  <span className="absolute inset-[-6px] rounded-full border-2 border-temp-warm animate-pulse opacity-40" />
+                )}
+                {/* Steady pulse ring when listening but no speech yet */}
+                {isAutoListening && !isSpeechActive && silenceCountdown === 0 && !isTTSSpeaking && !isProcessing && (
+                  <span className="absolute inset-[-6px] rounded-full border border-temp-cool/30 animate-pulse" />
+                )}
+                <MicIcon
+                  size={18}
+                  className={`transition-all duration-300 ${
+                    isAutoListening && isSpeechActive
+                      ? "text-temp-cool"
+                      : isAutoListening
+                      ? "text-temp-cool/50"
+                      : isTTSSpeaking
+                      ? "text-accent/40"
+                      : "text-ember-600"
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Center: state label + live transcript */}
+            <div className="flex-1 min-w-0">
+              {/* State label */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-mono text-[10px] uppercase tracking-widest transition-colors duration-300 ${
+                    isTTSSpeaking
+                      ? "text-accent/60"
+                      : isProcessing
+                      ? "text-ember-500 animate-pulse"
+                      : isAutoListening && isSpeechActive
+                      ? "text-temp-cool"
+                      : isAutoListening && silenceCountdown > 0
+                      ? "text-temp-warm"
+                      : isAutoListening
+                      ? "text-ember-600"
+                      : "text-ember-700"
+                  }`}
+                >
+                  {isTTSSpeaking
+                    ? "Parallax is responding..."
+                    : isProcessing
+                    ? "Analyzing..."
+                    : isAutoListening && isSpeechActive
+                    ? `Listening to ${activeSpeakerName}...`
+                    : isAutoListening && silenceCountdown > 0
+                    ? `Sending in ${silenceCountdown}s...`
+                    : isAutoListening
+                    ? `${activeSpeakerName}'s turn`
+                    : "Starting..."}
+                </span>
+              </div>
+
+              {/* Live interim transcript */}
+              {autoInterim && (
+                <p className="font-mono text-sm text-foreground/80 leading-relaxed mt-1 truncate">
+                  {autoInterim}
+                </p>
+              )}
+            </div>
+
+            {/* Right: speaker dot + type fallback */}
+            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                    isSpeechActive
+                      ? "bg-temp-cool"
+                      : isAutoListening
+                      ? "bg-temp-cool/30"
+                      : "bg-ember-600/30"
+                  }`}
+                />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                  {activeSpeakerName}
+                </span>
+              </div>
+              <button
+                onClick={() => setMode("text")}
+                className="font-mono text-[8px] uppercase tracking-widest text-ember-700 hover:text-ember-500 transition-colors"
+              >
+                Type instead
+              </button>
+            </div>
+          </div>
+
+          {/* Expanded transcript for longer text */}
+          {autoInterim && autoInterim.length > 80 && (
+            <div className="mt-2 px-1 pb-1">
+              <p className="font-mono text-sm text-foreground/80 leading-relaxed">
+                {autoInterim}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : effectiveMode === "voice" ? (
         // ─── VOICE MODE: Tap to Talk ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">

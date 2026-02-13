@@ -13,6 +13,7 @@ import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
+import { useAutoListen } from "@/hooks/useAutoListen";
 import type {
   Session,
   OnboardingContext,
@@ -274,6 +275,14 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
   );
 
+  // Auto-listen: hands-free voice detection (Claude mobile app style — 1.5s silence = done)
+  const autoListen = useAutoListen({
+    enabled: turnBasedMode && isActive && !conductorLoading && !isAnalyzing,
+    isTTSPlaying: isSpeaking,
+    onTranscript: handleSend,
+    silenceTimeoutMs: 1500,
+  });
+
   const endSession = useCallback(async () => {
     cancelSpeech();
     try {
@@ -409,7 +418,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <ParallaxPresence
           isAnalyzing={isAnalyzing || conductorLoading}
           isSpeaking={isSpeaking}
-          statusLabel={isMicHot ? "Recording..." : undefined}
+          statusLabel={
+            autoListen.isListening
+              ? autoListen.isSpeechActive
+                ? "Listening..."
+                : "Waiting..."
+              : isMicHot
+              ? "Recording..."
+              : undefined
+          }
           voiceWaveform={voiceWaveform}
           voiceEnergy={voiceEnergy}
         />
@@ -543,8 +560,17 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onSend={handleSend}
           disabled={conductorLoading}
           onMicStateChange={setIsMicHot}
-          isYourTurn={true} // Always allow input (in-person mode = both at same device)
+          isYourTurn={true}
           timeRemaining={turnBasedMode && isActive ? timeRemaining : undefined}
+          autoListen={turnBasedMode && isActive}
+          autoListenState={{
+            isListening: autoListen.isListening,
+            interimText: autoListen.interimText,
+            isSpeechActive: autoListen.isSpeechActive,
+            silenceCountdown: autoListen.silenceCountdown,
+          }}
+          isTTSSpeaking={isSpeaking}
+          isProcessing={isAnalyzing || conductorLoading}
         />
       </div>
 
