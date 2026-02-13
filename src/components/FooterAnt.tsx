@@ -46,6 +46,8 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   const [antState, setAntState] = useState<AntState>("entering");
   const stateTimer = useRef<number>(0);
   const targetPoint = useRef({ x: 0, y: 0 });
+  const directionChangeTimer = useRef<number>(0);
+  const nextDirectionChange = useRef<number>(3000);
 
   // Check if ant should be visible on this page
   useEffect(() => {
@@ -122,9 +124,11 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     if (!isVisible) return;
 
     let animationFrame: number;
+    const WANDER_MAX_TIME = 15000; // Force exit after 15 seconds
 
     function animate() {
       stateTimer.current += 16; // ~60fps
+      directionChangeTimer.current += 16;
 
       // State machine
       if (antState === "entering") {
@@ -137,42 +141,60 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
           // Reached target, start wandering
           setAntState("wandering");
           stateTimer.current = 0;
+          directionChangeTimer.current = 0;
+          nextDirectionChange.current = 2000 + Math.random() * 2000;
         } else {
-          // Move toward target
-          const speed = 1.5;
-          setVelocity({
-            x: (dx / distance) * speed,
-            y: (dy / distance) * speed,
-          });
+          // Move toward target (smooth)
+          const speed = 1.2;
+          const targetVelX = (dx / distance) * speed;
+          const targetVelY = (dy / distance) * speed;
+
+          // Smooth lerp toward target velocity
+          setVelocity((v) => ({
+            x: v.x + (targetVelX - v.x) * 0.1,
+            y: v.y + (targetVelY - v.y) * 0.1,
+          }));
         }
       } else if (antState === "wandering") {
-        // Wander randomly for 10-20 seconds
-        if (stateTimer.current > 10000 + Math.random() * 10000) {
+        // FORCE EXIT after max time (guaranteed to leave!)
+        if (stateTimer.current > WANDER_MAX_TIME) {
           // Pick random exit edge
           const w = window.innerWidth;
           const h = window.innerHeight;
           const edge = Math.floor(Math.random() * 4);
 
           switch (edge) {
-            case 0: targetPoint.current = { x: Math.random() * w, y: -50 }; break; // Exit top
-            case 1: targetPoint.current = { x: w + 50, y: Math.random() * h }; break; // Exit right
-            case 2: targetPoint.current = { x: Math.random() * w, y: h + 50 }; break; // Exit bottom
-            case 3: targetPoint.current = { x: -50, y: Math.random() * h }; break; // Exit left
+            case 0: targetPoint.current = { x: Math.random() * w, y: -50 }; break;
+            case 1: targetPoint.current = { x: w + 50, y: Math.random() * h }; break;
+            case 2: targetPoint.current = { x: Math.random() * w, y: h + 50 }; break;
+            case 3: targetPoint.current = { x: -50, y: Math.random() * h }; break;
           }
 
           setAntState("exiting");
           stateTimer.current = 0;
+        } else if (directionChangeTimer.current > nextDirectionChange.current) {
+          // Time for smooth direction change
+          directionChangeTimer.current = 0;
+          nextDirectionChange.current = 2000 + Math.random() * 2000;
+
+          // Pick new target direction (smooth)
+          const targetVelX = (Math.random() - 0.5) * 1.5;
+          const targetVelY = (Math.random() - 0.5) * 1.5;
+
+          // Lerp toward new direction over multiple frames
+          setVelocity((v) => ({
+            x: v.x + (targetVelX - v.x) * 0.15,
+            y: v.y + (targetVelY - v.y) * 0.15,
+          }));
         } else {
-          // Random direction changes every 2-4 seconds
-          if (stateTimer.current % (2000 + Math.random() * 2000) < 16) {
-            setVelocity({
-              x: (Math.random() - 0.5) * 2,
-              y: (Math.random() - 0.5) * 2,
-            });
-          }
+          // Gradually slow down and speed up (organic feel)
+          setVelocity((v) => ({
+            x: v.x * 0.98 + (Math.random() - 0.5) * 0.05,
+            y: v.y * 0.98 + (Math.random() - 0.5) * 0.05,
+          }));
         }
       } else if (antState === "exiting") {
-        // Walk toward exit point
+        // Walk toward exit point (faster and more direct)
         const dx = targetPoint.current.x - position.x;
         const dy = targetPoint.current.y - position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -191,15 +213,19 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
           setPosition({ x: -200, y: -200 });
           return;
         } else {
-          const speed = 2;
-          setVelocity({
-            x: (dx / distance) * speed,
-            y: (dy / distance) * speed,
-          });
+          // Smooth acceleration toward exit
+          const speed = 2.5;
+          const targetVelX = (dx / distance) * speed;
+          const targetVelY = (dy / distance) * speed;
+
+          setVelocity((v) => ({
+            x: v.x + (targetVelX - v.x) * 0.2,
+            y: v.y + (targetVelY - v.y) * 0.2,
+          }));
         }
       }
 
-      // Update position
+      // Update position (always smooth)
       setPosition((p) => ({
         x: p.x + velocity.x,
         y: p.y + velocity.y,
@@ -210,7 +236,7 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isVisible, velocity, position, antState]);
+  }, [isVisible, velocity, position, antState, allowedPaths]);
 
   // Handle ant click
   const handleClick = () => {
