@@ -115,16 +115,15 @@ export default function Home() {
       {/* Page content — dimmed during narration/chat */}
       <div className={shouldDim ? "content-dimmed" : ""}>
 
-        {/* ─── Hero: Cinematic Entry ─── */}
+        {/* ─── Hero: Centered Text That Scrolls Up ─── */}
         <NarrationSection
           id="hero"
           isComplete={isComplete}
           registerSection={narration.registerSection}
         >
-          <div className="relative min-h-screen flex flex-col justify-center px-6 py-20">
+          <div className="relative min-h-[80vh] flex flex-col justify-center px-6 pt-20 sm:pt-32 pb-16 sm:pb-20">
             {/* Layered atmospheric backgrounds */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {/* Deep gradient pool */}
               <div
                 className="absolute inset-0"
                 style={{
@@ -134,49 +133,40 @@ export default function Home() {
                   `,
                 }}
               />
-
-              {/* Floating ember particles */}
               <div className="absolute top-1/4 left-1/4 w-1 h-1 rounded-full bg-accent/30 animate-pulse" />
               <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-success/20 animate-pulse delay-700" />
               <div className="absolute bottom-1/4 right-1/4 w-1 h-1 rounded-full bg-accent/25 animate-pulse delay-1000" />
             </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto w-full">
-              {/* Meditation moment */}
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center gap-3 mb-8">
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-                    Real-time Conflict Resolution
-                  </p>
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                </div>
+            <div className="relative z-10 max-w-2xl mx-auto w-full">
+              <p className="section-indicator mb-6">Real-time Conflict Resolution</p>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl leading-[1.1] mb-6">
+                See the conversation{" "}
+                <span className="text-accent">you&apos;re actually having</span>
+              </h1>
+              <div className="w-12 h-px bg-accent mb-6" />
+              <p className="text-muted text-base sm:text-lg leading-relaxed max-w-xl">
+                14 analytical lenses. Real-time NVC translation.
+                Two people talk — Parallax sees what&apos;s underneath.
+              </p>
+              <HeroPreview />
+            </div>
+          </div>
+        </NarrationSection>
 
-                <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] mb-8 tracking-tight">
-                  See the conversation<br />
-                  <span className="text-accent">you&apos;re actually having</span>
-                </h1>
-
-                <div className="flex items-center justify-center gap-4 mb-8">
-                  <div className="h-px w-16 bg-accent/40" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-                  <div className="h-px w-16 bg-accent/40" />
-                </div>
-
-                <p className="text-xl sm:text-2xl text-ember-300 leading-relaxed max-w-2xl mx-auto mb-4">
-                  14 analytical lenses. Real-time NVC translation.
-                </p>
-                <p className="text-base text-ember-500 leading-relaxed max-w-xl mx-auto">
-                  Two people talk — Parallax sees what&apos;s underneath.
-                </p>
-              </div>
-
-              {/* Before/After Visual Storytelling */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {/* ─── Temperature Showcase ─── */}
+        <NarrationSection
+          id="temperature-showcase"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="px-6 py-16 sm:py-24">
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {/* Before: Hot temperature */}
                 <div className="relative group">
                   <div className="absolute -inset-0.5 bg-gradient-to-br from-temp-hot/20 to-temp-warm/10 rounded-lg blur-sm opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative border border-ember-700 bg-surface/80 backdrop-blur-sm p-8 rounded-lg">
+                  <div className="relative border border-ember-700 bg-surface/80 backdrop-blur-sm p-6 sm:p-8 rounded-lg">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-3 h-3 rounded-full bg-temp-hot" />
                       <p className="font-mono text-xs uppercase tracking-wider text-temp-hot">
@@ -201,7 +191,7 @@ export default function Home() {
                 {/* After: Cool temperature */}
                 <div className="relative group">
                   <div className="absolute -inset-0.5 bg-gradient-to-br from-temp-cool/20 to-success/10 rounded-lg blur-sm opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative border border-ember-700 bg-surface/80 backdrop-blur-sm p-8 rounded-lg">
+                  <div className="relative border border-ember-700 bg-surface/80 backdrop-blur-sm p-6 sm:p-8 rounded-lg">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-3 h-3 rounded-full bg-temp-cool" />
                       <p className="font-mono text-xs uppercase tracking-wider text-temp-cool">
