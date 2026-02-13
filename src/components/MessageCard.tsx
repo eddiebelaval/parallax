@@ -6,6 +6,7 @@ import {
   getTemperatureLabel,
   getBacklitClass,
 } from "@/lib/temperature";
+import { useSettings } from "@/hooks/useSettings";
 import { useMelt, MeltText } from "./TheMelt";
 import { LensBar } from "./lenses/LensBar";
 import type {
@@ -59,9 +60,12 @@ export function MessageCard({
   nvcAnalysis,
   isLatest = false,
 }: MessageCardProps) {
+  const { settings } = useSettings();
   const [expanded, setExpanded] = useState(false);
   const style = SENDER_STYLES[sender];
   const hasAnalysis = nvcAnalysis != null;
+  const analysisVisible = hasAnalysis && settings.show_analysis;
+  const temperatureVisible = hasAnalysis && settings.show_temperature;
 
   // V3: Severity-aware Melt timing
   const severity = hasAnalysis
@@ -74,10 +78,10 @@ export function MessageCard({
   const isV3Analysis = hasAnalysis && isConflictAnalysis(nvcAnalysis);
   const v3Analysis = isV3Analysis ? (nvcAnalysis as ConflictAnalysis) : null;
 
-  // Auto-expand analysis when crystallize phase begins
+  // Auto-expand analysis when crystallize phase begins (if setting enabled)
   useEffect(() => {
-    if (isCrystallizing) setExpanded(true);
-  }, [isCrystallizing]);
+    if (isCrystallizing && settings.auto_expand) setExpanded(true);
+  }, [isCrystallizing, settings.auto_expand]);
 
   const tempColor = hasAnalysis
     ? getTemperatureColor(nvcAnalysis.emotionalTemperature)
@@ -115,7 +119,7 @@ export function MessageCard({
           <span className="font-mono text-xs text-ember-700">
             {timestamp}
           </span>
-          {hasAnalysis && (
+          {temperatureVisible && (
             <span
               className="font-mono text-[10px] uppercase tracking-wider ml-auto"
               style={{ color: tempColor }}
@@ -148,8 +152,8 @@ export function MessageCard({
           }`}
         />
 
-        {/* NVC Analysis — expand/collapse */}
-        {hasAnalysis && (
+        {/* NVC Analysis — expand/collapse (controlled by show_analysis setting) */}
+        {analysisVisible && (
           <div className="mt-3">
             {/* Toggle hidden during crystallize — analysis appears directly */}
             {!isCrystallizing && (

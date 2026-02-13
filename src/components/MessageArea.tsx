@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { MessageCard } from "./MessageCard";
 import { SignalRail } from "./SignalRail";
+import { useSettings } from "@/hooks/useSettings";
 import type { Message, ContextMode } from "@/types/database";
 
 interface MessageAreaProps {
@@ -20,6 +21,7 @@ export function MessageArea({
   analyzingMessageId,
   lensCount,
 }: MessageAreaProps) {
+  const { settings } = useSettings();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function MessageArea({
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="flex gap-3">
-        <SignalRail messages={messages} />
+        {settings.show_temperature && <SignalRail messages={messages} />}
         <div className="flex-1 space-y-4">
           {messages.map((msg) => (
             <div key={msg.id}>

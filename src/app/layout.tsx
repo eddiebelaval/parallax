@@ -10,6 +10,7 @@ import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FloatingHelpButton } from "@/components/FloatingHelpButton";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -206,7 +207,9 @@ export default function RootLayout({
         className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
         <CursorSpotlight />
-        <LayoutShell>{children}</LayoutShell>
+        <SettingsProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </SettingsProvider>
       </body>
     </html>
   );

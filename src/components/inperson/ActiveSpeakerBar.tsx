@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { MicIcon, MicOffIcon, KeyboardIcon } from "@/components/icons";
+import { useSettings } from "@/hooks/useSettings";
 
 // Web Speech API types (Chrome webkit prefix)
 interface SpeechRecognitionEvent {
@@ -82,12 +83,16 @@ export function ActiveSpeakerBar({
   onToggleMute,
   onModeChange,
 }: ActiveSpeakerBarProps) {
+  const { settings } = useSettings();
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
   const [interim, setInterim] = useState("");
   const [textValue, setTextValue] = useState("");
   const [dictating, setDictating] = useState(false);
   const [supported, setSupported] = useState(true);
+
+  // Voice features require both browser support AND user preference
+  const voiceAvailable = supported && settings.voice_enabled;
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const finalTranscriptRef = useRef("");
@@ -258,8 +263,8 @@ export function ActiveSpeakerBar({
 
   const isRecording = micHot || dictating;
 
-  // Auto mode: determine effective mode
-  const effectiveMode: BarMode = autoListen && supported ? "auto" : mode;
+  // Auto mode: determine effective mode (requires voice to be available)
+  const effectiveMode: BarMode = autoListen && voiceAvailable ? "auto" : mode;
 
   // In auto mode, notify parent about mic state from auto-listen
   useEffect(() => {
@@ -272,12 +277,12 @@ export function ActiveSpeakerBar({
   const timeRemainingSeconds = timeRemaining ? Math.ceil(timeRemaining / 1000) : null;
   const showUrgentWarning = timeRemainingSeconds !== null && timeRemainingSeconds <= 30;
 
-  // If voice not supported, default to text
+  // If voice not available (unsupported or disabled), default to text
   useEffect(() => {
-    if (!supported && mode === "voice") {
+    if (!voiceAvailable && mode === "voice") {
       setMode("text");
     }
-  }, [supported, mode]);
+  }, [voiceAvailable, mode]);
 
   // Auto-listen visual state determination
   const autoState = autoListenState;
@@ -321,7 +326,7 @@ export function ActiveSpeakerBar({
       {/* ─── Mode strip: all controls in one place ─── */}
       {autoListen !== undefined && (
         <div className="px-4 pt-3 pb-1 flex items-center gap-2">
-          {supported && (
+          {voiceAvailable && (
             <button
               onClick={() => {
                 onModeChange?.("auto");
@@ -336,7 +341,7 @@ export function ActiveSpeakerBar({
               Hands-free
             </button>
           )}
-          {supported && (
+          {voiceAvailable && (
             <button
               onClick={() => {
                 onModeChange?.("voice");
@@ -550,7 +555,7 @@ export function ActiveSpeakerBar({
               />
 
               {/* Inline dictation mic button */}
-              {supported && (
+              {voiceAvailable && (
                 <button
                   onClick={dictating ? stopDictation : startDictation}
                   disabled={disabled}
