@@ -135,6 +135,6 @@ export const SUCCESS_MESSAGES = {
   PROFILE_PRIVATE: 'Your profile is now private.',
   VOICE_SPEED_UPDATED: (speed: number) => `Voice speed set to ${speed}x.`,
   SETTINGS_UPDATED: 'Settings updated successfully.',
-  DATA_EXPORTED: 'Your data export has been started. You'll receive a download link via email shortly.',
-  INTERVIEW_RESET: 'Interview reset. You can retake it whenever you're ready.',
+  DATA_EXPORTED: 'Your data export has been started. You will receive a download link via email shortly.',
+  INTERVIEW_RESET: 'Interview reset. You can retake it whenever you are ready.',
 } as const
