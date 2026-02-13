@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isValidRoomCode } from '@/lib/room-code'
 import { ContextModePicker } from '@/components/ContextModePicker'
+import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
 import { useAuth } from '@/hooks/useAuth'
 import type { SessionMode, ContextMode } from '@/types/database'
 
@@ -312,21 +313,13 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
             <div className="absolute -inset-0.5 bg-gradient-to-br from-accent/40 via-accent/20 to-accent/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header */}
+              {/* Visual header — two people + mediator orbs */}
               <div className="relative h-40 bg-gradient-to-br from-accent/10 to-accent/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Stylized icon */}
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full border-2 border-accent/40 flex items-center justify-center">
-                      <div className="w-14 h-14 rounded-full border-2 border-accent/60 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-accent/80 group-hover:bg-accent transition-colors" />
-                      </div>
-                    </div>
-                  </div>
+                <div className="absolute inset-0 flex items-center justify-center gap-3">
+                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={40} />
+                  <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.2} active={false} size={28} />
+                  <AudioWaveformOrb name="" role="b" waveform={null} energy={0.3} active={false} size={40} />
                 </div>
-                {/* Floating orbs */}
-                <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-accent/30 group-hover:bg-accent/50 transition-colors" />
-                <div className="absolute bottom-1/3 right-1/4 w-1.5 h-1.5 rounded-full bg-accent/20 group-hover:bg-accent/40 transition-colors" />
               </div>
 
               {/* Content */}
@@ -376,13 +369,16 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
             <div className="absolute -inset-0.5 bg-gradient-to-br from-success/40 via-success/20 to-success/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header */}
+              {/* Visual header — two remote orbs with teal bridge */}
               <div className="relative h-40 bg-gradient-to-br from-success/10 to-success/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center gap-4">
-                  {/* Two connected orbs */}
-                  <div className="w-12 h-12 rounded-full border-2 border-success/60 bg-success/20 group-hover:bg-success/30 transition-colors" />
-                  <div className="h-px w-8 bg-success/40 group-hover:bg-success/60 transition-colors" />
-                  <div className="w-12 h-12 rounded-full border-2 border-success/60 bg-success/20 group-hover:bg-success/30 transition-colors" />
+                <div className="absolute inset-0 flex items-center justify-center gap-6">
+                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.25} active={false} size={40} />
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="h-px w-10 bg-success/40" />
+                    <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.15} active={false} size={20} />
+                    <div className="h-px w-10 bg-success/40" />
+                  </div>
+                  <AudioWaveformOrb name="" role="b" waveform={null} energy={0.25} active={false} size={40} />
                 </div>
               </div>
 
@@ -433,17 +429,11 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
             <div className="absolute -inset-0.5 bg-gradient-to-br from-success/40 via-success/20 to-success/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header */}
+              {/* Visual header — single person + Parallax companion */}
               <div className="relative h-40 bg-gradient-to-br from-success/10 to-success/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Single glowing orb */}
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-2 border-success/60 bg-success/20 group-hover:bg-success/30 transition-colors flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-full border-2 border-success/80 bg-success/40 group-hover:bg-success/50 transition-colors" />
-                    </div>
-                    {/* Pulsing rings */}
-                    <div className="absolute inset-0 rounded-full border border-success/20 animate-ping" />
-                  </div>
+                <div className="absolute inset-0 flex items-center justify-center gap-4">
+                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={44} />
+                  <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.2} active={false} size={36} />
                 </div>
               </div>
 

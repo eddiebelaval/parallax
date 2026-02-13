@@ -113,7 +113,7 @@ SECTIONS:
 "context-modes" (35-50 words): Different relationships need different analysis.
   Must mention: intimate partners need attachment theory/Gottman, coworkers need psychological safety, six modes with different lens combinations.
 
-"two-modes" (35-50 words): Two ways to use Parallax.
+"two-modes" (35-50 words): Three ways to use Parallax.
   Must mention: in-person (voice-first, AI conductor, live issue scoreboard) and remote (split screens, NVC analysis on every message).
 
 "the-door" (15-25 words): Brief warm invitation to start.
@@ -169,7 +169,7 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
   {
     id: 'two-modes',
     type: 'static',
-    text: "You can use me two ways. Sit together in the same room \u2014 I'll guide the conversation with voice and track your issues live. Or connect remotely \u2014 each on your own screen, with my analysis on every message.",
+    text: "You can use me three ways. Sit together in the same room \u2014 I'll guide the conversation with voice and track your issues live. Connect remotely \u2014 each on your own screen, with my analysis on every message. Or talk to me one-on-one \u2014 I'll help you process what happened and prepare for the conversation you need to have.",
     revealsSection: 'two-modes',
     delayAfterMs: 1000,
   },
