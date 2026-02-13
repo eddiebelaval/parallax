@@ -70,7 +70,7 @@ export default function InterviewPage() {
   // Detect new assistant messages → fire typewriter + TTS
   const lastAssistantMsg = messages.findLast(m => m.role === 'assistant')
   const lastAssistantKey = lastAssistantMsg
-    ? `${messages.length}-${lastAssistantMsg.content}`
+    ? `assistant-${lastAssistantMsg.content}`
     : null
 
   useEffect(() => {
