@@ -119,11 +119,20 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     }
   }, [roomCode, refreshSession]);
 
-  const { timeRemaining, progress, reset: resetTimer } = useTurnTimer({
+  const { timeRemaining, progress, reset: resetTimer, pause: pauseTimer, resume: resumeTimer } = useTurnTimer({
     durationMs: timerDuration,
     onExpire: handleTurnExpire,
-    enabled: turnBasedMode && isActive,
+    enabled: turnBasedMode && isActive && !isCompleted,
   });
+
+  // Pause timer while Parallax is speaking or analyzing — user's time doesn't burn
+  useEffect(() => {
+    if (isSpeaking || isAnalyzing || conductorLoading) {
+      pauseTimer();
+    } else {
+      resumeTimer();
+    }
+  }, [isSpeaking, isAnalyzing, conductorLoading, pauseTimer, resumeTimer]);
 
   // Reset timer when turn changes
   useEffect(() => {
