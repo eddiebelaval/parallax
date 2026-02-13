@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useConversation } from '@/hooks/useConversation'
 import { useAutoListen } from '@/hooks/useAutoListen'
 import { useParallaxVoice } from '@/hooks/useParallaxVoice'
-import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
+import { ParallaxOrb } from '@/components/ParallaxOrb'
 import type { ConversationMessage } from '@/types/conversation'
 
 type InputMode = 'hands-free' | 'type'
@@ -21,7 +21,7 @@ export function FloatingHelpButton() {
   const { messages, isLoading, error, sendMessage, clearConversation } = useConversation('guide')
 
   // TTS for assistant responses
-  const { speak, isSpeaking, cancel, waveform, energy } = useParallaxVoice()
+  const { speak, isSpeaking, cancel, energy } = useParallaxVoice()
 
   // Voice input — only active when expanded + hands-free mode
   const handleTranscript = useCallback(
@@ -138,13 +138,10 @@ export function FloatingHelpButton() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <AudioWaveformOrb
-              name="Parallax"
-              role="claude"
-              waveform={waveform}
-              energy={energy}
-              active={isSpeaking}
+            <ParallaxOrb
               size={32}
+              energy={energy}
+              isSpeaking={isSpeaking}
             />
             <div>
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
