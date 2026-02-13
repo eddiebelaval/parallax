@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { InterviewPhase } from '@/types/database'
 
 interface InterviewMessage {
@@ -20,6 +20,30 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
   const [isLoading, setIsLoading] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [signalsExtracted, setSignalsExtracted] = useState(0)
+  const [isResuming, setIsResuming] = useState(false)
+  const resumeChecked = useRef(false)
+
+  // Check for existing interview progress on mount (resume capability)
+  useEffect(() => {
+    if (!userId || resumeChecked.current) return
+    resumeChecked.current = true
+
+    setIsResuming(true)
+    fetch(`/api/interview?user_id=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.completed) {
+          setIsComplete(true)
+          setPhase(4)
+        } else if (data.messages?.length > 0) {
+          // Resume from saved progress
+          setPhase(data.phase as InterviewPhase)
+          setMessages(data.messages)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsResuming(false))
+  }, [userId])
 
   const sendMessage = useCallback(async (content: string) => {
     if (isLoading || isComplete) return
@@ -76,6 +100,9 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
   }, [userId, phase, messages, isLoading, isComplete, contextMode, displayName])
 
   const startInterview = useCallback(async () => {
+    // If we already have messages (resumed), don't restart
+    if (messages.length > 0) return
+
     setPhase(1)
     setMessages([])
     setIsLoading(true)
@@ -104,13 +131,14 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
     } finally {
       setIsLoading(false)
     }
-  }, [userId, contextMode, displayName])
+  }, [userId, contextMode, displayName, messages.length])
 
   return {
     phase,
     messages,
     isLoading,
     isComplete,
+    isResuming,
     signalsExtracted,
     sendMessage,
     startInterview,

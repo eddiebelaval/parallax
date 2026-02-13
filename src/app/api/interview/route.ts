@@ -28,6 +28,54 @@ interface InterviewRequestBody {
   display_name?: string | null
 }
 
+/**
+ * GET /api/interview?user_id=X
+ *
+ * Load existing interview progress for resume capability.
+ * Returns current phase, messages (if in-progress), and completion status.
+ */
+export async function GET(request: Request): Promise<NextResponse> {
+  const { searchParams } = new URL(request.url)
+  const user_id = searchParams.get('user_id')
+
+  if (!user_id) {
+    return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  }
+
+  const supabase = createServerClient()
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('interview_phase, interview_completed, raw_responses, display_name')
+    .eq('user_id', user_id)
+    .single()
+
+  if (!profile) {
+    return NextResponse.json({ phase: 1, messages: [], completed: false })
+  }
+
+  if (profile.interview_completed) {
+    return NextResponse.json({
+      phase: 4,
+      messages: [],
+      completed: true,
+      display_name: profile.display_name,
+    })
+  }
+
+  // Look for in_progress entry in raw_responses
+  const rawResponses = (profile.raw_responses as unknown[]) ?? []
+  const inProgress = rawResponses.find(
+    (r) => typeof r === 'object' && r !== null && (r as Record<string, unknown>).phase === 'in_progress',
+  ) as { current_phase: number; messages: Array<{ role: string; content: string }> } | undefined
+
+  return NextResponse.json({
+    phase: inProgress?.current_phase ?? profile.interview_phase ?? 1,
+    messages: inProgress?.messages ?? [],
+    completed: false,
+    display_name: profile.display_name,
+  })
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   const rateLimited = checkRateLimit(request, 20, 60_000)
   if (rateLimited) return rateLimited
@@ -99,7 +147,20 @@ export async function POST(request: Request): Promise<NextResponse> {
   const phaseComplete = isPhaseComplete(rawText)
   const interviewDone = isInterviewComplete(rawText)
 
+  // Build the full message history including the new exchange
+  const updatedHistory = [
+    ...(conversation_history ?? []),
+    { role: 'user' as const, content: message },
+    { role: 'assistant' as const, content: cleanResponseForDisplay(rawText) },
+  ]
+
   let signalsExtracted = 0
+
+  // Filter out any previous in_progress entry from raw_responses
+  const completedResponses = rawResponses.filter(
+    (r) => typeof r === 'object' && r !== null && (r as Record<string, unknown>).phase !== 'in_progress',
+  )
+
   if (phaseComplete || interviewDone) {
     const extraction = parseInterviewExtraction(rawText)
     if (extraction) {
@@ -120,9 +181,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       signalsExtracted = signals.length
 
-      // Build profile update
+      // Build profile update — phase complete, replace in_progress with extraction
       const profileUpdate: Record<string, unknown> = {
-        raw_responses: [...rawResponses, extraction],
+        raw_responses: [...completedResponses, extraction],
         interview_phase: interviewDone ? 4 : phase,
         interview_completed: interviewDone,
         interview_completed_at: interviewDone ? new Date().toISOString() : undefined,
@@ -138,6 +199,22 @@ export async function POST(request: Request): Promise<NextResponse> {
         .update(profileUpdate)
         .eq('user_id', user_id)
     }
+  } else {
+    // Save in-progress conversation after EVERY exchange so users can resume
+    const inProgress = {
+      phase: 'in_progress' as const,
+      current_phase: phase,
+      messages: updatedHistory,
+      updated_at: new Date().toISOString(),
+    }
+
+    await supabase
+      .from('user_profiles')
+      .update({
+        raw_responses: [...completedResponses, inProgress],
+        interview_phase: phase,
+      })
+      .eq('user_id', user_id)
   }
 
   return NextResponse.json({

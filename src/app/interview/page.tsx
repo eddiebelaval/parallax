@@ -42,6 +42,7 @@ export default function InterviewPage() {
     messages,
     isLoading,
     isComplete,
+    isResuming,
     signalsExtracted,
     sendMessage,
     startInterview,
@@ -60,13 +61,14 @@ export default function InterviewPage() {
   //   }
   // }, [authLoading, user, router])
 
-  // Auto-start interview once user and displayName are resolved
+  // Auto-start interview once user and displayName are resolved (skip if resuming)
   useEffect(() => {
+    if (isResuming) return
     if (user && displayName !== undefined && messages.length === 0) {
       startInterview()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, displayName])
+  }, [user, displayName, isResuming])
 
   // Detect new assistant messages → fire typewriter + TTS
   const lastAssistantMsg = messages.findLast(m => m.role === 'assistant')
@@ -310,6 +312,13 @@ export default function InterviewPage() {
             {getPhaseConfig(phase as Exclude<InterviewPhase, 0>).duration}
           </span>
         </div>
+        {/* Exit ramp — save progress and leave */}
+        <button
+          onClick={() => router.push('/profile')}
+          className="font-mono text-[9px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors mt-2"
+        >
+          Save and continue later
+        </button>
       </div>
 
       {/* Parallax Orb - Larger, More Prominent */}
