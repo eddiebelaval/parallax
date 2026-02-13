@@ -90,4 +90,12 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
     revealsSection: 'what-you-see',
     delayAfterMs: 5000,
   },
+  // BEAT 4: Closer (static — invite to act, then pill collapses)
+  {
+    id: 'closer',
+    type: 'static',
+    text: "Every conversation has a version the other person can actually hear. I'll help you find it.",
+    revealsSection: 'the-door',
+    delayAfterMs: 1500,
+  },
 ]
