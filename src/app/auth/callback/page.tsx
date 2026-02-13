@@ -22,10 +22,10 @@ function CallbackHandler() {
         return
       }
 
-      // Check if user has completed the interview
+      // Check if user already has a profile
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('interview_completed')
+        .select('user_id')
         .eq('user_id', data.user.id)
         .single()
 
@@ -41,11 +41,10 @@ function CallbackHandler() {
         }, {
           onConflict: 'user_id',
         })
-
-        router.replace('/interview')
-      } else {
-        router.replace(profile.interview_completed ? '/home' : '/interview')
       }
+
+      // Always go home — interview is optional, not a gate
+      router.replace('/home')
     })
   }, [searchParams, router])
 

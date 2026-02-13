@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPrompt } from '@/lib/knowledge-base'
 import { GUIDE_TOOLS, executeGuideToolCall } from '@/lib/guide-tools'
+import { createClient } from '@supabase/supabase-js'
 import type { ConversationalMode, ConversationMessage, ConverseResponse, ToolResult } from '@/types/conversation'
 
 const VALID_MODES: ConversationalMode[] = ['explorer', 'guide']
@@ -37,6 +38,20 @@ function buildMessages(
   return messages
 }
 
+async function getUserIdFromRequest(request: Request): Promise<string | undefined> {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return undefined
+
+  const token = authHeader.slice(7)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) return undefined
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  const { data: { user } } = await supabase.auth.getUser(token)
+  return user?.id
+}
+
 /**
  * POST /api/converse
  *
@@ -44,8 +59,9 @@ function buildMessages(
  * which knowledge base, system prompt, and tools are used.
  *
  * Explorer: read-only, no tools. Supports streaming (stream: true).
- * Guide: has tools (update_setting, get_settings) — handles the
- *   tool_use loop internally and returns final text + tool results
+ * Guide: has tools (update_setting, get_settings, navigate_to,
+ *   update_profile, get_profile) — handles the tool_use loop
+ *   internally and returns final text + tool results
  *
  * Body: { mode: 'explorer' | 'guide', message: string, history: ConversationMessage[], stream?: boolean }
  */
@@ -137,6 +153,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: extractText(response) })
     }
 
+    // Extract userId for profile tools (best-effort, non-blocking)
+    const userId = await getUserIdFromRequest(request)
+
     // Tool use loop — execute tools and continue the conversation
     const collectedToolResults: ToolResult[] = []
     let currentMessages: Anthropic.MessageParam[] = [...messages]
@@ -155,9 +174,10 @@ export async function POST(request: Request) {
 
       for (const block of currentResponse.content) {
         if (block.type === 'tool_use') {
-          const toolResult = executeGuideToolCall(
+          const toolResult = await executeGuideToolCall(
             block.name,
             block.input as Record<string, unknown>,
+            userId,
           )
           collectedToolResults.push(toolResult)
 

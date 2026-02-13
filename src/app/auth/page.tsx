@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signUp, signIn, signInWithGoogle, signInWithMagicLink } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
 
 function AuthContent() {
   const router = useRouter()
@@ -28,17 +27,10 @@ function AuthContent() {
     }
   }, [searchParams])
 
-  // Redirect already-authenticated users
+  // Redirect already-authenticated users straight to home
   useEffect(() => {
     if (authLoading || !user) return
-    supabase
-      .from('user_profiles')
-      .select('interview_completed')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => {
-        router.replace(data?.interview_completed ? '/home' : '/interview')
-      })
+    router.replace('/home')
   }, [user, authLoading, router])
 
   async function handleGoogleSignIn() {
@@ -76,19 +68,10 @@ function AuthContent() {
     try {
       if (isSignUp) {
         await signUp(email, password)
-        router.push('/interview')
+        router.push('/home')
       } else {
-        const { user: signedIn } = await signIn(email, password)
-        if (signedIn) {
-          const { data } = await supabase
-            .from('user_profiles')
-            .select('interview_completed')
-            .eq('user_id', signedIn.id)
-            .single()
-          router.push(data?.interview_completed ? '/home' : '/interview')
-        } else {
-          router.push('/interview')
-        }
+        await signIn(email, password)
+        router.push('/home')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed')

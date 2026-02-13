@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 import type {
   ConversationalMode,
   ConversationMessage,
@@ -43,9 +44,16 @@ export function useConversation(mode: ConversationalMode, options?: UseConversat
           history: currentMessages,
         }
 
+        // Pass auth token for profile tools (best-effort)
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+
         const res = await fetch('/api/converse', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(body),
         })
 

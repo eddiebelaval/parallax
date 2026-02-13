@@ -89,6 +89,16 @@ export default function Home() {
         onClick={narration.startNarration}
       />
 
+      {/* Skip intro — visible during idle phase */}
+      {isIdle && (
+        <button
+          onClick={narration.skipToEnd}
+          className="fixed bottom-8 right-8 z-40 font-mono text-xs text-muted uppercase tracking-widest hover:text-foreground transition-colors px-4 py-2 border border-border rounded-lg bg-background/80 backdrop-blur-sm"
+        >
+          Skip intro
+        </button>
+      )}
+
       {/* Parallax Aura — the teal glow presence */}
       <ParallaxAura visible={narration.auraVisible} chatMode={isChat}>
         {isNarrating && (
@@ -523,7 +533,7 @@ export default function Home() {
         {/* ─── Divider ─── */}
         <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
 
-        {/* ─── Two Modes ─── */}
+        {/* ─── Three Modes ─── */}
         <NarrationSection
           id="two-modes"
           isComplete={isComplete}

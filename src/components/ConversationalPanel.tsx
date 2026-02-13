@@ -12,12 +12,30 @@ function toolResultLabel(tr: ToolResult): string {
   if (tr.toolName === 'get_settings') {
     return 'Read settings'
   }
+  if (tr.toolName === 'navigate_to' && tr.success) {
+    return `Navigating to ${typeof tr.input.page === 'string' ? tr.input.page : 'page'}`
+  }
+  if (tr.toolName === 'update_profile' && tr.success) {
+    return `Updated profile ${typeof tr.input.field === 'string' ? tr.input.field : 'field'}`
+  }
+  if (tr.toolName === 'get_profile') {
+    return 'Read profile'
+  }
   return tr.toolName
 }
 
-export function ConversationalPanel({ mode, isOpen, onClose }: ConversePanelProps) {
+interface ExtendedPanelProps extends ConversePanelProps {
+  onToolResults?: (results: ToolResult[]) => void
+}
+
+export function ConversationalPanel({ mode, isOpen, onClose, onToolResults: externalOnToolResults }: ExtendedPanelProps) {
   const { applyToolResults } = useSettings()
-  const options = useMemo(() => ({ onToolResults: applyToolResults }), [applyToolResults])
+  const options = useMemo(() => ({
+    onToolResults: (results: ToolResult[]) => {
+      applyToolResults(results)
+      externalOnToolResults?.(results)
+    },
+  }), [applyToolResults, externalOnToolResults])
   const { messages, isLoading, error, sendMessage, clearConversation } = useConversation(
     mode,
     options,

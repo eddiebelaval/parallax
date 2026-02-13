@@ -125,6 +125,14 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
               >
                 Profile
               </Link>
+              <Link
+                href="/settings"
+                className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                  pathname === "/settings" ? "text-foreground" : "text-muted hover:text-foreground"
+                }`}
+              >
+                Settings
+              </Link>
             </nav>
           )}
         </div>
@@ -164,6 +172,9 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <Link href="/profile" className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors">
                   Profile
+                </Link>
+                <Link href="/settings" className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+                  Settings
                 </Link>
               </>
             )}
