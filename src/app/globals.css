@@ -627,8 +627,34 @@ li {
 }
 
 @keyframes signal-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+/* ─── Interview Experience Animations ─── */
+
+/* Ambient breathing effect for completion screen */
+@keyframes ambient-breathe {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+/* Cursor blink for typewriter */
+@keyframes cursor-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  50% { opacity: 0; }
 }
 
 .signal-segment {
@@ -955,6 +981,28 @@ li {
 
 .animate-slide-in-right {
   animation: slideInRight 0.25s ease-out forwards;
+}
+
+/* ─── Scanning Beam (X-Ray Vision) ─── */
+@keyframes scanning-beam {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.scanning-beam {
+  animation: scanning-beam 3s ease-in-out infinite;
 }
 
 /* ─── Hot Mic Glow ─── */

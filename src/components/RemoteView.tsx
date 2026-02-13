@@ -6,6 +6,7 @@ import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
 import { CoachingPanel } from "./CoachingPanel";
+import { AudioWaveformOrb } from "./AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
@@ -402,14 +403,61 @@ export function RemoteView({
         </div>
       </div>
 
-      {/* ParallaxPresence orb */}
+      {/* Split-screen person panels with ParallaxPresence in center */}
       <div className="flex-shrink-0 border-b border-border">
-        <ParallaxPresence
-          isAnalyzing={!!analyzingMessageId || conductorLoading}
-          isSpeaking={isSpeaking}
-          voiceWaveform={voiceWaveform}
-          voiceEnergy={voiceEnergy}
-        />
+        <div className="grid grid-cols-3 items-center">
+          {/* Person A orb (hidden on mobile during pre-active phases) */}
+          {(isActive || conductorPhase === "waiting_for_b") && (
+            <div className="hidden md:block border-r border-border/50">
+              <div className="p-4">
+                <div className="flex flex-col items-center">
+                  <AudioWaveformOrb
+                    name={personAName}
+                    role="a"
+                    waveform={null}
+                    energy={0.2}
+                    active={effectiveTurn === "person_a"}
+                    size={50}
+                  />
+                  <span className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ember-400">
+                    {personAName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Center: Parallax presence */}
+          <div className={isActive || conductorPhase === "waiting_for_b" ? "" : "col-span-3"}>
+            <ParallaxPresence
+              isAnalyzing={!!analyzingMessageId || conductorLoading}
+              isSpeaking={isSpeaking}
+              voiceWaveform={voiceWaveform}
+              voiceEnergy={voiceEnergy}
+            />
+          </div>
+
+          {/* Person B orb (hidden on mobile during pre-active phases) */}
+          {(isActive || conductorPhase === "waiting_for_b") && (
+            <div className="hidden md:block border-l border-border/50">
+              <div className="p-4">
+                <div className="flex flex-col items-center">
+                  <AudioWaveformOrb
+                    name={personBName}
+                    role="b"
+                    waveform={null}
+                    energy={0.2}
+                    active={effectiveTurn === "person_b"}
+                    size={50}
+                  />
+                  <span className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ember-400">
+                    {personBName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main content: messages + sidebar */}
