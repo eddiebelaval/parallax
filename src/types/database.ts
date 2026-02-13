@@ -1,5 +1,5 @@
 export type SessionStatus = 'waiting' | 'active' | 'completed'
-export type SessionMode = 'remote' | 'in_person'
+export type SessionMode = 'remote' | 'in_person' | 'solo'
 export type OnboardingStep = 'introductions' | 'set_stage' | 'set_goals' | 'complete'
 export type MessageSender = 'person_a' | 'person_b' | 'mediator'
 export type IssueStatus = 'unaddressed' | 'well_addressed' | 'poorly_addressed' | 'deferred'
@@ -206,6 +206,7 @@ export interface Database {
           context_mode: ContextMode
           onboarding_step: OnboardingStep | null
           onboarding_context: OnboardingContext | null
+          timer_duration_ms: number | null
           created_at: string
           updated_at: string
         }
@@ -221,6 +222,7 @@ export interface Database {
           context_mode?: ContextMode
           onboarding_step?: OnboardingStep | null
           onboarding_context?: OnboardingContext | null
+          timer_duration_ms?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -236,6 +238,7 @@ export interface Database {
           context_mode?: ContextMode
           onboarding_step?: OnboardingStep | null
           onboarding_context?: OnboardingContext | null
+          timer_duration_ms?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -385,6 +388,7 @@ export interface Database {
           interview_completed_at: string | null
           raw_responses: unknown[]
           primary_context_mode: string
+          solo_memory: SoloMemory | Record<string, never>
           created_at: string
           updated_at: string
         }
@@ -398,6 +402,7 @@ export interface Database {
           interview_completed_at?: string | null
           raw_responses?: unknown[]
           primary_context_mode?: string
+          solo_memory?: SoloMemory | Record<string, never>
           created_at?: string
           updated_at?: string
         }
@@ -411,6 +416,7 @@ export interface Database {
           interview_completed_at?: string | null
           raw_responses?: unknown[]
           primary_context_mode?: string
+          solo_memory?: SoloMemory | Record<string, never>
           created_at?: string
           updated_at?: string
         }
@@ -595,6 +601,7 @@ export interface UserProfile {
   interview_completed_at: string | null
   raw_responses: unknown[]
   primary_context_mode: ContextMode
+  solo_memory: SoloMemory | Record<string, never>
   created_at: string
   updated_at: string
 }
@@ -626,6 +633,51 @@ export interface SignalAccessLog {
   signal_type: string
   consent_level: ConsentLevel
   accessed_at: string
+}
+
+// ────────────────────────────────────────────────
+// Solo Memory types (persistent across sessions)
+// ────────────────────────────────────────────────
+
+export interface SoloActionItem {
+  id: string
+  text: string
+  status: 'suggested' | 'in_progress' | 'completed'
+  addedAt: string
+}
+
+export interface SoloRecentSession {
+  date: string
+  summary: string
+  topics: string[]
+  emotionalArc: string
+}
+
+export interface SoloMemory {
+  // LONG-TERM — accumulated across all sessions, distilled
+  identity: {
+    name: string | null
+    bio: string | null
+    importantPeople: Array<{ name: string; relationship: string }>
+  }
+  themes: string[]
+  patterns: string[]
+  values: string[]
+  strengths: string[]
+
+  // SHORT-TERM — recent session summaries (last 5)
+  recentSessions: SoloRecentSession[]
+
+  // IMMEDIATE — current session state
+  currentSituation: string | null
+  emotionalState: string | null
+
+  // ACTION ITEMS — persistent, cross-session
+  actionItems: SoloActionItem[]
+
+  // META
+  sessionCount: number
+  lastSeenAt: string
 }
 
 // Convenience types
