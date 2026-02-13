@@ -6,7 +6,7 @@ import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
 import { CoachingPanel } from "./CoachingPanel";
-import { AudioWaveformOrb } from "./AudioWaveformOrb";
+import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";

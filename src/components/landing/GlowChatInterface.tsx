@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ConversationMessage } from '@/types/conversation'
-import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
+import { AudioWaveformOrb } from '@/components/_deprecated/AudioWaveformOrb'
 import { useAudioAnalyser } from '@/hooks/useAudioAnalyser'
 
 const SUGGESTION_CHIPS = [

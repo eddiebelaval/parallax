@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { AudioWaveformOrb } from '../AudioWaveformOrb'
+import { AudioWaveformOrb } from '../_deprecated/AudioWaveformOrb'
 
 describe('AudioWaveformOrb', () => {
   it('renders the name label', () => {

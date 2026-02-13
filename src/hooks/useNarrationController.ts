@@ -6,10 +6,12 @@ import { useParallaxVoice } from './useParallaxVoice'
 import { NARRATION_SCRIPT, FALLBACK_INTRO, getIntroPrompt, buildFullNarrationPrompt, DYNAMIC_STEP_IDS } from '@/lib/narration-script'
 import type { NarrationStep, GeneratedNarration, DynamicStepId } from '@/lib/narration-script'
 
-export type NarrationPhase = 'idle' | 'narrating' | 'complete' | 'chat'
+export type NarrationPhase = 'idle' | 'expanding' | 'narrating' | 'collapsing' | 'complete' | 'chat'
 
 const INTRO_SEEN_KEY = 'parallax-intro-seen'
 const API_TIMEOUT_MS = 5000
+const EXPAND_DURATION_MS = 300
+const COLLAPSE_DURATION_MS = 400
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -18,6 +20,7 @@ function sleep(ms: number): Promise<void> {
 export function useNarrationController() {
   // Always start 'idle' for SSR consistency — check localStorage after hydration
   const [phase, setPhase] = useState<NarrationPhase>('idle')
+  const [slidUp, setSlidUp] = useState(false)
   const hydratedRef = useRef(false)
 
   useEffect(() => {
@@ -39,6 +42,7 @@ export function useNarrationController() {
   const mutedRef = useRef(false)
   const replayCountRef = useRef(0)
   const generatedTextRef = useRef<GeneratedNarration | null>(null)
+  const firstSectionRevealedRef = useRef(false)
 
   const registerSection = useCallback((id: string, el: HTMLElement | null) => {
     if (el) {
@@ -54,11 +58,18 @@ export function useNarrationController() {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => {
       el.classList.add('section-visible')
-    }, 600)
+    }, 400)
+
+    // After the first section reveals, signal the panel to slide up
+    if (!firstSectionRevealedRef.current) {
+      firstSectionRevealedRef.current = true
+      setSlidUp(true)
+    }
   }, [])
 
   const markComplete = useCallback(() => {
     setPhase('complete')
+    setSlidUp(false)
     localStorage.setItem(INTRO_SEEN_KEY, '1')
     sectionRefs.current.forEach((el) => {
       el.classList.add('section-visible')
@@ -179,6 +190,19 @@ export function useNarrationController() {
   const startNarration = useCallback(async () => {
     abortRef.current = false
     generatedTextRef.current = null
+    firstSectionRevealedRef.current = false
+    setSlidUp(false)
+
+    // Phase 1: Expanding — morph pill to panel
+    setPhase('expanding')
+
+    // Check for reduced motion preference
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    await sleep(prefersReduced ? 0 : EXPAND_DURATION_MS)
+
+    if (abortRef.current) return
+
+    // Phase 2: Narrating
     setPhase('narrating')
 
     // Fire full narration generation in parallel with the greeting step.
@@ -201,6 +225,10 @@ export function useNarrationController() {
     }
 
     if (!abortRef.current) {
+      // Phase 3: Collapsing — morph panel back to pill
+      setPhase('collapsing')
+      const prefersReducedEnd = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      await sleep(prefersReducedEnd ? 0 : COLLAPSE_DURATION_MS)
       markComplete()
     }
   }, [runStep, markComplete, generateFullNarration])
@@ -209,6 +237,7 @@ export function useNarrationController() {
     abortRef.current = true
     voice.cancel()
     typewriter.skipToEnd()
+    setSlidUp(false)
     markComplete()
   }, [voice, typewriter, markComplete])
 
@@ -226,6 +255,7 @@ export function useNarrationController() {
     abortRef.current = true
     voice.cancel()
     typewriter.reset()
+    setSlidUp(false)
     // Re-hide all sections so they reveal again during narration
     sectionRefs.current.forEach((el) => {
       el.classList.remove('section-visible')
@@ -245,11 +275,9 @@ export function useNarrationController() {
     setPhase('complete')
   }, [])
 
-  // Derived: whether the aura should be visible
-  const auraVisible = phase === 'narrating' || phase === 'chat'
-
   return {
     phase,
+    slidUp,
     currentStep,
     displayedText: typewriter.displayedText,
     isTyping: typewriter.isTyping,
@@ -257,7 +285,6 @@ export function useNarrationController() {
     voiceWaveform: voice.waveform,
     voiceEnergy: voice.energy,
     isMuted,
-    auraVisible,
     startNarration,
     replayNarration,
     skipToEnd,

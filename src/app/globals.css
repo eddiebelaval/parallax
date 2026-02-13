@@ -286,6 +286,345 @@
   }
 }
 
+/* ═══════════════════════════════════════════════
+   NARRATION GLASS PANEL — Morphing Pill Lifecycle
+   States: idle (pill) → expanding → narrating → collapsing → complete (pill)
+   The pill and panel are the SAME element in different layout states.
+   GSAP Flip handles the rect interpolation; CSS defines the resting states.
+   ═══════════════════════════════════════════════ */
+
+/* ── Base: the shared glass surface ── */
+.glass-panel {
+  position: fixed;
+  z-index: 35;
+  pointer-events: auto;
+  will-change: transform, width, height, border-radius;
+  overflow: visible;
+}
+
+/* ── Idle: Orb cage — centered pill with frosted orb inside ── */
+.glass-panel--idle {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1.5rem 2.5rem;
+  border-radius: 9999px !important;
+}
+
+@media (min-width: 640px) {
+  .glass-panel--idle {
+    padding: 2rem 3rem;
+  }
+}
+
+/* Frosted cage effect — extra blur and reduced transparency on idle */
+.glass-panel--idle .glass-panel__surface {
+  backdrop-filter: blur(48px) saturate(200%) brightness(105%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(105%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.10) 100%
+  );
+}
+
+/* ── Complete/Resting: Small header pill ── */
+.glass-panel--pill {
+  top: 0.65rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.375rem 1.25rem;
+  border-radius: 9999px !important;
+}
+
+/* ── Narrating: Voice pill, centered initially ── */
+.glass-panel--narrating {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1.25rem 2rem;
+  border-radius: 9999px !important;
+}
+
+/* ── Narrating + slid up: Voice pill at top third ── */
+.glass-panel--narrating-top {
+  top: 33vh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1.25rem 2rem;
+  border-radius: 9999px !important;
+}
+
+/* Slide-up transition — slow organic movement */
+.glass-panel--slide-up {
+  transition: top 1200ms cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 1200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ── Active voice glow — pill pulses teal when speaking ── */
+.glass-panel--speaking .glass-panel__surface {
+  border-color: rgba(106, 171, 142, 0.35);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.20),
+    inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.06),
+    0 0 16px rgba(106, 171, 142, 0.25),
+    0 0 32px rgba(106, 171, 142, 0.12),
+    0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* ── Teleprompter: scrolling text below the orb ── */
+.teleprompter {
+  max-height: 3.4em;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.6;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 78%,
+    transparent 100%
+  );
+}
+
+.teleprompter__inner {
+  overflow-y: auto;
+  max-height: 3.4em;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.teleprompter__inner::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Page content blur: focus stays on the pill ── */
+.content-blur-top::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20vh;
+  z-index: 25;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--background) 0%,
+    rgba(0, 0, 0, 0.6) 40%,
+    transparent 100%
+  );
+}
+
+.light .content-blur-top::before {
+  background: linear-gradient(
+    to bottom,
+    var(--background) 0%,
+    rgba(245, 239, 230, 0.6) 40%,
+    transparent 100%
+  );
+}
+
+/* ── Orbiting hint text for idle pill ── */
+@keyframes orbit-text {
+  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius, 130px)) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(var(--orbit-radius, 130px)) rotate(-360deg); }
+}
+
+.orbit-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -0.5em;
+  margin-left: -2em;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  opacity: 0.5;
+  animation: orbit-text 16s linear infinite;
+}
+
+@media (min-width: 640px) {
+  .orbit-hint {
+    --orbit-radius: 160px;
+  }
+}
+
+/* ── Chat: Panel at bottom ── */
+.glass-panel--chat {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: auto;
+  transform: none;
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 1.5rem 1.5rem 0 0 !important;
+  min-height: 35vh;
+}
+
+/* ── Glass material (shared across all states) ── */
+.glass-panel__surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  backdrop-filter: blur(40px) saturate(180%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(110%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.20),
+    inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(255, 255, 255, 0.15);
+  transition: backdrop-filter 0.3s, border-color 0.3s;
+}
+
+/* Fresnel rim — edges brighter than center */
+.glass-panel__fresnel {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 50%,
+    transparent 45%,
+    rgba(255, 255, 255, 0.06) 65%,
+    rgba(255, 255, 255, 0.15) 85%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Chromatic aberration — red/blue shifted borders */
+.glass-panel__chromatic-r,
+.glass-panel__chromatic-b {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.glass-panel__chromatic-r {
+  border: 1px solid rgba(255, 100, 80, 0.08);
+  transform: translate(0.6px, 0);
+}
+
+.glass-panel__chromatic-b {
+  border: 1px solid rgba(80, 100, 255, 0.08);
+  transform: translate(-0.6px, 0);
+}
+
+/* Stronger chromatic on idle pill (larger surface) */
+.glass-panel--idle .glass-panel__chromatic-r {
+  border-width: 1.5px;
+  border-color: rgba(255, 100, 80, 0.10);
+  transform: translate(1px, 0);
+}
+
+.glass-panel--idle .glass-panel__chromatic-b {
+  border-width: 1.5px;
+  border-color: rgba(80, 100, 255, 0.10);
+  transform: translate(-1px, 0);
+}
+
+/* Teal glow halo for idle state */
+.glass-panel--idle .glass-panel__glow {
+  position: absolute;
+  inset: -3rem;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(106, 171, 142, 0.2) 60deg,
+    transparent 120deg,
+    rgba(106, 171, 142, 0.15) 200deg,
+    transparent 280deg,
+    rgba(106, 171, 142, 0.1) 340deg,
+    transparent 360deg
+  );
+  filter: blur(16px);
+  animation:
+    hello-ring-rotate 8s linear infinite,
+    hello-ring-pulse 3s ease-in-out infinite;
+}
+
+/* Breathing ring for idle state */
+.glass-panel__breathe-ring {
+  position: absolute;
+  inset: -0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(106, 171, 142, 0.2);
+  pointer-events: none;
+  animation: hello-ring-breathe 3s ease-in-out infinite;
+}
+
+/* ── Light mode adaptation ── */
+
+.light .glass-panel__surface {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.20) 50%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.5),
+    inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.light .glass-panel__fresnel {
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 50%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.2) 65%,
+    rgba(255, 255, 255, 0.45) 85%,
+    rgba(255, 255, 255, 0.65) 100%
+  );
+}
+
+.light .glass-panel__chromatic-r { border-color: rgba(255, 100, 80, 0.12); }
+.light .glass-panel__chromatic-b { border-color: rgba(80, 100, 255, 0.12); }
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .glass-panel {
+    transition: none !important;
+    animation: none !important;
+  }
+  .glass-panel--slide-up {
+    transition: none !important;
+  }
+  .glass-panel__glow,
+  .glass-panel__breathe-ring {
+    animation: none !important;
+  }
+}
+
 /* Frosted glass card surface */
 .glass-card {
   background: rgba(255, 255, 255, 0.5);
@@ -330,7 +669,7 @@
 .section-hidden {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 .section-hidden.section-visible {

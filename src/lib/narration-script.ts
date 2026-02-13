@@ -129,14 +129,14 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
     type: 'api',
     // text is dynamically replaced by getIntroPrompt() in the narration controller
     text: '',
-    delayAfterMs: 1200,
+    delayAfterMs: 800,
   },
   {
     id: 'transformation',
     type: 'static',
     text: "Look at the difference. On the left, raw emotion \u2014 high charge, defensive. On the right, what they actually meant \u2014 structured, honest, hearable. That's what I do. Every single message.",
     revealsSection: 'temperature-showcase',
-    delayAfterMs: 5000,
+    delayAfterMs: 3000,
   },
   {
     id: 'problem',
@@ -157,7 +157,7 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
     type: 'static',
     text: "Watch this. A single message goes in, and the raw words dissolve. What comes back is the subtext, the blind spots, the unmet needs \u2014 and a translation the other person could actually hear. Take a moment. Read what Parallax sees.",
     revealsSection: 'what-you-see',
-    delayAfterMs: 7000,
+    delayAfterMs: 5000,
   },
   {
     id: 'context-modes',

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useAudioAnalyser } from "@/hooks/useAudioAnalyser";
 import { useSyntheticWaveform } from "@/hooks/useSyntheticWaveform";
-import { AudioWaveformOrb } from "./AudioWaveformOrb";
+import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import type { MessageSender } from "@/types/database";
 
 interface OrbStripProps {

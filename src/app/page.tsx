@@ -5,10 +5,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useNarrationController } from "@/hooks/useNarrationController";
 import { useAuth } from "@/hooks/useAuth";
-import { HelloButton } from "@/components/landing/HelloButton";
+import { NarrationPanel } from "@/components/landing/NarrationPanel";
 import { NarrationStage } from "@/components/landing/NarrationStage";
-import { NarrationControls } from "@/components/landing/NarrationControls";
-import { ParallaxAura } from "@/components/landing/ParallaxAura";
 import { GlowChatInterface } from "@/components/landing/GlowChatInterface";
 import { TheDoor } from "@/components/landing/TheDoor";
 import { HeroPreview } from "@/components/landing/HeroPreview";
@@ -60,7 +58,6 @@ export default function Home() {
   const { user } = useAuth();
   const isComplete = narration.phase === "complete";
   const isNarrating = narration.phase === "narrating";
-  const isIdle = narration.phase === "idle";
   const isChat = narration.phase === "chat";
   const shouldDim = isNarrating || isChat;
 
@@ -71,7 +68,7 @@ export default function Home() {
     );
   }, [narration.phase]);
 
-  // Listen for replay request from header
+  // Listen for replay request from header (if any external trigger)
   useEffect(() => {
     function handleReplay() {
       narration.replayNarration();
@@ -83,14 +80,30 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
 
-      {/* Hello button — only during idle */}
-      <HelloButton
-        visible={isIdle}
-        onClick={narration.startNarration}
+      {/* Unified glass panel — pill, expanding, narrating, collapsing, complete */}
+      <NarrationPanel
+        phase={narration.phase}
+        slidUp={narration.slidUp}
+        onStart={narration.startNarration}
+        onReplay={narration.replayNarration}
+        isLandingPage={true}
+        isSpeaking={narration.isSpeaking}
+        narrationContent={
+          <NarrationStage
+            text={narration.displayedText}
+            isTyping={narration.isTyping}
+            isSpeaking={narration.isSpeaking}
+            energy={narration.voiceEnergy}
+            isMuted={narration.isMuted}
+            onSkip={narration.skipToEnd}
+            onToggleMute={narration.toggleMute}
+          />
+        }
+        chatContent={<GlowChatInterface onClose={narration.exitChat} />}
       />
 
       {/* Skip intro — visible during idle phase */}
-      {isIdle && (
+      {narration.phase === "idle" && (
         <button
           onClick={narration.skipToEnd}
           className="fixed bottom-8 right-8 z-40 font-mono text-xs text-muted uppercase tracking-widest hover:text-foreground transition-colors px-4 py-2 border border-border rounded-lg bg-background/80 backdrop-blur-sm"
@@ -99,31 +112,8 @@ export default function Home() {
         </button>
       )}
 
-      {/* Parallax Aura — the teal glow presence */}
-      <ParallaxAura visible={narration.auraVisible} chatMode={isChat}>
-        {isNarrating && (
-          <>
-            <NarrationStage
-              text={narration.displayedText}
-              isTyping={narration.isTyping}
-              isSpeaking={narration.isSpeaking}
-              waveform={narration.voiceWaveform}
-              energy={narration.voiceEnergy}
-            />
-            <NarrationControls
-              isMuted={narration.isMuted}
-              onSkip={narration.skipToEnd}
-              onToggleMute={narration.toggleMute}
-            />
-          </>
-        )}
-        {isChat && (
-          <GlowChatInterface onClose={narration.exitChat} />
-        )}
-      </ParallaxAura>
-
-      {/* Page content — dimmed during narration/chat */}
-      <div className={shouldDim ? "content-dimmed" : ""}>
+      {/* Page content — dimmed during narration/chat, blur at top for focus */}
+      <div className={`${shouldDim ? "content-dimmed" : ""} ${isNarrating ? "content-blur-top" : ""}`}>
 
         {/* ─── Hero: Centered Text That Scrolls Up ─── */}
         <NarrationSection
