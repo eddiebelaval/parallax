@@ -11,6 +11,7 @@ import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FloatingHelpButton } from "@/components/FloatingHelpButton";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { FooterAnt } from "@/components/FooterAnt";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -207,6 +208,7 @@ export default function RootLayout({
         className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
         <CursorSpotlight />
+        <FooterAnt allowedPaths={["/", "/auth", "/profile", "/settings", "/session", "/home"]} />
         <SettingsProvider>
           <LayoutShell>{children}</LayoutShell>
         </SettingsProvider>

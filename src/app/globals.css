@@ -203,6 +203,20 @@
   }
 }
 
+/* ── Ant March Animation ── */
+@keyframes ant-march {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+.ant-march {
+  animation: ant-march 20s linear infinite;
+}
+
 /* ── Narration aura: fixed top ── */
 .parallax-aura {
   position: fixed;
