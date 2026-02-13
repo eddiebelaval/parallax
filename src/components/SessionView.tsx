@@ -96,15 +96,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
     );
   }
 
-  // 2. Completed — show summary (both modes)
-  if (isCompleted) {
+  // 2. Completed — remote/in-person stay inline (summary shown within the session view)
+  //    Only solo uses the standalone SessionSummary page
+  if (isCompleted && session?.mode === 'solo') {
     return (
       <div className="flex-1 flex flex-col">
         <SessionSummary
           roomCode={roomCode}
           personAName={personAName}
           personBName={personBName}
-          mode={session?.mode === 'in_person' ? 'in_person' : 'remote'}
+          mode="remote"
         />
       </div>
     );

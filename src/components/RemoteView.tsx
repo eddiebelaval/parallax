@@ -14,6 +14,9 @@ import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
+import { buildSessionSummaryHtml } from "@/lib/export-html";
+import { useRouter } from "next/navigation";
+import type { SessionSummaryData } from "@/types/database";
 import type {
   Session,
   ContextMode,
@@ -88,6 +91,9 @@ export function RemoteView({
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
   const [handsFree, setHandsFree] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [summaryData, setSummaryData] = useState<SessionSummaryData | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const router = useRouter();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const conductorFired = useRef(false);
@@ -110,6 +116,7 @@ export function RemoteView({
     CONTEXT_MODE_INFO[contextMode]?.name || "Intimate Partners";
 
   const isMyTurn = effectiveTurn === localPerson;
+  const isCompleted = activeSession.status === "completed";
   const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
 
   // Active speaker name for ActiveSpeakerBar
@@ -140,6 +147,39 @@ export function RemoteView({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
+
+  // Fetch summary when session is completed
+  const summaryFetched = useRef(false);
+  useEffect(() => {
+    if (!isCompleted || summaryFetched.current) return;
+    summaryFetched.current = true;
+    setSummaryLoading(true);
+    fetch(`/api/sessions/${roomCode}/summary`, { method: "POST" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.summary) setSummaryData(data.summary);
+      })
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false));
+  }, [isCompleted, roomCode]);
+
+  // Export summary as HTML download
+  const handleExportSummary = useCallback(() => {
+    if (!summaryData) return;
+    const html = buildSessionSummaryHtml(summaryData, roomCode, personAName, personBName, "remote");
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `parallax-${roomCode.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  }, [summaryData, roomCode, personAName, personBName]);
 
   // Speak new mediator messages via TTS
   useEffect(() => {
@@ -402,7 +442,12 @@ export function RemoteView({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {isActive && (
+          {isCompleted && (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ember-500">
+              Session ended
+            </span>
+          )}
+          {isActive && !isCompleted && (
             <button
               onClick={endSession}
               disabled={endingSession}
@@ -553,7 +598,73 @@ export function RemoteView({
             </div>
           )}
 
-          {/* Tabbed input area */}
+          {/* Session completed — inline summary + export */}
+          {isCompleted && (
+            <div className="flex-shrink-0 border-t border-border">
+              {summaryLoading && (
+                <div className="px-4 py-6 flex items-center justify-center gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
+                    Generating summary...
+                  </span>
+                </div>
+              )}
+              {summaryData && (
+                <div className="px-4 py-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                  <div className="border-l-2 border-accent pl-4 py-1">
+                    <p className="text-foreground text-sm leading-relaxed font-serif">
+                      {summaryData.overallInsight}
+                    </p>
+                  </div>
+                  {summaryData.keyMoments.length > 0 && (
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
+                        Key Moments
+                      </p>
+                      <ul className="space-y-1.5">
+                        {summaryData.keyMoments.map((moment, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-ember-300">
+                            <span className="mt-1 block w-1 h-1 rounded-full bg-accent flex-shrink-0" />
+                            {moment}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      onClick={handleExportSummary}
+                      className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-4 py-2 hover:border-foreground/20"
+                    >
+                      Export
+                    </button>
+                    <button
+                      onClick={() => router.push("/home")}
+                      className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors border border-accent/30 px-4 py-2 hover:border-foreground/20"
+                    >
+                      Home
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!summaryLoading && !summaryData && (
+                <div className="px-4 py-4 flex items-center gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
+                    Session ended
+                  </span>
+                  <button
+                    onClick={() => router.push("/home")}
+                    className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors"
+                  >
+                    Home
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tabbed input area — hidden when session is completed */}
+          {!isCompleted && (
           <div className="flex-shrink-0">
             {/* Folder tabs — visible when coaching is available */}
             {(isActive || conductorPhase === "waiting_for_b") && (
@@ -622,10 +733,11 @@ export function RemoteView({
               }}
             />
           </div>
+          )}
         </div>
 
-        {/* Right sidebar — Signal cards + Action panels (desktop only, active phase) */}
-        {isActive && (
+        {/* Right sidebar — Signal cards + Action panels (desktop only, active/completed phase) */}
+        {(isActive || isCompleted) && (
           <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
             {/* Signal cards */}
             <div className="space-y-1 p-2">
