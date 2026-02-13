@@ -5,7 +5,7 @@ import { summarizeSession } from '@/lib/opus'
 import type { V3MessageContext } from '@/lib/opus'
 import { buildNameMap, toConversationHistory, stripCodeFences } from '@/lib/conversation'
 import { isConflictAnalysis } from '@/types/database'
-import type { Message, ConflictAnalysis, NvcAnalysis, SessionSummaryData, OnboardingContext } from '@/types/database'
+import type { Message, ConflictAnalysis, NvcAnalysis, SessionSummaryData, OnboardingContext, SoloMemory } from '@/types/database'
 
 function parseSessionSummary(raw: string): SessionSummaryData | null {
   try {
@@ -138,6 +138,74 @@ export async function POST(
       { error: 'Failed to parse session summary from Claude response' },
       { status: 502 },
     )
+  }
+
+  // File summary into each authenticated participant's solo_memory.recentSessions
+  const participants: Array<[string, string | null]> = [
+    ['person_a', session.person_a_user_id],
+    ['person_b', session.person_b_user_id],
+  ]
+
+  for (const [role, userId] of participants) {
+    if (!userId) continue
+
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('solo_memory')
+      .eq('user_id', userId)
+      .single()
+
+    // Skip participant on read failure to avoid overwriting with empty defaults
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error(`[summary] Failed to load profile for ${role}:`, {
+        userId,
+        error: profileError.message,
+      })
+      continue
+    }
+
+    const existing = (profile?.solo_memory &&
+      typeof profile.solo_memory === 'object' &&
+      Object.keys(profile.solo_memory).length > 0)
+      ? profile.solo_memory as SoloMemory
+      : null
+
+    const recentSessions = [...(existing?.recentSessions || [])]
+
+    recentSessions.push({
+      date: new Date().toISOString(),
+      summary: summary.overallInsight,
+      topics: summary.keyMoments.slice(0, 3),
+      emotionalArc: summary.temperatureArc,
+    })
+
+    // Keep last 5 sessions
+    while (recentSessions.length > 5) recentSessions.shift()
+
+    const updatedMemory: SoloMemory = {
+      identity: existing?.identity || { name: null, bio: null, importantPeople: [] },
+      themes: existing?.themes || [],
+      patterns: existing?.patterns || [],
+      values: existing?.values || [],
+      strengths: existing?.strengths || [],
+      recentSessions,
+      currentSituation: existing?.currentSituation || null,
+      emotionalState: existing?.emotionalState || null,
+      actionItems: existing?.actionItems || [],
+      sessionCount: (existing?.sessionCount || 0) + 1,
+      lastSeenAt: new Date().toISOString(),
+    }
+
+    const { error: upsertError } = await supabase.from('user_profiles').upsert(
+      { user_id: userId, solo_memory: updatedMemory },
+      { onConflict: 'user_id' },
+    )
+    if (upsertError) {
+      console.error(`[summary] Failed to file summary for ${role}:`, {
+        userId,
+        error: upsertError.message,
+      })
+    }
   }
 
   return NextResponse.json({ summary })

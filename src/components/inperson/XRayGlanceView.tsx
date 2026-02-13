@@ -286,38 +286,104 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-4">
+      {/* Header with visual temperature scoreboard */}
+      <div className="px-4 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-6">
           <span className="font-mono text-[10px] text-ember-700">{roomCode}</span>
 
-          {/* Turn Timer (active phase only) */}
-          {turnBasedMode && isActive && (
-            <TurnTimer
-              timeRemaining={timeRemaining}
-              progress={progress}
-              speakerName={activeSpeaker}
-              isActive={true}
-            />
+          {/* Issue Scoreboard with temperature coding */}
+          {isActive && hasIssues && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-[8px] uppercase tracking-widest text-ember-500">
+                    {personAName}
+                  </span>
+                  <div className="flex gap-0.5">
+                    {personAIssues.map((issue) => {
+                      const tempColor = issue.status === "well_addressed"
+                        ? "var(--temp-cool)"
+                        : issue.status === "poorly_addressed"
+                        ? "var(--temp-hot)"
+                        : "var(--temp-warm)";
+                      return (
+                        <div
+                          key={issue.id}
+                          className="w-2 h-2 rounded-sm transition-all duration-300"
+                          style={{
+                            backgroundColor: tempColor,
+                            boxShadow: `0 0 6px ${tempColor}`
+                          }}
+                          title={issue.label}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="w-px h-6 bg-border" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-[8px] uppercase tracking-widest text-ember-500">
+                    {personBName}
+                  </span>
+                  <div className="flex gap-0.5">
+                    {personBIssues.map((issue) => {
+                      const tempColor = issue.status === "well_addressed"
+                        ? "var(--temp-cool)"
+                        : issue.status === "poorly_addressed"
+                        ? "var(--temp-hot)"
+                        : "var(--temp-warm)";
+                      return (
+                        <div
+                          key={issue.id}
+                          className="w-2 h-2 rounded-sm transition-all duration-300"
+                          style={{
+                            backgroundColor: tempColor,
+                            boxShadow: `0 0 6px ${tempColor}`
+                          }}
+                          title={issue.label}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* Fallback indicator (onboarding phase) */}
+          {/* Turn Timer with temperature pulse (active phase only) */}
+          {turnBasedMode && isActive && (
+            <div className="flex items-center gap-2">
+              <div className="w-px h-6 bg-border" />
+              <TurnTimer
+                timeRemaining={timeRemaining}
+                progress={progress}
+                speakerName={activeSpeaker}
+                isActive={true}
+              />
+            </div>
+          )}
+
+          {/* Onboarding indicator */}
           {isOnboarding && (
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <span className="absolute inset-0 w-2 h-2 rounded-full bg-accent animate-ping opacity-30" />
+              </div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-                {activeSpeaker}
+                {activeSpeaker} • Gathering context
               </span>
             </div>
           )}
         </div>
+
         <div className="flex items-center gap-3">
           {!isOnboarding && (
             <button
               onClick={() => setIssueDrawerOpen(true)}
               className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
             >
-              Issues{totalIssues > 0 ? ` (${totalIssues})` : ""}
+              X-Ray View {totalIssues > 0 ? `(${totalIssues})` : ""}
             </button>
           )}
           {turnBasedMode && isActive && (
@@ -326,15 +392,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
               className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
               title="Timer settings"
             >
-              ⚙
+              Timer
             </button>
           )}
-          <button
-            onClick={() => setTurnBasedMode(!turnBasedMode)}
-            className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
-          >
-            Timer: {turnBasedMode ? "ON" : "OFF"}
-          </button>
           <button
             onClick={endSession}
             className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"

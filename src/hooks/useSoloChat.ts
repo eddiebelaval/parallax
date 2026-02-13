@@ -10,6 +10,59 @@ export interface SoloChatMessage {
   created_at: string
 }
 
+/** Keep existing array items in order, append only genuinely new ones. */
+function appendNewStrings(existing: string[], incoming: string[]): string[] {
+  const seen = new Set(existing.map((s) => s.toLowerCase()))
+  const added = incoming.filter((s) => !seen.has(s.toLowerCase()))
+  return [...existing, ...added]
+}
+
+/** Same as appendNewStrings but keyed by object field. */
+function appendNewByKey<T>(
+  existing: T[],
+  incoming: T[],
+  key: keyof T,
+): T[] {
+  const seen = new Set(existing.map((item) => String(item[key]).toLowerCase()))
+  const added = incoming.filter((item) => !seen.has(String(item[key]).toLowerCase()))
+  return [...existing, ...added]
+}
+
+/**
+ * Merge incoming insights into existing state.
+ * Preserves existing items in place, only appends new ones.
+ * Scalar fields (situation, emotion) update in place.
+ */
+function mergeInsights(existing: SoloMemory | null, incoming: SoloMemory): SoloMemory {
+  if (!existing) return incoming
+
+  return {
+    identity: {
+      name: incoming.identity?.name || existing.identity?.name || null,
+      bio: incoming.identity?.bio || existing.identity?.bio || null,
+      importantPeople: appendNewByKey(
+        existing.identity?.importantPeople || [],
+        incoming.identity?.importantPeople || [],
+        'name',
+      ),
+    },
+    themes: appendNewStrings(existing.themes, incoming.themes),
+    patterns: appendNewStrings(existing.patterns, incoming.patterns),
+    values: appendNewStrings(existing.values, incoming.values),
+    strengths: appendNewStrings(existing.strengths, incoming.strengths),
+    recentSessions: incoming.recentSessions || existing.recentSessions,
+    currentSituation: incoming.currentSituation || existing.currentSituation,
+    emotionalState: incoming.emotionalState || existing.emotionalState,
+    actionItems: appendNewByKey(
+      existing.actionItems,
+      incoming.actionItems,
+      'id',
+    ),
+    sessionCount: Math.max(existing.sessionCount || 0, incoming.sessionCount || 0),
+    lastSeenAt: incoming.lastSeenAt || existing.lastSeenAt,
+  }
+}
+
 export function useSoloChat(sessionId: string | undefined, userId: string | undefined) {
   const [messages, setMessages] = useState<SoloChatMessage[]>([])
   const [insights, setInsights] = useState<SoloMemory | null>(null)
@@ -36,6 +89,7 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
           })))
         }
         if (data.insights) {
+          // On mount, set directly (no merge needed — this is the baseline)
           setInsights(data.insights)
         }
       })
@@ -73,7 +127,9 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, greetingMsg])
-      if (data.insights) setInsights(data.insights)
+      if (data.insights) {
+        setInsights((prev) => mergeInsights(prev, data.insights))
+      }
     } catch {
       // Greeting failure is non-critical
     } finally {
@@ -117,7 +173,9 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistantMsg])
-      if (data.insights) setInsights(data.insights)
+      if (data.insights) {
+        setInsights((prev) => mergeInsights(prev, data.insights))
+      }
     } catch {
       setError('Connection lost -- message not sent')
     } finally {

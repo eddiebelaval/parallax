@@ -123,6 +123,23 @@ export async function POST(request: Request) {
       .eq('user_id', user_id)
       .single()
 
+    // Ensure profile row exists (covers demo-mode auth bypass and edge cases)
+    if (!profile) {
+      const { error: upsertError } = await supabase
+        .from('user_profiles')
+        .upsert(
+          { user_id, display_name: session.person_a_name || null },
+          { onConflict: 'user_id' },
+        )
+      if (upsertError) {
+        console.error('[solo/POST] Failed to create profile row:', {
+          userId: user_id,
+          error: upsertError.message,
+          code: upsertError.code,
+        })
+      }
+    }
+
     if (profile?.display_name) displayName = profile.display_name
     if (profile?.solo_memory && Object.keys(profile.solo_memory).length > 0) {
       existingMemory = profile.solo_memory as SoloMemory

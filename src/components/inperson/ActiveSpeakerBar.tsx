@@ -243,7 +243,7 @@ export function ActiveSpeakerBar({
 
   return (
     <div
-      className={`border-t transition-all duration-300 ${
+      className={`border-t transition-all duration-300 flex-shrink-0 ${
         isRecording
           ? "border-temp-cool mic-hot-glow"
           : showUrgentWarning

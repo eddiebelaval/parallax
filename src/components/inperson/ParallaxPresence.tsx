@@ -82,18 +82,60 @@ export function ParallaxPresence({
   }, [statusLabel, isSpeaking, isAnalyzing]);
 
   return (
-    <div className="flex flex-col items-center py-4">
-      <AudioWaveformOrb
-        name="Parallax"
-        role="claude"
-        waveform={waveform}
-        energy={energy}
-        active={isActive}
-        size={80}
-      />
-      <span className="mt-2 font-mono text-[10px] uppercase tracking-widest text-temp-cool">
-        {effectiveLabel}
-      </span>
+    <div className="relative flex flex-col items-center py-6 flex-shrink-0">
+      {/* Scanning beam effect when analyzing */}
+      {isAnalyzing && (
+        <div className="absolute inset-0 overflow-hidden opacity-20">
+          <div
+            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-temp-cool to-transparent scanning-beam"
+          />
+        </div>
+      )}
+
+      {/* Central orb */}
+      <div className="relative">
+        {/* Outer pulse rings when active */}
+        {isActive && (
+          <>
+            <div
+              className="absolute inset-[-16px] rounded-full border border-temp-cool/30 animate-ping"
+              style={{ animationDuration: "2s" }}
+            />
+            <div
+              className="absolute inset-[-24px] rounded-full border border-temp-cool/20 animate-ping"
+              style={{ animationDuration: "3s", animationDelay: "0.5s" }}
+            />
+          </>
+        )}
+        <AudioWaveformOrb
+          name="Parallax"
+          role="claude"
+          waveform={waveform}
+          energy={energy}
+          active={isActive}
+          size={80}
+        />
+      </div>
+
+      {/* Status label with glow */}
+      <div className="mt-3 flex items-center gap-2">
+        <div className="relative">
+          <span className="w-1 h-1 rounded-full bg-temp-cool" />
+          {isActive && (
+            <span className="absolute inset-0 w-1 h-1 rounded-full bg-temp-cool animate-ping" />
+          )}
+        </div>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-temp-cool">
+          {effectiveLabel}
+        </span>
+      </div>
+
+      {/* X-Ray Vision subtitle when analyzing */}
+      {isAnalyzing && (
+        <span className="mt-1 font-mono text-[8px] uppercase tracking-[0.2em] text-ember-500 animate-pulse">
+          Seeing beneath the surface
+        </span>
+      )}
     </div>
   );
 }
