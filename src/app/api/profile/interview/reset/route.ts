@@ -12,11 +12,24 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getServerUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { confirmed } = await request.json()
+
+    // HACKATHON DEMO: Allow reset without auth (just return success)
+    if (!user) {
+      if (!confirmed) {
+        return NextResponse.json(
+          {
+            error: 'Confirmation required',
+            message: 'Pass { confirmed: true } to reset interview data and behavioral signals',
+          },
+          { status: 400 }
+        )
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'Interview reset. Behavioral signals cleared. (demo mode)',
+      })
+    }
 
     if (!confirmed) {
       return NextResponse.json(

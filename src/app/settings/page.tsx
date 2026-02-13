@@ -143,9 +143,13 @@ export default function SettingsPage() {
 
   // Helper for profile updates with toast feedback
   const updateProfileSetting = async (key: string, value: unknown) => {
-    const success = await profileConcierge.updateSetting(key as keyof typeof profileConcierge.settings, value)
+    const success = await profileConcierge.updateSetting(key as any, value)
     setToast(success ? 'Settings saved' : 'Failed to save settings')
   }
+
+  // Wait for profile settings to load
+  const profileSettings = profileConcierge.settings
+  const isLoadingProfile = !profileSettings
 
   // Account action handlers
   const handleExportData = async () => {
@@ -202,8 +206,6 @@ export default function SettingsPage() {
       setToast('Failed to delete account')
     }
   }
-
-  const profileSettings = profileConcierge.settings
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 pb-24">
@@ -326,13 +328,19 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Profile Identity */}
-      <Accordion title="Profile Identity">
+      {isLoadingProfile ? (
+        <div className="text-center py-8 text-muted">
+          <p>Loading profile settings...</p>
+        </div>
+      ) : (
+        <>
+          {/* Profile Identity */}
+          <Accordion title="Profile Identity">
         <div className="p-4 border border-border rounded-lg mb-3">
           <label className="block text-sm text-foreground mb-2">Preferred Name</label>
           <input
             type="text"
-            value={profileSettings?.preferred_name || ''}
+            value={profileSettings.preferred_name || ''}
             onChange={(e) => updateProfileSetting('preferred_name', e.target.value)}
             maxLength={50}
             className="w-full px-3 py-2 bg-surface border border-border text-foreground text-sm rounded placeholder:text-muted focus:border-accent focus:outline-none transition-colors"
@@ -344,7 +352,7 @@ export default function SettingsPage() {
           <label className="block text-sm text-foreground mb-2">Pronouns</label>
           <input
             type="text"
-            value={profileSettings?.pronouns || ''}
+            value={profileSettings.pronouns || ''}
             onChange={(e) => updateProfileSetting('pronouns', e.target.value)}
             maxLength={20}
             className="w-full px-3 py-2 bg-surface border border-border text-foreground text-sm rounded placeholder:text-muted focus:border-accent focus:outline-none transition-colors"
@@ -359,19 +367,19 @@ export default function SettingsPage() {
         <ToggleSwitch
           label="Email Notifications"
           description="Receive session summaries and insights via email"
-          checked={profileSettings?.email_notifications ?? true}
+          checked={profileSettings.email_notifications}
           onChange={(val) => updateProfileSetting('email_notifications', val)}
         />
         <ToggleSwitch
           label="SMS Notifications"
           description="Get text alerts for important updates"
-          checked={profileSettings?.sms_notifications ?? false}
+          checked={profileSettings.sms_notifications}
           onChange={(val) => updateProfileSetting('sms_notifications', val)}
         />
         <ToggleSwitch
           label="Push Notifications"
           description="Browser notifications for session reminders"
-          checked={profileSettings?.push_notifications ?? false}
+          checked={profileSettings.push_notifications}
           onChange={(val) => updateProfileSetting('push_notifications', val)}
         />
       </Accordion>
@@ -384,7 +392,7 @@ export default function SettingsPage() {
             <button
               onClick={() => updateProfileSetting('default_session_mode', 'remote')}
               className={`flex-1 px-4 py-2 border rounded text-sm transition-colors ${
-                profileSettings?.default_session_mode === 'remote'
+                profileSettings.default_session_mode === 'remote'
                   ? 'border-accent bg-accent/5 text-accent'
                   : 'border-border text-foreground hover:border-accent/50'
               }`}
@@ -394,7 +402,7 @@ export default function SettingsPage() {
             <button
               onClick={() => updateProfileSetting('default_session_mode', 'in-person')}
               className={`flex-1 px-4 py-2 border rounded text-sm transition-colors ${
-                profileSettings?.default_session_mode === 'in-person'
+                profileSettings.default_session_mode === 'in-person'
                   ? 'border-accent bg-accent/5 text-accent'
                   : 'border-border text-foreground hover:border-accent/50'
               }`}
@@ -407,13 +415,13 @@ export default function SettingsPage() {
         <ToggleSwitch
           label="Auto-Record Sessions"
           description="Automatically save session transcripts and analysis"
-          checked={profileSettings?.auto_record_sessions ?? true}
+          checked={profileSettings.auto_record_sessions}
           onChange={(val) => updateProfileSetting('auto_record_sessions', val)}
         />
         <ToggleSwitch
           label="Live Transcription"
           description="Show real-time transcription during voice input"
-          checked={profileSettings?.enable_live_transcription ?? false}
+          checked={profileSettings.enable_live_transcription}
           onChange={(val) => updateProfileSetting('enable_live_transcription', val)}
         />
       </Accordion>
@@ -423,19 +431,19 @@ export default function SettingsPage() {
         <ToggleSwitch
           label="Public Profile"
           description="Allow others to discover your profile"
-          checked={profileSettings?.public_profile ?? false}
+          checked={profileSettings.public_profile}
           onChange={(val) => updateProfileSetting('public_profile', val)}
         />
         <ToggleSwitch
           label="Share Behavioral Signals"
           description="Allow Parallax to use your patterns for better insights"
-          checked={profileSettings?.share_behavioral_signals ?? true}
+          checked={profileSettings.share_behavioral_signals ?? true}
           onChange={(val) => updateProfileSetting('share_behavioral_signals', val)}
         />
         <ToggleSwitch
           label="Allow Research Data Use"
           description="Contribute anonymized data to conflict resolution research"
-          checked={profileSettings?.allow_research_data_use ?? false}
+          checked={profileSettings.allow_research_data_use ?? false}
           onChange={(val) => updateProfileSetting('allow_research_data_use', val)}
         />
       </Accordion>
@@ -445,7 +453,7 @@ export default function SettingsPage() {
         <Slider
           label="Voice Speed"
           description="Adjust playback speed for voice feedback"
-          value={profileSettings?.voice_speed ?? 1.0}
+          value={profileSettings.voice_speed ?? 1.0}
           min={0.5}
           max={2.0}
           step={0.1}
@@ -458,19 +466,19 @@ export default function SettingsPage() {
         <ToggleSwitch
           label="High Contrast Mode"
           description="Increase color contrast for better visibility"
-          checked={profileSettings?.high_contrast_mode ?? false}
+          checked={profileSettings.high_contrast_mode ?? false}
           onChange={(val) => updateProfileSetting('high_contrast_mode', val)}
         />
         <ToggleSwitch
           label="Reduce Motion"
           description="Minimize animations and transitions"
-          checked={profileSettings?.reduce_motion ?? false}
+          checked={profileSettings.reduce_motion ?? false}
           onChange={(val) => updateProfileSetting('reduce_motion', val)}
         />
         <ToggleSwitch
           label="Screen Reader Mode"
           description="Optimize for screen reader compatibility"
-          checked={profileSettings?.screen_reader_mode ?? false}
+          checked={profileSettings.screen_reader_mode ?? false}
           onChange={(val) => updateProfileSetting('screen_reader_mode', val)}
         />
       </Accordion>
@@ -480,13 +488,13 @@ export default function SettingsPage() {
         <ToggleSwitch
           label="Experimental Features"
           description="Enable cutting-edge features still in testing"
-          checked={profileSettings?.experimental_features ?? false}
+          checked={profileSettings.experimental_features ?? false}
           onChange={(val) => updateProfileSetting('experimental_features', val)}
         />
         <ToggleSwitch
           label="Beta Access"
           description="Get early access to new Parallax features"
-          checked={profileSettings?.beta_access ?? false}
+          checked={profileSettings.beta_access ?? false}
           onChange={(val) => updateProfileSetting('beta_access', val)}
         />
       </Accordion>
@@ -521,6 +529,8 @@ export default function SettingsPage() {
           </p>
         </button>
       </Accordion>
+        </>
+      )}
 
       {/* Toast Notification */}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}

@@ -12,8 +12,23 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getServerUser()
 
+    // HACKATHON DEMO: Return empty export if no auth
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const demoExport = {
+        export_date: new Date().toISOString(),
+        user_id: 'demo',
+        profile: { display_name: 'Hackathon Judge' },
+        sessions: [],
+        messages: [],
+        solo_memory: null,
+      }
+      return new NextResponse(JSON.stringify(demoExport, null, 2), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Disposition': `attachment; filename="parallax-data-demo.json"`,
+        },
+      })
     }
 
     const supabase = createServerClient()

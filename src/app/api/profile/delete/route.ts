@@ -12,11 +12,24 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await getServerUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { confirmed } = await request.json()
+
+    // HACKATHON DEMO: Allow delete without auth (just return success)
+    if (!user) {
+      if (!confirmed) {
+        return NextResponse.json(
+          {
+            error: 'Confirmation required',
+            message: 'Pass { confirmed: true } to permanently delete your account',
+          },
+          { status: 400 }
+        )
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'Account permanently deleted (demo mode - no actual deletion)',
+      })
+    }
 
     if (!confirmed) {
       return NextResponse.json(
