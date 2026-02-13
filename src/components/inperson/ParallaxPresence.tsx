@@ -82,7 +82,7 @@ export function ParallaxPresence({
   }, [statusLabel, isSpeaking, isAnalyzing]);
 
   return (
-    <div className="flex flex-col items-center py-4">
+    <div className="flex flex-col items-center py-4 flex-shrink-0">
       <AudioWaveformOrb
         name="Parallax"
         role="claude"

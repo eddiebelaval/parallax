@@ -137,7 +137,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
   const isLandingNarrating = narrationPhase === "idle" || narrationPhase === "narrating" || narrationPhase === "chat";
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <header
         className={`border-b border-border px-6 py-4 grid grid-cols-3 items-center transition-opacity duration-500 ${
           isLandingNarrating ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -165,7 +165,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
