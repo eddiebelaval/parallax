@@ -40,6 +40,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [turnBasedMode, setTurnBasedMode] = useState(true);
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
   const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
+  const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -278,10 +279,10 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   // Auto-listen: hands-free from session start (togglable)
   const autoListen = useAutoListen({
-    enabled: handsFree && (isOnboarding || isActive) && !conductorLoading && !isAnalyzing,
+    enabled: handsFree && !muted && (isOnboarding || isActive) && !conductorLoading && !isAnalyzing,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
-    silenceTimeoutMs: 1500,
+    silenceTimeoutMs: 5000,
   });
 
   const endSession = useCallback(async () => {
@@ -584,6 +585,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           }}
           isTTSSpeaking={isSpeaking}
           isProcessing={isAnalyzing || conductorLoading}
+          isMuted={muted}
+          onToggleMute={() => setMuted((v) => !v)}
         />
       </div>
 

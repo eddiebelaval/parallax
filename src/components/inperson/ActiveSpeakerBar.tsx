@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MicIcon, KeyboardIcon } from "@/components/icons";
+import { MicIcon, MicOffIcon, KeyboardIcon } from "@/components/icons";
 
 // Web Speech API types (Chrome webkit prefix)
 interface SpeechRecognitionEvent {
@@ -54,6 +54,10 @@ interface ActiveSpeakerBarProps {
   isTTSSpeaking?: boolean;
   /** Whether any processing is happening (analyzing/loading) */
   isProcessing?: boolean;
+  /** Whether mic is muted in hands-free mode */
+  isMuted?: boolean;
+  /** Toggle mute callback */
+  onToggleMute?: () => void;
 }
 
 function isSpeechSupported(): boolean {
@@ -72,6 +76,8 @@ export function ActiveSpeakerBar({
   autoListenState,
   isTTSSpeaking = false,
   isProcessing = false,
+  isMuted = false,
+  onToggleMute,
 }: ActiveSpeakerBarProps) {
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
@@ -313,35 +319,46 @@ export function ActiveSpeakerBar({
         // ─── AUTO MODE: Claude mobile-style hands-free listening ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            {/* Mic indicator with energy ring (like Claude mobile) */}
-            <div className="flex items-center justify-center min-w-[44px] min-h-[44px]">
+            {/* Mute button / mic indicator */}
+            <button
+              onClick={onToggleMute}
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full transition-colors"
+              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+            >
               <div className="relative">
                 {/* Ping ring only when actively hearing speech */}
-                {isAutoListening && isSpeechActive && (
+                {!isMuted && isAutoListening && isSpeechActive && (
                   <span className="absolute inset-[-8px] rounded-full border-2 border-temp-cool animate-ping opacity-25" />
                 )}
                 {/* Warm pulse ring during silence countdown */}
-                {isAutoListening && !isSpeechActive && silenceCountdown > 0 && (
+                {!isMuted && isAutoListening && !isSpeechActive && silenceCountdown > 0 && (
                   <span className="absolute inset-[-6px] rounded-full border-2 border-temp-warm animate-pulse opacity-40" />
                 )}
                 {/* Steady pulse ring when listening but no speech yet */}
-                {isAutoListening && !isSpeechActive && silenceCountdown === 0 && !isTTSSpeaking && !isProcessing && (
+                {!isMuted && isAutoListening && !isSpeechActive && silenceCountdown === 0 && !isTTSSpeaking && !isProcessing && (
                   <span className="absolute inset-[-6px] rounded-full border border-temp-cool/30 animate-pulse" />
                 )}
-                <MicIcon
-                  size={18}
-                  className={`transition-all duration-300 ${
-                    isAutoListening && isSpeechActive
-                      ? "text-temp-cool"
-                      : isAutoListening
-                      ? "text-temp-cool/50"
-                      : isTTSSpeaking
-                      ? "text-accent/40"
-                      : "text-ember-600"
-                  }`}
-                />
+                {isMuted ? (
+                  <MicOffIcon
+                    size={18}
+                    className="text-temp-hot/70"
+                  />
+                ) : (
+                  <MicIcon
+                    size={18}
+                    className={`transition-all duration-300 ${
+                      isAutoListening && isSpeechActive
+                        ? "text-temp-cool"
+                        : isAutoListening
+                        ? "text-temp-cool/50"
+                        : isTTSSpeaking
+                        ? "text-accent/40"
+                        : "text-ember-600"
+                    }`}
+                  />
+                )}
               </div>
-            </div>
+            </button>
 
             {/* Center: state label + live transcript */}
             <div className="flex-1 min-w-0">
@@ -362,7 +379,9 @@ export function ActiveSpeakerBar({
                       : "text-ember-700"
                   }`}
                 >
-                  {isTTSSpeaking
+                  {isMuted
+                    ? "Muted — tap mic to unmute"
+                    : isTTSSpeaking
                     ? "Parallax is responding..."
                     : isProcessing
                     ? "Analyzing..."
