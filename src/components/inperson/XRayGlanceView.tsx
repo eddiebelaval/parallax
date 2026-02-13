@@ -389,18 +389,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Hands-free / Tap-to-talk toggle */}
-          <button
-            onClick={() => setHandsFree((v) => !v)}
-            className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${
-              handsFree
-                ? "text-temp-cool hover:text-temp-cool/80"
-                : "text-ember-600 hover:text-foreground"
-            }`}
-            title={handsFree ? "Switch to tap-to-talk" : "Switch to hands-free"}
-          >
-            {handsFree ? "Hands-free" : "Tap to talk"}
-          </button>
           {!isOnboarding && (
             <button
               onClick={() => setIssueDrawerOpen(true)}
@@ -587,6 +575,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           isProcessing={isAnalyzing || conductorLoading}
           isMuted={muted}
           onToggleMute={() => setMuted((v) => !v)}
+          onModeChange={(mode) => {
+            if (mode === "auto") {
+              setHandsFree(true);
+              setMuted(false);
+            } else {
+              setHandsFree(false);
+              setMuted(false);
+            }
+          }}
         />
       </div>
 

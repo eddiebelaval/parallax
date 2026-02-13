@@ -58,6 +58,8 @@ interface ActiveSpeakerBarProps {
   isMuted?: boolean;
   /** Toggle mute callback */
   onToggleMute?: () => void;
+  /** Switch between auto/voice/text from the bar */
+  onModeChange?: (mode: "auto" | "voice" | "text") => void;
 }
 
 function isSpeechSupported(): boolean {
@@ -78,6 +80,7 @@ export function ActiveSpeakerBar({
   isProcessing = false,
   isMuted = false,
   onToggleMute,
+  onModeChange,
 }: ActiveSpeakerBarProps) {
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
@@ -315,6 +318,71 @@ export function ActiveSpeakerBar({
         </div>
       )}
 
+      {/* ─── Mode strip: all controls in one place ─── */}
+      {autoListen !== undefined && (
+        <div className="px-4 pt-2 pb-1 flex items-center gap-1">
+          {supported && (
+            <button
+              onClick={() => {
+                onModeChange?.("auto");
+                setMode("voice");
+              }}
+              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                effectiveMode === "auto"
+                  ? "bg-temp-cool/15 text-temp-cool"
+                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+              }`}
+            >
+              Hands-free
+            </button>
+          )}
+          {supported && (
+            <button
+              onClick={() => {
+                onModeChange?.("voice");
+                setMode("voice");
+              }}
+              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                effectiveMode === "voice"
+                  ? "bg-temp-warm/15 text-temp-warm"
+                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+              }`}
+            >
+              Tap to talk
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onModeChange?.("text");
+              setMode("text");
+            }}
+            className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+              effectiveMode === "text"
+                ? "bg-ember-elevated text-foreground"
+                : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+            }`}
+          >
+            Type
+          </button>
+
+          {/* Speaker name — right-aligned */}
+          <div className="ml-auto flex items-center gap-1.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                effectiveMode === "auto" && isSpeechActive
+                  ? "bg-temp-cool"
+                  : isRecording
+                  ? "bg-temp-cool animate-pulse"
+                  : "bg-accent/50"
+              }`}
+            />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+              {activeSpeakerName}
+            </span>
+          </div>
+        </div>
+      )}
+
       {effectiveMode === "auto" ? (
         // ─── AUTO MODE: Claude mobile-style hands-free listening ───
         <div className="px-4 py-3">
@@ -403,29 +471,6 @@ export function ActiveSpeakerBar({
               )}
             </div>
 
-            {/* Right: speaker dot + type fallback */}
-            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                    isSpeechActive
-                      ? "bg-temp-cool"
-                      : isAutoListening
-                      ? "bg-temp-cool/30"
-                      : "bg-ember-600/30"
-                  }`}
-                />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                  {activeSpeakerName}
-                </span>
-              </div>
-              <button
-                onClick={() => setMode("text")}
-                className="font-mono text-[8px] uppercase tracking-widest text-ember-700 hover:text-ember-500 transition-colors"
-              >
-                Type instead
-              </button>
-            </div>
           </div>
 
           {/* Expanded transcript for longer text */}
@@ -441,16 +486,6 @@ export function ActiveSpeakerBar({
         // ─── VOICE MODE: Tap to Talk ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            {/* Switch to text */}
-            <button
-              onClick={() => setMode("text")}
-              disabled={disabled || micHot}
-              className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
-              aria-label="Switch to text input"
-            >
-              <KeyboardIcon size={14} />
-            </button>
-
             {/* Tap to Talk / Stop button */}
             <button
               onClick={toggleVoice}
@@ -480,20 +515,6 @@ export function ActiveSpeakerBar({
               </span>
             </button>
 
-            {/* Mic state + speaker name */}
-            <div className="flex flex-col items-end gap-0.5 min-w-[60px]">
-              {micHot && (
-                <span className="font-mono text-[9px] uppercase tracking-widest text-temp-cool mic-live-pulse">
-                  Mic live
-                </span>
-              )}
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                  {activeSpeakerName}
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* Interim transcript */}
@@ -509,21 +530,6 @@ export function ActiveSpeakerBar({
         // ─── TEXT MODE: Input with dictation mic ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-2">
-            {/* Switch to voice */}
-            {supported && (
-              <button
-                onClick={() => {
-                  if (dictating) stopDictation();
-                  setMode("voice");
-                }}
-                disabled={disabled}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
-                aria-label="Switch to voice input"
-              >
-                <MicIcon size={14} />
-              </button>
-            )}
-
             {/* Text input with inline dictation mic */}
             <div
               className={`flex-1 flex items-center gap-2 px-3 min-h-[44px] rounded-lg border transition-all duration-200 ${
@@ -574,13 +580,6 @@ export function ActiveSpeakerBar({
               Send
             </button>
 
-            {/* Speaker indicator */}
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600 whitespace-nowrap">
-                {activeSpeakerName}
-              </span>
-            </div>
           </div>
 
           {/* Dictation state indicator */}
