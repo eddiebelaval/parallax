@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { Message } from '@/types/database'
+import type { Message, SoloMemory } from '@/types/database'
 
 export interface SoloChatMessage {
   id: string
@@ -12,15 +12,19 @@ export interface SoloChatMessage {
 
 export function useSoloChat(sessionId: string | undefined, userId: string | undefined) {
   const [messages, setMessages] = useState<SoloChatMessage[]>([])
+  const [insights, setInsights] = useState<SoloMemory | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const greetingSentRef = useRef(false)
 
-  // Fetch existing messages on mount
+  // Fetch existing messages + insights on mount
   useEffect(() => {
     if (!sessionId) return
-    fetch(`/api/solo?session_id=${sessionId}`)
+    const params = new URLSearchParams({ session_id: sessionId })
+    if (userId) params.set('user_id', userId)
+
+    fetch(`/api/solo?${params}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.messages)) {
@@ -31,6 +35,9 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
             created_at: m.created_at,
           })))
         }
+        if (data.insights) {
+          setInsights(data.insights)
+        }
       })
       .catch(() => {
         // Non-critical fetch failure
@@ -38,7 +45,7 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
       .finally(() => {
         setInitialLoading(false)
       })
-  }, [sessionId])
+  }, [sessionId, userId])
 
   // Send initial greeting (once per session)
   const sendGreeting = useCallback(async () => {
@@ -66,6 +73,7 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, greetingMsg])
+      if (data.insights) setInsights(data.insights)
     } catch {
       // Greeting failure is non-critical
     } finally {
@@ -109,6 +117,7 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistantMsg])
+      if (data.insights) setInsights(data.insights)
     } catch {
       setError('Connection lost -- message not sent')
     } finally {
@@ -116,5 +125,5 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
     }
   }, [sessionId, userId, loading])
 
-  return { messages, loading, error, initialLoading, sendMessage, sendGreeting }
+  return { messages, insights, loading, error, initialLoading, sendMessage, sendGreeting }
 }

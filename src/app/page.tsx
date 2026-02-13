@@ -90,7 +90,7 @@ export default function Home() {
       />
 
       {/* Parallax Aura — the teal glow presence */}
-      <ParallaxAura visible={narration.auraVisible} chatMode={isChat} centered={narration.centered}>
+      <ParallaxAura visible={narration.auraVisible} chatMode={isChat}>
         {isNarrating && (
           <>
             <NarrationStage
