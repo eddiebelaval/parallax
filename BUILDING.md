@@ -38,6 +38,12 @@
 - [Branch Consolidation](#branch-consolidation--production-deployment-2026-02-12) — 3 PRs merged to main
 - [Interview Page Rebuild](#interview-page-conversational-rebuild) — PR #29, conversational design parity
 
+**Day 4 — Feb 13: Features + Merge to Main**
+- [Solo Mode](#solo-mode--solo-intelligence) — 1:1 conversations with Parallax, intelligence sidebar, HTML export
+- [Turn-Based Timer](#turn-based-timer) — Configurable turn timer for in-person mediation
+- [Remote Session Flow](#remote-session-flow-create-or-join) — Create-or-join choice for remote sessions
+- [PR #34: Merge to Main](#pr-34-merge-to-main) — All Day 4 work consolidated and merged
+
 **Philosophy**
 - [Opus at the Edge](#opus-at-the-edge-why-this-matters) — Token dashboard, self-assessment, building for Opus 5
 
@@ -1652,6 +1658,140 @@ Code review caught a critical dependency array bug: `voice` and `typewriter` obj
 - `npm run build` — production build succeeds (clean)
 - 1 file modified: `src/app/interview/page.tsx` (141 insertions, 110 deletions)
 - Net change: 232 lines → 262 lines (30 lines added, mostly hook coordination)
+
+---
+
+## Solo Mode & Solo Intelligence
+
+**PR #34** | Branch: `parallax/solo-intelligence` | 2026-02-13
+
+### The Idea
+
+Two-person mediation is Parallax's core, but what if someone wants to work on their communication skills alone? Solo Mode gives users a 1:1 conversation with Parallax — no second person needed. Over time, Parallax builds a behavioral profile that becomes the user's advocate in future two-person sessions.
+
+### What Was Built
+
+**Solo Mode (`SoloView.tsx`)**
+- Dedicated session type — starts from landing page alongside In-Person and Remote
+- 1:1 conversation with Parallax using the same NVC analysis engine
+- No context mode picker needed — solo sessions skip straight to conversation
+- API route: `/api/solo/route.ts` — streams Claude responses with solo-specific system prompt
+- Custom hook: `useSoloChat.ts` — manages conversation state, streaming, message history
+
+**Solo Intelligence Sidebar (`SoloSidebar.tsx`)**
+- Persistent sidebar that builds a user profile across sessions
+- Extracts communication patterns, emotional triggers, conflict tendencies
+- Dynamic intros — Parallax greets returning users with awareness of past conversations
+- HTML export — users can download their profile as a standalone document
+- Extractor: `sidebar-extractor.ts` — processes conversation for behavioral signals
+- Export: `export-html.ts` — generates self-contained HTML profile documents
+
+**Landing Page**
+- TheDoor now shows 3-column grid: In-Person, Remote, Solo
+- Solo card uses teal accent, bypasses context mode selection
+
+### Architecture Decisions
+
+1. **Solo gets its own API route** — Solo conversations have different system prompts and don't need mediation analysis, so a dedicated `/api/solo` route keeps concerns separated.
+2. **Sidebar extraction runs client-side** — Profile data is extracted from conversation in the browser and stored locally. No server-side profile storage yet — privacy-first approach for hackathon.
+3. **HTML export over PDF** — Self-contained HTML with inline styles is more portable and doesn't require a PDF library dependency.
+
+### Files Created
+- `src/components/SoloView.tsx` — Solo session UI
+- `src/components/SoloSidebar.tsx` — Intelligence sidebar
+- `src/app/api/solo/route.ts` — Solo conversation API
+- `src/hooks/useSoloChat.ts` — Solo chat state management
+- `src/lib/solo-extractor.ts` — Behavioral signal extraction
+- `src/lib/sidebar-extractor.ts` — Sidebar data processing
+- `src/lib/export-html.ts` — HTML profile export
+- `supabase/migrations/20260213000000_add_solo_mode.sql` — Solo mode schema
+- `supabase/migrations/20260213100000_add_solo_memory.sql` — Solo memory storage
+
+---
+
+## Turn-Based Timer
+
+**PR #34** | Branch: `parallax/solo-intelligence` | 2026-02-13
+
+### The Problem
+
+In-person mediation works best with structured turns. Without time boundaries, one person can dominate the conversation. A visible timer creates psychological safety — both people know they'll get equal time.
+
+### What Was Built
+
+- **`TurnTimer.tsx`** — Visual countdown timer with circular progress indicator
+- **`TimerSettings.tsx`** — Preset selector (30s, 60s, 90s, 120s) with custom duration option
+- **`useTurnTimer.ts`** — Timer state management hook with pause, reset, and auto-advance
+- **`timerAudio.ts`** — Audio cues at 10s warning and timer expiry (Web Audio API, no sound files)
+- **Schema migration** — `timer_duration_ms` column on sessions table
+- **Integration** — Timer appears in `XRayGlanceView` for in-person sessions, controlled by the active speaker bar
+
+### Architecture Decisions
+
+1. **Web Audio API for timer sounds** — Generated tones instead of audio files. Zero network requests, works offline, tiny bundle impact.
+2. **Timer is optional** — Sessions work fine without it. Timer settings appear in the in-person flow but default to off.
+3. **Duration stored server-side** — `timer_duration_ms` on the session row so both participants see the same timer if the page reloads.
+
+---
+
+## Remote Session Flow: Create or Join
+
+**PR #34** | Branch: `parallax/solo-intelligence` | 2026-02-13
+
+### The Problem
+
+Clicking "Remote" on the landing page immediately started creating a session. But what if you're Person B wanting to join? The join code input was buried below the mode cards in a separate section — disconnected from the Remote mode selection. Users had to scroll past the mode cards to find it.
+
+### What Changed
+
+Added an intermediate step when clicking "Remote":
+
+1. **Landing** — click Remote
+2. **NEW: Create or Join?** — two clear choices:
+   - **Create New Session** (Person A) — proceeds to context mode picker, then session
+   - **Join Existing Session** (Person B) — shows room code input with auto-focus
+3. Each step has a back button that navigates one level up
+
+The standalone "join existing session" section was removed from the landing page — join is now a first-class part of the Remote flow.
+
+### Architecture
+
+Uses a cascade of early returns in `TheDoor.tsx` — a React pattern for wizard/stepper flows where each state combination gets its own clean return block:
+
+```
+pendingMode === 'remote' && remoteAction === null   → Create/Join chooser
+pendingMode === 'remote' && remoteAction === 'join'  → Room code input
+pendingMode (any)                                    → Context mode picker
+default                                              → Landing page
+```
+
+### Files Modified
+- `src/components/landing/TheDoor.tsx` — 109 insertions, 38 deletions
+
+---
+
+## PR #34: Merge to Main
+
+**2026-02-13** | `parallax/solo-intelligence → main`
+
+### What Was Merged
+
+All Day 4 work consolidated into a single PR:
+- Solo Mode + Solo Intelligence (sidebar, memory, export)
+- Turn-Based Timer (configurable, audio cues)
+- Remote Session Flow (create-or-join choice)
+
+**Stats:** 28 files changed, 3,030 insertions, 66 deletions
+
+### Branch Cleanup
+
+After merge, deleted stale branches:
+- `parallax/solo-intelligence` — merged
+- `parallax/solo-mode` — ancestor of solo-intelligence
+- `parallax/turn-based-timer` — ancestor of solo-intelligence
+- `parallax/conversational-layer` — orphaned lockfile fix
+
+All work now lives on `main`.
 
 ---
 
