@@ -15,6 +15,8 @@ import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 import { useAutoListen } from "@/hooks/useAutoListen";
+import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { SoloSidebar } from "@/components/SoloSidebar";
 import { buildSessionSummaryHtml } from "@/lib/export-html";
 import { useRouter } from "next/navigation";
 import type {
@@ -34,6 +36,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const { insights: conversationInsights } = useConversationInsights(messages);
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -507,8 +510,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Three-column layout: Insight panels + Messages */}
       <div className="flex-1 flex min-h-0">
-        {/* Left panel — Person A signals + issues (desktop only) */}
+        {/* Left panel — Conversation insights + Person A signals (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <SoloSidebar insights={conversationInsights} />
           <div className="space-y-1 p-2">
             {messages
               .filter((m) => m.sender === "person_a" && m.nvc_analysis)

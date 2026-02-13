@@ -13,6 +13,8 @@ import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
+import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { SoloSidebar } from "./SoloSidebar";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import { buildSessionSummaryHtml } from "@/lib/export-html";
 import { useRouter } from "next/navigation";
@@ -77,6 +79,7 @@ export function RemoteView({
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const { insights: conversationInsights } = useConversationInsights(messages);
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
@@ -736,9 +739,11 @@ export function RemoteView({
           )}
         </div>
 
-        {/* Right sidebar — Signal cards + Action panels (desktop only, active/completed phase) */}
-        {(isActive || isCompleted) && (
-          <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
+        {/* Right sidebar — Insights + Signal cards + Action panels (desktop only) */}
+        <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
+          <SoloSidebar insights={conversationInsights} />
+          {(isActive || isCompleted) && (
+          <>
             {/* Signal cards */}
             <div className="space-y-1 p-2">
               {messages
@@ -768,8 +773,9 @@ export function RemoteView({
               side="right"
               onUpdateStatus={updateIssueStatus}
             />
-          </div>
-        )}
+          </>
+          )}
+        </div>
       </div>
 
       {/* Mobile: issue panels below messages (active phase only) */}
