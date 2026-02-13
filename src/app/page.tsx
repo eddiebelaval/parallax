@@ -316,32 +316,11 @@ export default function Home() {
         {/* --- 5. Footer: Built with Claude Code --- */}
         <section className="px-6 py-12 border-t border-border">
           <div className="max-w-2xl mx-auto text-center space-y-4">
-            {/* Built with Claude Code badge */}
-            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm">
-              {/* Crab icon (Clawd) — simple SVG, Ember-styled */}
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-success flex-shrink-0"
-              >
-                <path
-                  d="M5 8c-1.5-1.5-3-2-4-1.5M19 8c1.5-1.5 3-2 4-1.5M8 4c0-1.5-.5-3-1.5-3.5M16 4c0-1.5.5-3 1.5-3.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <ellipse cx="12" cy="13" rx="7" ry="6" stroke="currentColor" strokeWidth="1.5" />
-                <circle cx="9.5" cy="11.5" r="1" fill="currentColor" />
-                <circle cx="14.5" cy="11.5" r="1" fill="currentColor" />
-                <path
-                  d="M5 16c-2 1-3 3-2.5 4M19 16c2 1 3 3 2.5 4M8 19c-.5 1.5-1 3-.5 4M16 19c.5 1.5 1 3 .5 4"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+            {/* Built with Claude Code badge — ant walks on this! */}
+            <div
+              id="claude-code-badge"
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm relative"
+            >
               <span className="font-mono text-xs uppercase tracking-wider text-muted">
                 Built with Claude Code
               </span>
