@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useInterview } from '@/hooks/useInterview'
 import { useParallaxVoice } from '@/hooks/useParallaxVoice'
+import { useAutoListen } from '@/hooks/useAutoListen'
 import { useTypewriter } from '@/hooks/useTypewriter'
 import { supabase } from '@/lib/supabase'
 import { TOTAL_PHASES, getPhaseConfig } from '@/lib/interview-prompts'
@@ -118,6 +119,18 @@ export default function InterviewPage() {
     sendMessage(content.trim())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, sendMessage])
+
+  // Hands-free voice input
+  const [handsFree, setHandsFree] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const isBusy = isLoading || typewriter.isTyping || voice.isSpeaking;
+
+  const autoListen = useAutoListen({
+    enabled: handsFree && !muted && !isBusy,
+    isTTSPlaying: voice.isSpeaking,
+    onTranscript: handleSend,
+    silenceTimeoutMs: 5000,
+  });
 
   if (authLoading || displayName === undefined) {
     return (
@@ -240,8 +253,6 @@ export default function InterviewPage() {
       </div>
     )
   }
-
-  const isBusy = isLoading || typewriter.isTyping || voice.isSpeaking
 
   return (
     <div className="min-h-[calc(100vh-65px)] flex flex-col max-w-3xl mx-auto">
@@ -400,11 +411,31 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {/* Voice + Text Input */}
+      {/* Voice + Text Input — hands-free enabled */}
       <ActiveSpeakerBar
         activeSpeakerName={displayName || 'You'}
         onSend={handleSend}
         disabled={isBusy}
+        autoListen={handsFree}
+        autoListenState={{
+          isListening: autoListen.isListening,
+          interimText: autoListen.interimText,
+          isSpeechActive: autoListen.isSpeechActive,
+          silenceCountdown: autoListen.silenceCountdown,
+        }}
+        isTTSSpeaking={voice.isSpeaking}
+        isProcessing={isLoading}
+        isMuted={muted}
+        onToggleMute={() => setMuted((v) => !v)}
+        onModeChange={(mode) => {
+          if (mode === "auto") {
+            setHandsFree(true);
+            setMuted(false);
+          } else {
+            setHandsFree(false);
+            setMuted(false);
+          }
+        }}
       />
     </div>
   )

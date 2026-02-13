@@ -56,11 +56,7 @@ export function ParallaxFAB() {
         }`}
         aria-label="Open Parallax Guide"
       >
-        {/* Teal presence dot */}
-        <div className="relative">
-          <div className="w-3 h-3 rounded-full bg-success" />
-          <div className="absolute inset-0 w-3 h-3 rounded-full bg-success animate-ping opacity-30" />
-        </div>
+        <span className="font-mono text-lg font-semibold text-success">?</span>
       </button>
 
       {/* Guide Panel — reuses existing ConversationalPanel */}

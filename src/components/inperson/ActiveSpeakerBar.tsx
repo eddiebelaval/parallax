@@ -320,17 +320,17 @@ export function ActiveSpeakerBar({
 
       {/* ─── Mode strip: all controls in one place ─── */}
       {autoListen !== undefined && (
-        <div className="px-4 pt-2 pb-1 flex items-center gap-1">
+        <div className="px-4 pt-3 pb-1 flex items-center gap-2">
           {supported && (
             <button
               onClick={() => {
                 onModeChange?.("auto");
                 setMode("voice");
               }}
-              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-all ${
                 effectiveMode === "auto"
-                  ? "bg-temp-cool/15 text-temp-cool"
-                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+                  ? "bg-temp-cool/20 text-temp-cool border border-temp-cool/30"
+                  : "text-ember-500 border border-transparent hover:text-foreground hover:bg-ember-elevated hover:border-border"
               }`}
             >
               Hands-free
@@ -342,10 +342,10 @@ export function ActiveSpeakerBar({
                 onModeChange?.("voice");
                 setMode("voice");
               }}
-              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-all ${
                 effectiveMode === "voice"
-                  ? "bg-temp-warm/15 text-temp-warm"
-                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+                  ? "bg-temp-warm/20 text-temp-warm border border-temp-warm/30"
+                  : "text-ember-500 border border-transparent hover:text-foreground hover:bg-ember-elevated hover:border-border"
               }`}
             >
               Tap to talk
@@ -356,10 +356,10 @@ export function ActiveSpeakerBar({
               onModeChange?.("text");
               setMode("text");
             }}
-            className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-all ${
               effectiveMode === "text"
-                ? "bg-ember-elevated text-foreground"
-                : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+                ? "bg-ember-elevated text-foreground border border-border"
+                : "text-ember-500 border border-transparent hover:text-foreground hover:bg-ember-elevated hover:border-border"
             }`}
           >
             Type

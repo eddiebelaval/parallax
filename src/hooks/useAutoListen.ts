@@ -75,11 +75,19 @@ export function useAutoListen({
   const isStoppingRef = useRef(false);
   const silenceTimeoutRef = useRef(silenceTimeoutMs);
 
-  // VAD for silence detection
+  // VAD for silence detection — store in ref to prevent callback instability
   const vad = useVoiceActivityDetection({
     silenceThreshold: 0.01,
     minSpeechDurationMs: 300,
   });
+
+  // Stable refs for VAD methods (prevents startListening/stopListening from recreating every render)
+  const vadStartRef = useRef(vad.start);
+  const vadStopRef = useRef(vad.stop);
+  useEffect(() => {
+    vadStartRef.current = vad.start;
+    vadStopRef.current = vad.stop;
+  }, [vad.start, vad.stop]);
 
   // Keep refs fresh
   useEffect(() => {
@@ -168,11 +176,11 @@ export function useAutoListen({
     try {
       recognition.start();
       setIsListening(true);
-      vad.start();
+      vadStartRef.current();
     } catch {
       setIsListening(false);
     }
-  }, [vad]);
+  }, []); // Stable — uses refs for all external values
 
   // Stop recognition + VAD, optionally send transcript
   const stopListening = useCallback(
@@ -191,7 +199,7 @@ export function useAutoListen({
         recognitionRef.current = null;
       }
 
-      vad.stop();
+      vadStopRef.current();
       setIsListening(false);
 
       if (sendTranscript) {
@@ -204,7 +212,7 @@ export function useAutoListen({
       finalTranscriptRef.current = "";
       setInterimText("");
     },
-    [vad]
+    [] // Stable — uses refs for all external values
   );
 
   // Auto-start/stop based on enabled + TTS state

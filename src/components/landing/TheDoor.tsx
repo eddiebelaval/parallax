@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isValidRoomCode } from '@/lib/room-code'
 import { ContextModePicker } from '@/components/ContextModePicker'
-import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { ModeCardScene } from '@/components/landing/ModeCardScene'
 import { useAuth } from '@/hooks/useAuth'
 import type { SessionMode, ContextMode } from '@/types/database'
 
@@ -303,57 +302,38 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
         </div>
 
         {/* Mode selection cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
+        <div className="grid grid-cols-1 gap-5 max-w-xl mx-auto mb-16">
           {/* In-Person Mode */}
           <button
             onClick={() => handleModeSelect('in_person')}
             disabled={creating !== null || soloLoading}
-            className="group relative text-left overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            className="group relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
-            {/* Glowing border effect */}
             <div className="absolute -inset-0.5 bg-gradient-to-br from-accent/40 via-accent/20 to-accent/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header — two people + mediator orbs */}
-              <div className="relative h-40 bg-gradient-to-br from-accent/10 to-accent/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center gap-3">
-                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={40} />
-                  <ParallaxOrb size={28} energy={0.2} isSpeaking={false} particles={false} />
-                  <AudioWaveformOrb name="" role="b" waveform={null} energy={0.3} active={false} size={40} />
+            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                {/* Orb scene */}
+                <div className="sm:w-48 h-36 sm:h-auto flex-shrink-0 border-b sm:border-b-0 sm:border-r border-border overflow-hidden">
+                  <ModeCardScene type="inperson" height={144} />
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
+                {/* Text content */}
+                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-2 h-2 rounded-full bg-accent" />
-                    <h3 className="font-mono text-lg uppercase tracking-wider text-accent">
+                    <h3 className="font-mono text-sm sm:text-base uppercase tracking-wider text-accent">
                       {creating === 'in_person' ? 'Creating...' : 'In-Person'}
                     </h3>
                   </div>
                   <p className="text-ember-400 text-sm mb-3">
                     Same device, shared screen
                   </p>
-                </div>
-
-                <ul className="space-y-2 mb-6 flex-1">
-                  {[
-                    'AI Conductor guides the conversation',
-                    'Single shared view — no split screen',
-                    'X-Ray Scoreboard tracks issues live',
-                    'Turn-based flow with adaptive timing',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <span className="w-1 h-1 rounded-full bg-accent mt-1.5 flex-shrink-0" />
-                      <span className="text-ember-500 text-xs leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="pt-4 border-t border-border">
+                  <p className="text-ember-500 text-xs leading-relaxed mb-4">
+                    AI conductor guides the conversation with turn-based flow. X-Ray scoreboard tracks issues live.
+                  </p>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600 group-hover:text-accent transition-colors">
-                    Begin session
+                    Begin Session &rarr;
                   </span>
                 </div>
               </div>
@@ -364,56 +344,33 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
           <button
             onClick={() => handleModeSelect('remote')}
             disabled={creating !== null || soloLoading}
-            className="group relative text-left overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            className="group relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
-            {/* Glowing border effect */}
             <div className="absolute -inset-0.5 bg-gradient-to-br from-success/40 via-success/20 to-success/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header — two remote orbs with teal bridge */}
-              <div className="relative h-40 bg-gradient-to-br from-success/10 to-success/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center gap-6">
-                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.25} active={false} size={40} />
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="h-px w-10 bg-success/40" />
-                    <ParallaxOrb size={20} energy={0.15} isSpeaking={false} particles={false} />
-                    <div className="h-px w-10 bg-success/40" />
-                  </div>
-                  <AudioWaveformOrb name="" role="b" waveform={null} energy={0.25} active={false} size={40} />
+            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                {/* Orb scene */}
+                <div className="sm:w-48 h-36 sm:h-auto flex-shrink-0 border-b sm:border-b-0 sm:border-r border-border overflow-hidden">
+                  <ModeCardScene type="remote" height={144} />
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
+                {/* Text content */}
+                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-2 h-2 rounded-full bg-success" />
-                    <h3 className="font-mono text-lg uppercase tracking-wider text-success">
+                    <h3 className="font-mono text-sm sm:text-base uppercase tracking-wider text-success">
                       {creating === 'remote' ? 'Creating...' : 'Remote'}
                     </h3>
                   </div>
                   <p className="text-ember-400 text-sm mb-3">
                     Different devices, connected experience
                   </p>
-                </div>
-
-                <ul className="space-y-2 mb-6 flex-1">
-                  {[
-                    'Share a 6-character room code',
-                    'Each person has their own panel',
-                    'NVC analysis on every message',
-                    'Session summary when you\'re done',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <span className="w-1 h-1 rounded-full bg-success mt-1.5 flex-shrink-0" />
-                      <span className="text-ember-500 text-xs leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="pt-4 border-t border-border">
+                  <p className="text-ember-500 text-xs leading-relaxed mb-4">
+                    Share a room code. Each person gets their own panel with NVC analysis on every message.
+                  </p>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600 group-hover:text-success transition-colors">
-                    Begin session
+                    Begin Session &rarr;
                   </span>
                 </div>
               </div>
@@ -424,51 +381,33 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
           <button
             onClick={handleSoloStart}
             disabled={creating !== null || soloLoading}
-            className="group relative text-left overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            className="group relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
-            {/* Glowing border effect */}
             <div className="absolute -inset-0.5 bg-gradient-to-br from-success/40 via-success/20 to-success/5 rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col">
-              {/* Visual header — single person + Parallax companion */}
-              <div className="relative h-40 bg-gradient-to-br from-success/10 to-success/5 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center gap-4">
-                  <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={44} />
-                  <ParallaxOrb size={36} energy={0.2} isSpeaking={false} />
+            <div className="relative border border-border bg-surface/90 backdrop-blur-sm rounded-xl overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                {/* Orb scene */}
+                <div className="sm:w-48 h-36 sm:h-auto flex-shrink-0 border-b sm:border-b-0 sm:border-r border-border overflow-hidden">
+                  <ModeCardScene type="solo" height={144} />
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
+                {/* Text content */}
+                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-2 h-2 rounded-full bg-success" />
-                    <h3 className="font-mono text-lg uppercase tracking-wider text-success">
+                    <h3 className="font-mono text-sm sm:text-base uppercase tracking-wider text-success">
                       {soloLoading ? 'Creating...' : 'Solo'}
                     </h3>
                   </div>
                   <p className="text-ember-400 text-sm mb-3">
                     Just you and Parallax
                   </p>
-                </div>
-
-                <ul className="space-y-2 mb-6 flex-1">
-                  {[
-                    '1:1 conversation — no second person needed',
-                    'Parallax learns your communication style',
-                    'Builds your profile for future sessions',
-                    'Your advocate in two-person conversations',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <span className="w-1 h-1 rounded-full bg-success mt-1.5 flex-shrink-0" />
-                      <span className="text-ember-500 text-xs leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="pt-4 border-t border-border">
+                  <p className="text-ember-500 text-xs leading-relaxed mb-4">
+                    1:1 conversation that learns your style and becomes your advocate in future sessions.
+                  </p>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600 group-hover:text-success transition-colors">
-                    Begin session
+                    Begin Session &rarr;
                   </span>
                 </div>
               </div>

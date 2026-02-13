@@ -63,12 +63,18 @@ export function ParallaxOrb({
     smoothEnergyRef.current += (targetEnergy - smoothEnergyRef.current) * 0.08;
     const e = smoothEnergyRef.current;
 
-    // Simulated energy variation
-    let liveEnergy = e;
+    // Always show life — idle breathing waveform baseline
+    // Speaking: full energy-driven waveform
+    // Analyzing: gentle pulse
+    // Silent/idle: slow, calm breathing wave (never flat)
+    const idleWave = 0.25 + 0.1 * Math.sin(t * 0.8); // Gentle constant breath
+    let liveEnergy: number;
     if (isSpeaking) {
-      liveEnergy = e * (0.6 + 0.4 * Math.sin(t * 3.7) * Math.sin(t * 1.3));
+      liveEnergy = Math.max(idleWave, e * (0.6 + 0.4 * Math.sin(t * 3.7) * Math.sin(t * 1.3)));
     } else if (isAnalyzing) {
-      liveEnergy = e * (0.8 + 0.2 * Math.sin(t * 2));
+      liveEnergy = Math.max(idleWave, e * (0.8 + 0.2 * Math.sin(t * 2)));
+    } else {
+      liveEnergy = idleWave; // Always alive, never flat
     }
 
     // Particle state
@@ -79,11 +85,15 @@ export function ParallaxOrb({
     ctx.save();
     ctx.scale(dpr, dpr);
 
+    // Detect light mode for opacity boost
+    const isLight = typeof document !== "undefined" && document.documentElement.classList.contains("light");
+    const boost = isLight ? 1.8 : 1; // Light mode needs stronger colors
+
     // ── 1. Outer glow ──
     const glowRadius = radius * (1.3 + liveEnergy * 0.4);
     const glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, glowRadius);
-    glowGrad.addColorStop(0, `rgba(106, 171, 142, ${0.12 + liveEnergy * 0.18})`);
-    glowGrad.addColorStop(0.5, `rgba(106, 171, 142, ${0.04 + liveEnergy * 0.06})`);
+    glowGrad.addColorStop(0, `rgba(106, 171, 142, ${Math.min(1, (0.2 + liveEnergy * 0.25) * boost)})`);
+    glowGrad.addColorStop(0.5, `rgba(106, 171, 142, ${Math.min(1, (0.08 + liveEnergy * 0.1) * boost)})`);
     glowGrad.addColorStop(1, "rgba(106, 171, 142, 0)");
     ctx.beginPath();
     ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
@@ -95,9 +105,9 @@ export function ParallaxOrb({
       cx - radius * 0.25, cy - radius * 0.25, 0,
       cx, cy, radius,
     );
-    bodyGrad.addColorStop(0, "rgba(106, 171, 142, 0.35)");
-    bodyGrad.addColorStop(0.6, "rgba(106, 171, 142, 0.15)");
-    bodyGrad.addColorStop(1, "rgba(106, 171, 142, 0.08)");
+    bodyGrad.addColorStop(0, `rgba(106, 171, 142, ${Math.min(1, 0.5 * boost)})`);
+    bodyGrad.addColorStop(0.6, `rgba(106, 171, 142, ${Math.min(1, 0.25 * boost)})`);
+    bodyGrad.addColorStop(1, `rgba(106, 171, 142, ${Math.min(1, 0.15 * boost)})`);
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fillStyle = bodyGrad;
@@ -106,7 +116,7 @@ export function ParallaxOrb({
     // Orb edge
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(106, 171, 142, ${0.3 + liveEnergy * 0.3})`;
+    ctx.strokeStyle = `rgba(106, 171, 142, ${Math.min(1, (0.5 + liveEnergy * 0.3) * boost)})`;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -120,7 +130,10 @@ export function ParallaxOrb({
     const waveWidth = radius * 2;
     const startX = cx - radius;
 
-    // Primary waveform
+    // Primary waveform — glowing white line
+    ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
+    ctx.shadowBlur = Math.max(4, 8 * liveEnergy);
+
     ctx.beginPath();
     for (let i = 0; i <= wavePoints; i++) {
       const x = startX + (i / wavePoints) * waveWidth;
@@ -135,11 +148,12 @@ export function ParallaxOrb({
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(106, 171, 142, ${0.4 + liveEnergy * 0.5})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(1, 0.6 + liveEnergy * 0.4)})`;
     ctx.lineWidth = Math.max(1, 1.5 * (radius / 60));
     ctx.stroke();
 
-    // Second harmonic — thinner, offset
+    // Second harmonic — thinner, softer white glow
+    ctx.shadowBlur = Math.max(2, 4 * liveEnergy);
     ctx.beginPath();
     for (let i = 0; i <= wavePoints; i++) {
       const x = startX + (i / wavePoints) * waveWidth;
@@ -153,9 +167,13 @@ export function ParallaxOrb({
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(106, 171, 142, ${0.2 + liveEnergy * 0.25})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(1, 0.3 + liveEnergy * 0.3)})`;
     ctx.lineWidth = Math.max(0.5, 1 * (radius / 60));
     ctx.stroke();
+
+    // Reset shadow for everything else
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
 
     ctx.restore();
 

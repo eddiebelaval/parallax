@@ -304,7 +304,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   // Auto-listen: hands-free from session start (togglable)
   const autoListen = useAutoListen({
-    enabled: handsFree && !muted && (isOnboarding || isActive) && !conductorLoading && !isAnalyzing,
+    enabled: handsFree && !muted && !conductorLoading && !isAnalyzing,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
     silenceTimeoutMs: 5000,
@@ -599,7 +599,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onMicStateChange={setIsMicHot}
           isYourTurn={true}
           timeRemaining={turnBasedMode && isActive ? timeRemaining : undefined}
-          autoListen={handsFree && (isOnboarding || isActive)}
+          autoListen={handsFree}
           autoListenState={{
             isListening: autoListen.isListening,
             interimText: autoListen.interimText,

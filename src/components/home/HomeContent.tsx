@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { TheDoor } from '@/components/landing/TheDoor'
 import { SessionHistory } from '@/components/home/SessionHistory'
 import { ProfileSummary } from '@/components/home/ProfileSummary'
@@ -30,6 +31,11 @@ interface HomeContentProps {
  * - ParallaxFAB (always visible)
  */
 export function HomeContent({ displayName, userId, profile, signals, sessions }: HomeContentProps) {
+  // Client-side auth fallback — server auth can't read cookies, so get name from client
+  const { user } = useAuth()
+  const clientName = user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null
+  const name = displayName !== 'there' ? displayName : clientName ?? user?.email?.split('@')[0] ?? 'there'
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       {/* Header */}
@@ -41,7 +47,7 @@ export function HomeContent({ displayName, userId, profile, signals, sessions }:
           </span>
         </div>
         <h1 className="font-serif text-3xl text-foreground tracking-tight">
-          Welcome back, {displayName}
+          Welcome back, {name}
         </h1>
       </div>
 

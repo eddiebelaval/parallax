@@ -51,6 +51,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const supabase = createServerClient()
 
+  // Ensure profile exists (upsert for anonymous/first-time users)
+  await supabase
+    .from('user_profiles')
+    .upsert(
+      { user_id, display_name: display_name ?? null },
+      { onConflict: 'user_id' },
+    )
+
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('raw_responses')

@@ -366,7 +366,7 @@ export function RemoteView({
 
   // Auto-listen: hands-free mode for remote conversations
   const autoListen = useAutoListen({
-    enabled: handsFree && !muted && (isMyTurn || !isActive) && !conductorLoading,
+    enabled: handsFree && !muted && !conductorLoading,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
     silenceTimeoutMs: 5000,
@@ -600,7 +600,7 @@ export function RemoteView({
               activeSpeakerName={inputTab === "coaching" ? localName : activeSpeaker}
               onSend={inputTab === "coaching" ? coaching.sendMessage : handleSend}
               disabled={inputTab === "coaching" ? coaching.loading : (!isMyTurn || conductorLoading)}
-              autoListen={inputTab === "coaching" ? false : handsFree && (isMyTurn || !isActive)}
+              autoListen={inputTab === "coaching" ? false : handsFree}
               autoListenState={inputTab === "conversation" ? {
                 isListening: autoListen.isListening,
                 interimText: autoListen.interimText,

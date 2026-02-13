@@ -53,7 +53,7 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
   const greetingTriggered = useRef(false);
   const lastSpokenRef = useRef<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [handsFree, setHandsFree] = useState(false);
+  const [handsFree, setHandsFree] = useState(true);
   const [muted, setMuted] = useState(false);
 
   // Auto-scroll on new messages
