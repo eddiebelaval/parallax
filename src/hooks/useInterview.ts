@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
 import type { InterviewPhase } from '@/types/database'
 
 interface InterviewMessage {
@@ -21,6 +22,12 @@ interface UseInterviewOptions {
   displayName?: string | null
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return {}
+  return { Authorization: `Bearer ${session.access_token}` }
+}
+
 export function useInterview({ userId, contextMode, displayName }: UseInterviewOptions) {
   const [phase, setPhase] = useState<InterviewPhase>(1)
   const [messages, setMessages] = useState<InterviewMessage[]>([])
@@ -36,7 +43,8 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
     resumeChecked.current = true
 
     setIsResuming(true)
-    fetch(`/api/interview?user_id=${userId}`)
+    getAuthHeaders()
+      .then((headers) => fetch('/api/interview', { headers }))
       .then((res) => res.json() as Promise<ResumeResponse>)
       .then((data) => {
         if (data.completed) {
@@ -61,9 +69,10 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
     setIsLoading(true)
 
     try {
+      const authHeaders = await getAuthHeaders()
       const response = await fetch('/api/interview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           user_id: userId,
           phase,
@@ -117,9 +126,10 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
     setIsComplete(false)
 
     try {
+      const authHeaders = await getAuthHeaders()
       const response = await fetch('/api/interview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           user_id: userId,
           phase: 1,

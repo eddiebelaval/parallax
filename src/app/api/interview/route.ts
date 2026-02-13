@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@/lib/supabase'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getInterviewPrompt } from '@/lib/interview-prompts'
@@ -49,18 +50,31 @@ function getCompletedResponses(responses: unknown[]): unknown[] {
   return responses.filter((entry) => !isInProgressEntry(entry))
 }
 
+async function getAuthUserId(request: Request): Promise<string | null> {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+
+  const token = authHeader.slice(7)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) return null
+
+  const client = createClient(supabaseUrl, supabaseAnonKey)
+  const { data: { user } } = await client.auth.getUser(token)
+  return user?.id ?? null
+}
+
 /**
- * GET /api/interview?user_id=X
+ * GET /api/interview
  *
  * Load existing interview progress for resume capability.
- * Returns current phase, messages (if in-progress), and completion status.
+ * User ID is extracted from the Authorization Bearer token.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url)
-  const user_id = searchParams.get('user_id')
+  const user_id = await getAuthUserId(request)
 
   if (!user_id) {
-    return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
 
   const supabase = createServerClient()
@@ -98,6 +112,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   const rateLimited = checkRateLimit(request, 20, 60_000)
   if (rateLimited) return rateLimited
 
+  const authUserId = await getAuthUserId(request)
+  if (!authUserId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
   const body = await request.json() as InterviewRequestBody
   const { user_id, phase, message, conversation_history, context_mode, display_name } = body
 
@@ -106,6 +125,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       { error: 'user_id, phase, and message are required' },
       { status: 400 },
     )
+  }
+
+  if (user_id !== authUserId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   if (phase < 1 || phase > 4) {
