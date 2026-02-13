@@ -28,6 +28,27 @@ interface InterviewRequestBody {
   display_name?: string | null
 }
 
+interface InProgressEntry {
+  phase: 'in_progress'
+  current_phase: number
+  messages: Array<{ role: string; content: string }>
+  updated_at: string
+}
+
+type RawResponseEntry = Record<string, unknown>
+
+function isInProgressEntry(entry: unknown): entry is InProgressEntry {
+  return (
+    typeof entry === 'object' &&
+    entry !== null &&
+    (entry as RawResponseEntry).phase === 'in_progress'
+  )
+}
+
+function getCompletedResponses(responses: unknown[]): unknown[] {
+  return responses.filter((entry) => !isInProgressEntry(entry))
+}
+
 /**
  * GET /api/interview?user_id=X
  *
@@ -62,11 +83,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     })
   }
 
-  // Look for in_progress entry in raw_responses
   const rawResponses = (profile.raw_responses as unknown[]) ?? []
-  const inProgress = rawResponses.find(
-    (r) => typeof r === 'object' && r !== null && (r as Record<string, unknown>).phase === 'in_progress',
-  ) as { current_phase: number; messages: Array<{ role: string; content: string }> } | undefined
+  const inProgress = rawResponses.find(isInProgressEntry)
 
   return NextResponse.json({
     phase: inProgress?.current_phase ?? profile.interview_phase ?? 1,
@@ -156,10 +174,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   let signalsExtracted = 0
 
-  // Filter out any previous in_progress entry from raw_responses
-  const completedResponses = rawResponses.filter(
-    (r) => typeof r === 'object' && r !== null && (r as Record<string, unknown>).phase !== 'in_progress',
-  )
+  const completedResponses = getCompletedResponses(rawResponses)
 
   if (phaseComplete || interviewDone) {
     const extraction = parseInterviewExtraction(rawText)

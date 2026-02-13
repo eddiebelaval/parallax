@@ -8,6 +8,13 @@ interface InterviewMessage {
   content: string
 }
 
+interface ResumeResponse {
+  phase: InterviewPhase
+  messages: InterviewMessage[]
+  completed: boolean
+  display_name?: string | null
+}
+
 interface UseInterviewOptions {
   userId: string
   contextMode?: string
@@ -30,18 +37,19 @@ export function useInterview({ userId, contextMode, displayName }: UseInterviewO
 
     setIsResuming(true)
     fetch(`/api/interview?user_id=${userId}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<ResumeResponse>)
       .then((data) => {
         if (data.completed) {
           setIsComplete(true)
           setPhase(4)
         } else if (data.messages?.length > 0) {
-          // Resume from saved progress
-          setPhase(data.phase as InterviewPhase)
+          setPhase(data.phase)
           setMessages(data.messages)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Silently fail — user will start a fresh interview
+      })
       .finally(() => setIsResuming(false))
   }, [userId])
 
