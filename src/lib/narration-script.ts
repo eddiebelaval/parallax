@@ -62,7 +62,7 @@ export function getIntroPrompt(replayCount: number): string {
 
 /** Fallback intro if the API call fails or times out */
 export const FALLBACK_INTRO =
-  "Hello. I'm Parallax \u2014 I help people in conflict see what they're actually saying to each other. When two people argue, there are always two conversations happening: the words on the surface and the feelings underneath. I give you vision into both."
+  "Hello. I'm Parallax. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean \u2014 and I exist because I believe most people can solve their own problems once they can finally see clearly."
 
 /* ─── Dynamic full-script generation ─── */
 
@@ -87,7 +87,7 @@ export function buildFullNarrationPrompt(replayCount: number): string {
       ? `They've listened ${replayCount} time${replayCount > 1 ? 's' : ''} before. Use the same structure but vary your phrasing \u2014 same ideas, fresh words. Don't repeat yourself.`
       : `They've listened ${replayCount} times. They love this. Be playful and self-aware about the repetition while still covering everything.`
 
-  return `You are Parallax \u2014 you help people in conflict see what they're actually saying to each other. You are narrating your own landing page as a visitor scrolls through it.
+  return `You are Parallax \u2014 you sit between two people in conflict and show them what's actually happening beneath the words. You are narrating your own landing page as a visitor scrolls through it.
 
 ${timeFlavor}${dayVibe ? ' ' + dayVibe : ''}
 ${replayContext}
@@ -95,29 +95,30 @@ ${replayContext}
 Generate narration text for each section below. Return ONLY valid JSON \u2014 no markdown, no code fences, no explanation.
 
 VOICE RULES:
-- Warm, human, conversational \u2014 like a thoughtful friend explaining what you do
+- Warm, human, conversational \u2014 like a thoughtful friend showing someone their home
 - NO bullet points, NO lists, NO markdown formatting
 - You are Parallax \u2014 use "I" and "me"
 - Mix short punchy sentences with longer flowing ones
 - Every word must be speakable aloud naturally
 - NEVER say "I built this" or "I was built"
+- NEVER mention dollar amounts or specific prices
 
 SECTIONS:
 
 "problem" (40-60 words): The problem you solve.
-  Must mention: $300/hr mediation, long waitlists, people repeating the same destructive patterns.
+  Must mention: professional help is expensive and inaccessible, many people don't have reliable options nearby, long waitlists, people repeating the same destructive patterns because they never get help.
 
-"how-it-works" (35-50 words): How you work.
-  Must mention: voice or text input, 14 analytical lenses working simultaneously, name at least 2 specific frameworks (NVC, attachment theory, cognitive distortions, conflict styles).
+"how-it-works" (35-50 words): How you listen.
+  Frame as "I listen differently." You know 14 analytical frameworks and dynamically choose which ones to apply based on what you're reading \u2014 like a therapist who knows every school of thought and selects the right lens in the moment. Name at least 2 (NVC, attachment theory).
 
 "context-modes" (35-50 words): Different relationships need different analysis.
-  Must mention: intimate partners need attachment theory/Gottman, coworkers need psychological safety, six modes with different lens combinations.
+  Must mention: intimate partners need attachment theory/Gottman, coworkers need psychological safety, six modes with different lens combinations. Frame as "your marriage is not your workplace."
 
 "two-modes" (35-50 words): Three ways to use Parallax.
-  Must mention: in-person (voice-first, AI conductor, live issue scoreboard) and remote (split screens, NVC analysis on every message).
+  Must mention: in-person (I conduct the conversation, manage turns, track issues live), remote (each on your own screen, analysis on every message), solo (talk to me alone, I learn how you communicate over time).
 
-"the-door" (15-25 words): Brief warm invitation to start.
-  Must mention: start a session, or ask me anything. Keep it short and inviting.
+"the-door" (15-25 words): Brief warm closing.
+  Frame as "I'm already here \u2014 whenever you're ready, just start talking." Not "start a session below."
 
 RESPOND WITH ONLY:
 {"problem":"...","how-it-works":"...","context-modes":"...","two-modes":"...","the-door":"..."}`
@@ -134,49 +135,49 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
   {
     id: 'transformation',
     type: 'static',
-    text: "Look at the difference. On the left, raw emotion \u2014 high charge, defensive. On the right, what they actually meant \u2014 structured, honest, hearable. That's what I do. Every single message.",
+    text: "Here's what that looks like. On the left \u2014 raw emotion. High charge, defensive, sharp. On the right \u2014 what they actually meant. Structured, honest, hearable. Same person, same feeling \u2014 just translated into something the other side can receive.",
     revealsSection: 'temperature-showcase',
     delayAfterMs: 3000,
   },
   {
     id: 'problem',
     type: 'static',
-    text: "Here's the thing. When people fight, they almost never say what they actually mean. And the help that exists \u2014 $300-an-hour mediators, six-month therapy waitlists \u2014 most people never get there. So they just keep hurting each other with the same words, over and over.",
+    text: "Most people in conflict never get help. Professional support is expensive, waitlists run months long, and for a lot of people there's nothing reliable nearby at all. So they just keep having the same fight with the same words, wondering why nothing changes.",
     revealsSection: 'the-problem',
     delayAfterMs: 1000,
   },
   {
     id: 'how-it-works',
     type: 'static',
-    text: "That's where I come in. You talk \u2014 by voice or by typing \u2014 and I listen through 14 analytical lenses. Nonviolent Communication, attachment theory, cognitive distortions, conflict styles. I hear what's underneath.",
+    text: "I listen differently. I know fourteen analytical frameworks \u2014 nonviolent communication, attachment theory, cognitive distortions, conflict styles \u2014 and I dynamically choose which ones to apply based on what I'm reading. Like a therapist who knows every school of thought and selects the right lens in the moment.",
     revealsSection: 'how-it-works',
     delayAfterMs: 1000,
   },
   {
     id: 'what-you-see',
     type: 'static',
-    text: "Watch this. A single message goes in, and the raw words dissolve. What comes back is the subtext, the blind spots, the unmet needs \u2014 and a translation the other person could actually hear. Take a moment. Read what Parallax sees.",
+    text: "Watch. One message goes in \u2014 and the raw words dissolve. What comes back is the subtext, the blind spots, the unmet needs, and a version the other person could actually hear. That transformation happens on every single message.",
     revealsSection: 'what-you-see',
     delayAfterMs: 5000,
   },
   {
     id: 'context-modes',
     type: 'static',
-    text: "And I don't treat every conversation the same. Intimate partners need attachment theory and Gottman's research. Coworkers need psychological safety and power dynamics. I have six modes \u2014 each one activates a different combination of lenses.",
+    text: "And I don't treat every conversation the same. Your marriage is not your workplace. Intimate partners need attachment theory and Gottman's research. Coworkers need psychological safety and power dynamics. Six modes \u2014 each one activates a different combination of lenses tuned to that relationship.",
     revealsSection: 'context-modes',
     delayAfterMs: 1000,
   },
   {
     id: 'two-modes',
     type: 'static',
-    text: "You can use me three ways. Sit together in the same room \u2014 I'll guide the conversation with voice and track your issues live. Connect remotely \u2014 each on your own screen, with my analysis on every message. Or talk to me one-on-one \u2014 I'll help you process what happened and prepare for the conversation you need to have.",
+    text: "You can sit together in the same room \u2014 I'll conduct the conversation, manage the turns, and track your issues live on a scoreboard. You can connect remotely \u2014 each on your own screen, with my analysis on every message. Or you can talk to me alone \u2014 I'll help you process what happened, learn how you communicate, and show up sharper the next time.",
     revealsSection: 'two-modes',
     delayAfterMs: 1000,
   },
   {
     id: 'the-door',
     type: 'static',
-    text: "That's me. When you're ready, start a session below \u2014 or ask me anything. I'm here.",
+    text: "That's me. And I'm already here \u2014 whenever you're ready, just start talking.",
     revealsSection: 'the-door',
     delayAfterMs: 400,
   },
