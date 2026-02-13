@@ -28,6 +28,7 @@ export function makeSession(overrides: Partial<Session> = {}): Session {
     context_mode: 'intimate',
     onboarding_step: 'complete',
     onboarding_context: null,
+    timer_duration_ms: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,

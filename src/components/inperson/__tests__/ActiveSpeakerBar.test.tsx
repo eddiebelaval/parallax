@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { ActiveSpeakerBar } from '../ActiveSpeakerBar'
 
 // Mock icons
 vi.mock('@/components/icons', () => ({
   MicIcon: ({ size, className }: { size?: number; className?: string }) => (
     <span data-testid="mic-icon" className={className}>{size}</span>
+  ),
+  MicOffIcon: ({ size, className }: { size?: number; className?: string }) => (
+    <span data-testid="mic-off-icon" className={className}>{size}</span>
   ),
   KeyboardIcon: ({ size, className }: { size?: number; className?: string }) => (
     <span data-testid="keyboard-icon" className={className}>{size}</span>
@@ -26,20 +29,22 @@ describe('ActiveSpeakerBar', () => {
     expect(speakerNames.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('defaults to voice mode with "Tap to talk" label', () => {
+  it('defaults to voice mode with "Tap to talk" button', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
-    expect(screen.getByText('Tap to talk')).toBeInTheDocument()
+    // "Tap to talk" appears in both the mode strip button and the voice button
+    const elements = screen.getAllByText('Tap to talk')
+    expect(elements.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('can switch to text mode', () => {
+  it('can switch to text mode via Type button', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
-    fireEvent.click(screen.getByLabelText('Switch to text input'))
+    fireEvent.click(screen.getByText('Type'))
     expect(screen.getByPlaceholderText('Alice, speak your truth...')).toBeInTheDocument()
   })
 
   it('sends text message when Enter pressed in text mode', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
-    fireEvent.click(screen.getByLabelText('Switch to text input'))
+    fireEvent.click(screen.getByText('Type'))
 
     const input = screen.getByPlaceholderText('Alice, speak your truth...')
     fireEvent.change(input, { target: { value: 'Hello there' } })
@@ -49,7 +54,7 @@ describe('ActiveSpeakerBar', () => {
 
   it('sends text message when Send button clicked', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
-    fireEvent.click(screen.getByLabelText('Switch to text input'))
+    fireEvent.click(screen.getByText('Type'))
 
     const input = screen.getByPlaceholderText('Alice, speak your truth...')
     fireEvent.change(input, { target: { value: 'Hello there' } })
@@ -59,7 +64,7 @@ describe('ActiveSpeakerBar', () => {
 
   it('disables Send button when text is empty', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
-    fireEvent.click(screen.getByLabelText('Switch to text input'))
+    fireEvent.click(screen.getByText('Type'))
     expect(screen.getByText('Send')).toBeDisabled()
   })
 
@@ -76,10 +81,9 @@ describe('ActiveSpeakerBar', () => {
     expect(onMicStateChange).toHaveBeenCalledWith(true)
   })
 
-  it('shows "Tap to send" and "Mic live" when recording', () => {
+  it('shows "Tap to send" when recording', () => {
     render(<ActiveSpeakerBar activeSpeakerName="Alice" onSend={onSend} />)
     fireEvent.click(screen.getByLabelText('Tap to talk'))
     expect(screen.getByText('Tap to send')).toBeInTheDocument()
-    expect(screen.getByText('Mic live')).toBeInTheDocument()
   })
 })

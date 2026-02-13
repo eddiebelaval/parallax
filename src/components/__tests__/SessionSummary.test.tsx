@@ -3,6 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { SessionSummary } from '../SessionSummary'
 import type { SessionSummaryData } from '@/types/database'
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
+vi.mock('@/lib/export-html', () => ({
+  buildSessionSummaryHtml: vi.fn(() => '<html></html>'),
+}))
+
 function makeSummaryData(overrides: Partial<SessionSummaryData> = {}): SessionSummaryData {
   return {
     temperatureArc: 'Started hot, cooled down',

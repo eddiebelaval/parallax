@@ -8,21 +8,10 @@ vi.mock('../MessageArea', () => ({
   MessageArea: () => <div data-testid="message-area">Messages</div>,
 }))
 
-vi.mock('../MessageInput', () => ({
-  MessageInput: ({ onSend, placeholder }: { onSend: (s: string) => void; placeholder?: string }) => (
-    <div data-testid="message-input">
-      <input placeholder={placeholder} onChange={(e) => onSend(e.target.value)} />
-    </div>
+vi.mock('../inperson/ActiveSpeakerBar', () => ({
+  ActiveSpeakerBar: ({ activeSpeakerName }: { activeSpeakerName: string }) => (
+    <div data-testid="active-speaker-bar">{activeSpeakerName}</div>
   ),
-}))
-
-vi.mock('../VoiceInput', () => ({
-  VoiceInput: () => <div data-testid="voice-input">Voice</div>,
-}))
-
-vi.mock('../icons', () => ({
-  MicIcon: ({ size }: { size?: number }) => <span data-testid="mic-icon">{size}</span>,
-  KeyboardIcon: ({ size }: { size?: number }) => <span data-testid="keyboard-icon">{size}</span>,
 }))
 
 function makeProps(overrides = {}) {
@@ -94,10 +83,10 @@ describe('PersonPanel', () => {
     expect(screen.queryByTestId('message-area')).not.toBeInTheDocument()
   })
 
-  it('shows message area and input when both joined', () => {
+  it('shows message area and active speaker bar when both joined', () => {
     render(<PersonPanel {...makeProps()} />)
     expect(screen.getByTestId('message-area')).toBeInTheDocument()
-    expect(screen.getByTestId('message-input')).toBeInTheDocument()
+    expect(screen.getByTestId('active-speaker-bar')).toBeInTheDocument()
   })
 
   it('shows mediation error when present', () => {
@@ -105,10 +94,4 @@ describe('PersonPanel', () => {
     expect(screen.getByText('Analysis unavailable')).toBeInTheDocument()
   })
 
-  it('has input mode toggle button', () => {
-    render(<PersonPanel {...makeProps()} />)
-    // The toggle button exists with aria-label
-    const toggleButton = screen.getByLabelText('Switch to voice')
-    expect(toggleButton).toBeInTheDocument()
-  })
 })

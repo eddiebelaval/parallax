@@ -37,8 +37,28 @@ vi.mock('@/hooks/useIssues', () => ({
 vi.mock('@/hooks/useParallaxVoice', () => ({
   useParallaxVoice: () => ({
     speak: vi.fn(),
+    speakChunked: vi.fn(),
     isSpeaking: false,
     cancel: vi.fn(),
+    waveform: null,
+    energy: 0,
+  }),
+}))
+
+vi.mock('@/hooks/useTurnTimer', () => ({
+  useTurnTimer: () => ({
+    timeRemaining: 180000,
+    progress: 1,
+    reset: vi.fn(),
+  }),
+}))
+
+vi.mock('@/hooks/useAutoListen', () => ({
+  useAutoListen: () => ({
+    isListening: false,
+    interimText: '',
+    isSpeechActive: false,
+    silenceCountdown: 0,
   }),
 }))
 
@@ -69,6 +89,18 @@ vi.mock('../ActiveSpeakerBar', () => ({
   ),
 }))
 
+vi.mock('../TurnTimer', () => ({
+  TurnTimer: () => <div data-testid="turn-timer">Timer</div>,
+}))
+
+vi.mock('../TurnProgressBar', () => ({
+  TurnProgressBar: () => <div data-testid="turn-progress-bar">Progress</div>,
+}))
+
+vi.mock('../TimerSettings', () => ({
+  TimerSettings: () => <div data-testid="timer-settings">Settings</div>,
+}))
+
 const mockSession: Session = {
   id: 'sess-1',
   room_code: 'XYZ789',
@@ -81,6 +113,7 @@ const mockSession: Session = {
   context_mode: 'intimate',
   onboarding_step: null,
   onboarding_context: { conductorPhase: 'active' },
+  timer_duration_ms: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -115,11 +148,11 @@ describe('XRayGlanceView', () => {
     expect(screen.getByTestId('active-speaker-bar')).toBeInTheDocument()
   })
 
-  it('shows Issues button in active phase', () => {
+  it('shows X-Ray View button in active phase', () => {
     render(<XRayGlanceView session={mockSession} roomCode="XYZ789" />)
-    // Issues button exists (might have count suffix)
-    const issuesButton = screen.getByText('Issues')
-    expect(issuesButton).toBeInTheDocument()
+    // Button text is now "X-Ray View" (was "Issues")
+    const xrayButton = screen.getByText(/X-Ray View/)
+    expect(xrayButton).toBeInTheDocument()
   })
 
   it('renders messages in the center column', () => {
@@ -137,13 +170,13 @@ describe('XRayGlanceView', () => {
     expect(screen.getByText('I feel frustrated')).toBeInTheDocument()
   })
 
-  it('hides Issues button during onboarding phase', () => {
+  it('hides X-Ray View button during onboarding phase', () => {
     const onboardingSession = {
       ...mockSession,
       onboarding_context: { conductorPhase: 'onboarding' as const },
     }
     render(<XRayGlanceView session={onboardingSession} roomCode="XYZ789" />)
-    expect(screen.queryByText('Issues')).not.toBeInTheDocument()
+    expect(screen.queryByText(/X-Ray View/)).not.toBeInTheDocument()
   })
 
   it('renders action panels for both people', () => {

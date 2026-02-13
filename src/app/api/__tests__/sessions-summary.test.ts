@@ -120,6 +120,7 @@ describe('POST /api/sessions/[code]/summary', () => {
       expect.any(Array),
       undefined, // no ConflictAnalysis → no v3Context
       undefined, // null onboarding_context → no sessionGoals
+      { personA: false, personB: false }, // no user IDs → both false
     )
     expect(response.status).toBe(200)
     expect(data.summary).toBeDefined()
@@ -211,6 +212,7 @@ describe('POST /api/sessions/[code]/summary', () => {
       expect.any(Array),
       undefined, // no ConflictAnalysis on messages → no v3Context
       ['Goal 1', 'Goal 2'],
+      { personA: false, personB: false },
     )
   })
 
@@ -244,6 +246,7 @@ describe('POST /api/sessions/[code]/summary', () => {
         }),
       ]),
       undefined,
+      { personA: false, personB: false },
     )
   })
 

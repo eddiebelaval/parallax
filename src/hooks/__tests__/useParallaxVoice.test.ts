@@ -39,15 +39,20 @@ describe('useParallaxVoice', () => {
     expect(result.current.isSpeaking).toBe(false)
   })
 
-  it('speak() calls speechSynthesis.speak', () => {
+  it('speak() calls fetch to /api/tts', () => {
+    // Mock fetch to reject (triggers fallback to browser TTS)
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no tts')))
+
     const { result } = renderHook(() => useParallaxVoice())
 
     act(() => {
       result.current.speak('Hello world')
     })
 
-    expect(globalThis.speechSynthesis.cancel).toHaveBeenCalled()
-    expect(globalThis.speechSynthesis.speak).toHaveBeenCalled()
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/tts',
+      expect.objectContaining({ method: 'POST' }),
+    )
   })
 
   it('cancel() calls speechSynthesis.cancel and sets isSpeaking to false', () => {
@@ -68,27 +73,5 @@ describe('useParallaxVoice', () => {
     rerender()
     expect(result.current.speak).toBe(speakRef)
     expect(result.current.cancel).toBe(cancelRef)
-  })
-
-  it('loads voices on mount', () => {
-    renderHook(() => useParallaxVoice())
-    expect(globalThis.speechSynthesis.getVoices).toHaveBeenCalled()
-  })
-
-  it('adds voiceschanged event listener', () => {
-    renderHook(() => useParallaxVoice())
-    expect(globalThis.speechSynthesis.addEventListener).toHaveBeenCalledWith(
-      'voiceschanged',
-      expect.any(Function)
-    )
-  })
-
-  it('removes voiceschanged event listener on unmount', () => {
-    const { unmount } = renderHook(() => useParallaxVoice())
-    unmount()
-    expect(globalThis.speechSynthesis.removeEventListener).toHaveBeenCalledWith(
-      'voiceschanged',
-      expect.any(Function)
-    )
   })
 })

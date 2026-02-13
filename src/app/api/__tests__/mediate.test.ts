@@ -26,6 +26,11 @@ vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn(() => null),
 }))
 
+vi.mock('@/lib/context-injector', () => ({
+  buildIntelligenceContext: vi.fn(() => Promise.resolve(null)),
+  buildIntelligencePromptSection: vi.fn(() => null),
+}))
+
 import { POST } from '@/app/api/mediate/route'
 import { mediateMessage } from '@/lib/opus'
 import { parseConflictAnalysis } from '@/lib/prompts/index'
@@ -120,6 +125,7 @@ describe('POST /api/mediate', () => {
       'Bob',
       expect.any(Array),
       'intimate',
+      undefined,
       undefined,
     )
     expect(response.status).toBe(200)
@@ -245,6 +251,7 @@ describe('POST /api/mediate', () => {
         goals: ['Goal 1', 'Goal 2'],
         contextSummary: 'Summary of context',
       },
+      undefined,
     )
   })
 

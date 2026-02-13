@@ -10,6 +10,12 @@ vi.mock('@/lib/temperature', () => ({
     if (t <= 0.7) return '#d4a040'
     return '#c45c3c'
   },
+  getTemperatureLabel: (t: number) => {
+    if (t <= 0.1) return 'Neutral'
+    if (t <= 0.4) return 'Cool'
+    if (t <= 0.7) return 'Warm'
+    return 'Hot'
+  },
 }))
 
 let messageCounter = 0

@@ -12,6 +12,10 @@ vi.mock('@/lib/opus', () => ({
 
 vi.mock('@/lib/prompts/conductor', () => ({
   buildGreetingPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
+  buildGreetingAPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
+  buildProcessAPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
+  buildWaitingChatPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
+  buildGreetingBPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
   buildAcknowledgeAPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
   buildSynthesisPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
   buildInterventionPrompt: vi.fn(() => ({ system: 'sys', user: 'usr' })),
@@ -195,7 +199,7 @@ describe('POST /api/conductor', () => {
       expect(data.error).toContain('message_id required')
     })
 
-    it('gather_a phase: acknowledges A and advances to gather_b', async () => {
+    it('gather_a phase: processes A context and advances to waiting_for_b', async () => {
       const session = makeSession({
         id: 'sess-1',
         onboarding_context: { conductorPhase: 'gather_a' },
@@ -208,7 +212,11 @@ describe('POST /api/conductor', () => {
         .mockResolvedValueOnce({ data: session, error: null })
         .mockResolvedValueOnce({ data: message, error: null })
 
-      vi.mocked(conductorMessage).mockResolvedValue('I hear you, Alice. Bob, your turn.')
+      // The conductor now calls buildProcessAPrompt and returns JSON with message + name
+      vi.mocked(conductorMessage).mockResolvedValue(JSON.stringify({
+        message: 'I hear you, Alice. Let me share the room code with your partner.',
+        name: 'Alice',
+      }))
 
       const response = await POST(
         makeRequest({ session_id: 'sess-1', trigger: 'message_sent', message_id: 'msg-1' }),
@@ -216,13 +224,12 @@ describe('POST /api/conductor', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.phase).toBe('gather_b')
-      expect(data.message).toContain('I hear you')
+      expect(data.phase).toBe('waiting_for_b')
+      expect(data.message).toBeDefined()
 
       expect(chain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           sender: 'mediator',
-          content: 'I hear you, Alice. Bob, your turn.',
         }),
       )
     })
@@ -281,7 +288,7 @@ describe('POST /api/conductor', () => {
       expect(data.phase).toBe('active')
     })
 
-    it('gather_a phase handles Claude failure gracefully', async () => {
+    it('gather_a phase handles Claude failure gracefully (advances to waiting_for_b)', async () => {
       const session = makeSession({
         id: 'sess-1',
         onboarding_context: { conductorPhase: 'gather_a' },
@@ -300,7 +307,7 @@ describe('POST /api/conductor', () => {
       )
       const data = await response.json()
 
-      expect(data.phase).toBe('gather_b')
+      expect(data.phase).toBe('waiting_for_b')
     })
 
     it('gather_b phase handles synthesis failure gracefully', async () => {
