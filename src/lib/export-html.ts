@@ -17,18 +17,10 @@ const FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Sour
 const SHARED_CSS = `
   ${FONTS_IMPORT}
   :root {
-    --bg: #0f0b08; --surface: #1a1410; --border: #3a2e22;
-    --muted: #7a6c58; --text: #c9b9a3; --heading: #ebe1d4;
-    --accent: #d4a040; --cool: #6aab8e; --warm: #d4a040;
-    --hot: #c45c3c; --success: #6aab8e;
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f5efe6; --surface: #ebe1d4; --border: #d4c8b8;
-      --muted: #8a7c68; --text: #3a2e22; --heading: #1a1410;
-      --accent: #b08830; --cool: #4a8b6e; --warm: #b08830;
-      --hot: #a44c2c; --success: #4a8b6e;
-    }
+    --bg: #f5efe6; --surface: #ebe1d4; --border: #d4c8b8;
+    --muted: #8a7c68; --text: #3a2e22; --heading: #1a1410;
+    --accent: #b08830; --cool: #4a8b6e; --warm: #b08830;
+    --hot: #a44c2c; --success: #4a8b6e;
   }
   * { box-sizing: border-box; }
   body { margin:0; padding:40px 20px; background:var(--bg); color:var(--text); font-family:'Source Sans 3',-apple-system,sans-serif; line-height:1.6; }
@@ -40,7 +32,7 @@ const SHARED_CSS = `
   .section-title { font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--muted); margin:0 0 12px 0; padding-bottom:8px; border-bottom:1px solid var(--border); }
   .divider { height:1px; background:var(--border); margin:32px 0; }
   .tag { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:0.1em; padding:3px 10px; border:1px solid var(--border); color:var(--muted); margin:0 6px 6px 0; }
-  .hero-quote { border-left:3px solid var(--accent); padding:16px 20px; margin-bottom:32px; background:rgba(212,160,64,0.04); }
+  .hero-quote { border-left:3px solid var(--accent); padding:16px 20px; margin-bottom:32px; background:rgba(176,136,48,0.08); }
   .hero-quote p { font-family:'Source Serif 4',Georgia,serif; font-size:18px; line-height:1.7; color:var(--heading); margin:0; }
   .person-card { padding:20px; border:1px solid var(--border); margin-bottom:16px; }
   .person-name { font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent); margin:0 0 16px 0; }
@@ -52,8 +44,8 @@ const SHARED_CSS = `
   .lens-dot { background:var(--cool); }
   .moment-text { font-size:14px; color:var(--text); line-height:1.6; }
   .message { padding:12px 16px; border-left:2px solid var(--border); margin-bottom:12px; }
-  .message-parallax { border-left-color:var(--cool); background:rgba(106,171,142,0.04); }
-  .message-user { border-left-color:var(--accent); background:rgba(212,160,64,0.04); }
+  .message-parallax { border-left-color:var(--cool); background:rgba(74,139,110,0.06); }
+  .message-user { border-left-color:var(--accent); background:rgba(176,136,48,0.06); }
   .message-label { font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin:0 0 6px 0; }
   .message-content { font-size:14px; line-height:1.6; color:var(--text); margin:0; white-space:pre-wrap; }
   .pattern-item { padding:6px 0 6px 12px; border-left:2px solid var(--warm); font-size:13px; color:var(--text); margin-bottom:6px; }
