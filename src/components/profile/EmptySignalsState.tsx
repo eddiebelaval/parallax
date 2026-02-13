@@ -2,9 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 
-/**
- * Client component for empty signals state (needs router for button).
- */
 export function EmptySignalsState() {
   const router = useRouter()
 

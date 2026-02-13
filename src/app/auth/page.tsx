@@ -68,11 +68,10 @@ function AuthContent() {
     try {
       if (isSignUp) {
         await signUp(email, password)
-        router.push('/home')
       } else {
         await signIn(email, password)
-        router.push('/home')
       }
+      router.push('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed')
     } finally {

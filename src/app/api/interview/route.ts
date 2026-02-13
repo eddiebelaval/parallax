@@ -36,13 +36,11 @@ interface InProgressEntry {
   updated_at: string
 }
 
-type RawResponseEntry = Record<string, unknown>
-
 function isInProgressEntry(entry: unknown): entry is InProgressEntry {
   return (
     typeof entry === 'object' &&
     entry !== null &&
-    (entry as RawResponseEntry).phase === 'in_progress'
+    (entry as Record<string, unknown>).phase === 'in_progress'
   )
 }
 
@@ -64,12 +62,6 @@ async function getAuthUserId(request: Request): Promise<string | null> {
   return user?.id ?? null
 }
 
-/**
- * GET /api/interview
- *
- * Load existing interview progress for resume capability.
- * User ID is extracted from the Authorization Bearer token.
- */
 export async function GET(request: Request): Promise<NextResponse> {
   const user_id = await getAuthUserId(request)
 
@@ -118,17 +110,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const body = await request.json() as InterviewRequestBody
-  const { user_id, phase, message, conversation_history, context_mode, display_name } = body
+  const { phase, message, conversation_history, context_mode, display_name } = body
+  const user_id = authUserId
 
-  if (!user_id || !phase || !message) {
+  if (!phase || !message) {
     return NextResponse.json(
-      { error: 'user_id, phase, and message are required' },
+      { error: 'phase and message are required' },
       { status: 400 },
     )
-  }
-
-  if (user_id !== authUserId) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   if (phase < 1 || phase > 4) {

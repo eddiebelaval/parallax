@@ -54,13 +54,6 @@ export default function InterviewPage() {
   const voice = useParallaxVoice()
   const typewriter = useTypewriter()
 
-  // Hackathon: no auth walls — skip redirect
-  // useEffect(() => {
-  //   if (!authLoading && !user) {
-  //     router.push('/auth')
-  //   }
-  // }, [authLoading, user, router])
-
   // Auto-start interview once user and displayName are resolved (skip if resuming)
   useEffect(() => {
     if (isResuming) return
@@ -437,13 +430,8 @@ export default function InterviewPage() {
         isMuted={muted}
         onToggleMute={() => setMuted((v) => !v)}
         onModeChange={(mode) => {
-          if (mode === "auto") {
-            setHandsFree(true);
-            setMuted(false);
-          } else {
-            setHandsFree(false);
-            setMuted(false);
-          }
+          setHandsFree(mode === "auto");
+          setMuted(false);
         }}
       />
     </div>

@@ -221,7 +221,7 @@ export function getInterviewPrompt(
   const config = PHASE_CONFIGS[phase]
   let prompt = config.systemPrompt
 
-  if (phase === 1 && displayName) {
+  if (phase === 1 && displayName?.trim()) {
     prompt += `\n\nThe user's name is "${displayName}" (from their sign-in profile). Greet them warmly by name — for example: "Hi ${displayName}! I'd love to get to know you a bit before we dive in..." Do NOT ask for their name again.`
   } else if (phase === 1 && !displayName) {
     prompt += `\n\nYou don't know this person's name yet. Your first question should ask what they'd like to be called — for example: "Before we dive in — what should I call you?" Include their response as "display_name" in the extraction JSON.`

@@ -22,10 +22,6 @@ interface PhaseExtraction {
   extracted: Record<string, unknown>
 }
 
-/**
- * Parse Claude's interview response to extract the JSON data block.
- * Returns null if no valid JSON found.
- */
 export function parseInterviewExtraction(response: string): PhaseExtraction | null {
   const jsonMatch = response.match(/```json\s*([\s\S]*?)```/)
   if (!jsonMatch) return null
@@ -37,9 +33,6 @@ export function parseInterviewExtraction(response: string): PhaseExtraction | nu
   }
 }
 
-/**
- * Convert phase extraction data into typed behavioral signals.
- */
 export function extractSignals(extraction: PhaseExtraction): ExtractedSignal[] {
   const signals: ExtractedSignal[] = []
   const data = extraction.extracted
@@ -174,23 +167,14 @@ export function extractSignals(extraction: PhaseExtraction): ExtractedSignal[] {
   return signals
 }
 
-/**
- * Check if Claude's response indicates phase completion.
- */
 export function isPhaseComplete(response: string): boolean {
   return response.includes('[PHASE_COMPLETE]')
 }
 
-/**
- * Check if the interview is fully complete.
- */
 export function isInterviewComplete(response: string): boolean {
   return response.includes('[INTERVIEW_COMPLETE]')
 }
 
-/**
- * Strip phase markers from the response for display.
- */
 export function cleanResponseForDisplay(response: string): string {
   return response
     .replace(/\[PHASE_COMPLETE\]/g, '')

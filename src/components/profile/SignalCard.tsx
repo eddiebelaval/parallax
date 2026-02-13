@@ -1,5 +1,3 @@
-'use client'
-
 import type { BehavioralSignal } from '@/types/database'
 
 const SIGNAL_LABELS: Record<string, string> = {

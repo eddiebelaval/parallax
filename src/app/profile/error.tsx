@@ -2,10 +2,6 @@
 
 import { useEffect } from 'react'
 
-/**
- * Error boundary for profile page.
- * Catches server-side errors and auth failures.
- */
 export default function ProfileError({
   error,
   reset,

@@ -1,11 +1,6 @@
-/**
- * Loading state for profile page.
- * Shows while server component is fetching data.
- */
 export default function ProfileLoading() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
-      {/* Header skeleton */}
       <div className="mb-10">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
@@ -20,7 +15,6 @@ export default function ProfileLoading() {
         </div>
       </div>
 
-      {/* Signals skeleton */}
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
           <div key={i} className="bg-[var(--surface)] border border-border rounded-lg p-5">
@@ -36,7 +30,6 @@ export default function ProfileLoading() {
         ))}
       </div>
 
-      {/* Actions skeleton */}
       <div className="mt-10 flex gap-3">
         <div className="h-10 w-32 border border-border rounded-lg animate-pulse" />
         <div className="h-10 w-28 border border-border rounded-lg animate-pulse" />
