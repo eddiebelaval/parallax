@@ -132,6 +132,13 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
     delayAfterMs: 1200,
   },
   {
+    id: 'transformation',
+    type: 'static',
+    text: "Look at the difference. On the left, raw emotion \u2014 high charge, defensive. On the right, what they actually meant \u2014 structured, honest, hearable. That's what I do. Every single message.",
+    revealsSection: 'temperature-showcase',
+    delayAfterMs: 5000,
+  },
+  {
     id: 'problem',
     type: 'static',
     text: "Here's the thing. When people fight, they almost never say what they actually mean. And the help that exists \u2014 $300-an-hour mediators, six-month therapy waitlists \u2014 most people never get there. So they just keep hurting each other with the same words, over and over.",

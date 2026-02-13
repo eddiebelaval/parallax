@@ -13,6 +13,7 @@ import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
+import { useAutoListen } from "@/hooks/useAutoListen";
 import type {
   Session,
   OnboardingContext,
@@ -36,8 +37,10 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
   const [mediationError, setMediationError] = useState<string | null>(null);
   const [isMicHot, setIsMicHot] = useState(false);
-  const [turnBasedMode, setTurnBasedMode] = useState(true); // Enable turn-based timer mode
+  const [turnBasedMode, setTurnBasedMode] = useState(true);
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
+  const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
+  const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -274,6 +277,14 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
   );
 
+  // Auto-listen: hands-free from session start (togglable)
+  const autoListen = useAutoListen({
+    enabled: handsFree && !muted && (isOnboarding || isActive) && !conductorLoading && !isAnalyzing,
+    isTTSPlaying: isSpeaking,
+    onTranscript: handleSend,
+    silenceTimeoutMs: 5000,
+  });
+
   const endSession = useCallback(async () => {
     cancelSpeech();
     try {
@@ -409,7 +420,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <ParallaxPresence
           isAnalyzing={isAnalyzing || conductorLoading}
           isSpeaking={isSpeaking}
-          statusLabel={isMicHot ? "Recording..." : undefined}
+          statusLabel={
+            autoListen.isListening
+              ? autoListen.isSpeechActive
+                ? "Listening..."
+                : "Waiting..."
+              : isMicHot
+              ? "Recording..."
+              : undefined
+          }
           voiceWaveform={voiceWaveform}
           voiceEnergy={voiceEnergy}
         />
@@ -543,8 +562,28 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onSend={handleSend}
           disabled={conductorLoading}
           onMicStateChange={setIsMicHot}
-          isYourTurn={true} // Always allow input (in-person mode = both at same device)
+          isYourTurn={true}
           timeRemaining={turnBasedMode && isActive ? timeRemaining : undefined}
+          autoListen={handsFree && (isOnboarding || isActive)}
+          autoListenState={{
+            isListening: autoListen.isListening,
+            interimText: autoListen.interimText,
+            isSpeechActive: autoListen.isSpeechActive,
+            silenceCountdown: autoListen.silenceCountdown,
+          }}
+          isTTSSpeaking={isSpeaking}
+          isProcessing={isAnalyzing || conductorLoading}
+          isMuted={muted}
+          onToggleMute={() => setMuted((v) => !v)}
+          onModeChange={(mode) => {
+            if (mode === "auto") {
+              setHandsFree(true);
+              setMuted(false);
+            } else {
+              setHandsFree(false);
+              setMuted(false);
+            }
+          }}
         />
       </div>
 

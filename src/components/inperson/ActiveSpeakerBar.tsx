@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MicIcon, KeyboardIcon } from "@/components/icons";
+import { MicIcon, MicOffIcon, KeyboardIcon } from "@/components/icons";
 
 // Web Speech API types (Chrome webkit prefix)
 interface SpeechRecognitionEvent {
@@ -28,7 +28,14 @@ declare global {
   }
 }
 
-type BarMode = "voice" | "text";
+type BarMode = "voice" | "text" | "auto";
+
+interface AutoListenState {
+  isListening: boolean;
+  interimText: string;
+  isSpeechActive: boolean;
+  silenceCountdown: number;
+}
 
 interface ActiveSpeakerBarProps {
   activeSpeakerName: string;
@@ -39,6 +46,20 @@ interface ActiveSpeakerBarProps {
   isYourTurn?: boolean;
   /** Time remaining in current turn (ms), optional visual indicator */
   timeRemaining?: number;
+  /** Enable hands-free auto-listen mode (overrides voice/text toggle) */
+  autoListen?: boolean;
+  /** State from useAutoListen hook when autoListen is true */
+  autoListenState?: AutoListenState;
+  /** Whether Parallax TTS is currently speaking */
+  isTTSSpeaking?: boolean;
+  /** Whether any processing is happening (analyzing/loading) */
+  isProcessing?: boolean;
+  /** Whether mic is muted in hands-free mode */
+  isMuted?: boolean;
+  /** Toggle mute callback */
+  onToggleMute?: () => void;
+  /** Switch between auto/voice/text from the bar */
+  onModeChange?: (mode: "auto" | "voice" | "text") => void;
 }
 
 function isSpeechSupported(): boolean {
@@ -53,6 +74,13 @@ export function ActiveSpeakerBar({
   onMicStateChange,
   isYourTurn = true,
   timeRemaining,
+  autoListen = false,
+  autoListenState,
+  isTTSSpeaking = false,
+  isProcessing = false,
+  isMuted = false,
+  onToggleMute,
+  onModeChange,
 }: ActiveSpeakerBarProps) {
   const [mode, setMode] = useState<BarMode>("voice");
   const [micHot, setMicHot] = useState(false);
@@ -230,6 +258,16 @@ export function ActiveSpeakerBar({
 
   const isRecording = micHot || dictating;
 
+  // Auto mode: determine effective mode
+  const effectiveMode: BarMode = autoListen && supported ? "auto" : mode;
+
+  // In auto mode, notify parent about mic state from auto-listen
+  useEffect(() => {
+    if (effectiveMode === "auto" && autoListenState) {
+      onMicStateChange?.(autoListenState.isListening);
+    }
+  }, [effectiveMode, autoListenState, onMicStateChange]);
+
   // Format time remaining
   const timeRemainingSeconds = timeRemaining ? Math.ceil(timeRemaining / 1000) : null;
   const showUrgentWarning = timeRemainingSeconds !== null && timeRemainingSeconds <= 30;
@@ -241,10 +279,30 @@ export function ActiveSpeakerBar({
     }
   }, [supported, mode]);
 
+  // Auto-listen visual state determination
+  const autoState = autoListenState;
+  const isAutoListening = autoState?.isListening ?? false;
+  const autoInterim = autoState?.interimText ?? "";
+  const isSpeechActive = autoState?.isSpeechActive ?? false;
+  const silenceCountdown = autoState?.silenceCountdown ?? 0;
+
+  // Border color for auto mode
+  const autoBorderClass = isAutoListening
+    ? isSpeechActive
+      ? "border-temp-cool mic-hot-glow"
+      : silenceCountdown > 0
+      ? "border-temp-warm"
+      : "border-temp-cool/30"
+    : isTTSSpeaking
+    ? "border-accent/20"
+    : "border-border";
+
   return (
     <div
       className={`border-t transition-all duration-300 flex-shrink-0 ${
-        isRecording
+        effectiveMode === "auto"
+          ? autoBorderClass
+          : isRecording
           ? "border-temp-cool mic-hot-glow"
           : showUrgentWarning
           ? "border-temp-hot"
@@ -260,20 +318,174 @@ export function ActiveSpeakerBar({
         </div>
       )}
 
-      {mode === "voice" ? (
+      {/* ─── Mode strip: all controls in one place ─── */}
+      {autoListen !== undefined && (
+        <div className="px-4 pt-2 pb-1 flex items-center gap-1">
+          {supported && (
+            <button
+              onClick={() => {
+                onModeChange?.("auto");
+                setMode("voice");
+              }}
+              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                effectiveMode === "auto"
+                  ? "bg-temp-cool/15 text-temp-cool"
+                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+              }`}
+            >
+              Hands-free
+            </button>
+          )}
+          {supported && (
+            <button
+              onClick={() => {
+                onModeChange?.("voice");
+                setMode("voice");
+              }}
+              className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                effectiveMode === "voice"
+                  ? "bg-temp-warm/15 text-temp-warm"
+                  : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+              }`}
+            >
+              Tap to talk
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onModeChange?.("text");
+              setMode("text");
+            }}
+            className={`px-2.5 py-1 rounded font-mono text-[9px] uppercase tracking-widest transition-colors ${
+              effectiveMode === "text"
+                ? "bg-ember-elevated text-foreground"
+                : "text-ember-600 hover:text-foreground hover:bg-ember-elevated"
+            }`}
+          >
+            Type
+          </button>
+
+          {/* Speaker name — right-aligned */}
+          <div className="ml-auto flex items-center gap-1.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                effectiveMode === "auto" && isSpeechActive
+                  ? "bg-temp-cool"
+                  : isRecording
+                  ? "bg-temp-cool animate-pulse"
+                  : "bg-accent/50"
+              }`}
+            />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+              {activeSpeakerName}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {effectiveMode === "auto" ? (
+        // ─── AUTO MODE: Claude mobile-style hands-free listening ───
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Mute button / mic indicator */}
+            <button
+              onClick={onToggleMute}
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full transition-colors"
+              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+            >
+              <div className="relative">
+                {/* Ping ring only when actively hearing speech */}
+                {!isMuted && isAutoListening && isSpeechActive && (
+                  <span className="absolute inset-[-8px] rounded-full border-2 border-temp-cool animate-ping opacity-25" />
+                )}
+                {/* Warm pulse ring during silence countdown */}
+                {!isMuted && isAutoListening && !isSpeechActive && silenceCountdown > 0 && (
+                  <span className="absolute inset-[-6px] rounded-full border-2 border-temp-warm animate-pulse opacity-40" />
+                )}
+                {/* Steady pulse ring when listening but no speech yet */}
+                {!isMuted && isAutoListening && !isSpeechActive && silenceCountdown === 0 && !isTTSSpeaking && !isProcessing && (
+                  <span className="absolute inset-[-6px] rounded-full border border-temp-cool/30 animate-pulse" />
+                )}
+                {isMuted ? (
+                  <MicOffIcon
+                    size={18}
+                    className="text-temp-hot/70"
+                  />
+                ) : (
+                  <MicIcon
+                    size={18}
+                    className={`transition-all duration-300 ${
+                      isAutoListening && isSpeechActive
+                        ? "text-temp-cool"
+                        : isAutoListening
+                        ? "text-temp-cool/50"
+                        : isTTSSpeaking
+                        ? "text-accent/40"
+                        : "text-ember-600"
+                    }`}
+                  />
+                )}
+              </div>
+            </button>
+
+            {/* Center: state label + live transcript */}
+            <div className="flex-1 min-w-0">
+              {/* State label */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-mono text-[10px] uppercase tracking-widest transition-colors duration-300 ${
+                    isTTSSpeaking
+                      ? "text-accent/60"
+                      : isProcessing
+                      ? "text-ember-500 animate-pulse"
+                      : isAutoListening && isSpeechActive
+                      ? "text-temp-cool"
+                      : isAutoListening && silenceCountdown > 0
+                      ? "text-temp-warm"
+                      : isAutoListening
+                      ? "text-ember-600"
+                      : "text-ember-700"
+                  }`}
+                >
+                  {isMuted
+                    ? "Muted — tap mic to unmute"
+                    : isTTSSpeaking
+                    ? "Parallax is responding..."
+                    : isProcessing
+                    ? "Analyzing..."
+                    : isAutoListening && isSpeechActive
+                    ? `Listening to ${activeSpeakerName}...`
+                    : isAutoListening && silenceCountdown > 0
+                    ? `Sending in ${silenceCountdown}s...`
+                    : isAutoListening
+                    ? `${activeSpeakerName}'s turn`
+                    : "Starting..."}
+                </span>
+              </div>
+
+              {/* Live interim transcript */}
+              {autoInterim && (
+                <p className="font-mono text-sm text-foreground/80 leading-relaxed mt-1 truncate">
+                  {autoInterim}
+                </p>
+              )}
+            </div>
+
+          </div>
+
+          {/* Expanded transcript for longer text */}
+          {autoInterim && autoInterim.length > 80 && (
+            <div className="mt-2 px-1 pb-1">
+              <p className="font-mono text-sm text-foreground/80 leading-relaxed">
+                {autoInterim}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : effectiveMode === "voice" ? (
         // ─── VOICE MODE: Tap to Talk ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            {/* Switch to text */}
-            <button
-              onClick={() => setMode("text")}
-              disabled={disabled || micHot}
-              className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
-              aria-label="Switch to text input"
-            >
-              <KeyboardIcon size={14} />
-            </button>
-
             {/* Tap to Talk / Stop button */}
             <button
               onClick={toggleVoice}
@@ -303,20 +515,6 @@ export function ActiveSpeakerBar({
               </span>
             </button>
 
-            {/* Mic state + speaker name */}
-            <div className="flex flex-col items-end gap-0.5 min-w-[60px]">
-              {micHot && (
-                <span className="font-mono text-[9px] uppercase tracking-widest text-temp-cool mic-live-pulse">
-                  Mic live
-                </span>
-              )}
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                  {activeSpeakerName}
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* Interim transcript */}
@@ -332,21 +530,6 @@ export function ActiveSpeakerBar({
         // ─── TEXT MODE: Input with dictation mic ───
         <div className="px-4 py-3">
           <div className="flex items-center gap-2">
-            {/* Switch to voice */}
-            {supported && (
-              <button
-                onClick={() => {
-                  if (dictating) stopDictation();
-                  setMode("voice");
-                }}
-                disabled={disabled}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
-                aria-label="Switch to voice input"
-              >
-                <MicIcon size={14} />
-              </button>
-            )}
-
             {/* Text input with inline dictation mic */}
             <div
               className={`flex-1 flex items-center gap-2 px-3 min-h-[44px] rounded-lg border transition-all duration-200 ${
@@ -397,13 +580,6 @@ export function ActiveSpeakerBar({
               Send
             </button>
 
-            {/* Speaker indicator */}
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600 whitespace-nowrap">
-                {activeSpeakerName}
-              </span>
-            </div>
           </div>
 
           {/* Dictation state indicator */}
