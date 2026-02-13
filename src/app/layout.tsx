@@ -208,7 +208,7 @@ export default function RootLayout({
         className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
         <CursorSpotlight />
-        <FooterAnt allowedPaths={["/", "/auth", "/profile", "/settings", "/session", "/home"]} />
+        <FooterAnt allowedPaths={["/", "/profile", "/settings"]} />
         <SettingsProvider>
           <LayoutShell>{children}</LayoutShell>
         </SettingsProvider>
