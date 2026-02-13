@@ -108,6 +108,92 @@ function RemoteWireframe() {
   );
 }
 
-export function ModePreview({ mode }: { mode: "in_person" | "remote" }) {
-  return mode === "in_person" ? <InPersonWireframe /> : <RemoteWireframe />;
+function SoloWireframe() {
+  return (
+    <svg
+      viewBox="0 0 200 160"
+      className="w-full h-auto"
+      aria-label="Solo mode wireframe — coaching with intelligence sidebar"
+    >
+      {/* Background */}
+      <rect width="200" height="160" rx="3" fill="var(--ember-surface)" stroke="var(--ember-border)" strokeWidth="1" />
+
+      {/* ─── Left: Chat Column (8–128) ─── */}
+
+      {/* Orb at top */}
+      <circle cx="68" cy="18" r="9" fill="none" stroke="var(--temp-cool)" strokeWidth="1" opacity="0.6" />
+      <circle cx="68" cy="18" r="4" fill="var(--temp-cool)" opacity="0.3" />
+
+      {/* Parallax message */}
+      <rect x="14" y="34" width="80" height="7" rx="1" fill="var(--ember-border)" opacity="0.7" />
+      <rect x="14" y="44" width="60" height="5" rx="1" fill="var(--ember-border)" opacity="0.4" />
+
+      {/* User message (right-aligned in column) */}
+      <rect x="50" y="56" width="76" height="7" rx="1" fill="var(--ember-accent)" opacity="0.2" />
+      <rect x="60" y="66" width="66" height="5" rx="1" fill="var(--ember-accent)" opacity="0.12" />
+
+      {/* Parallax reply */}
+      <rect x="14" y="78" width="90" height="7" rx="1" fill="var(--ember-border)" opacity="0.7" />
+      <rect x="14" y="88" width="70" height="5" rx="1" fill="var(--ember-border)" opacity="0.4" />
+      <rect x="14" y="96" width="50" height="5" rx="1" fill="var(--ember-border)" opacity="0.3" />
+
+      {/* Input bar */}
+      <rect x="8" y="110" width="122" height="18" rx="2" fill="var(--ember-elevated)" stroke="var(--ember-border)" strokeWidth="0.5" />
+      {/* Waveform in input */}
+      <line x1="16" y1="116" x2="16" y2="122" stroke="var(--temp-cool)" strokeWidth="1.5" opacity="0.5" />
+      <line x1="22" y1="114" x2="22" y2="124" stroke="var(--temp-cool)" strokeWidth="1.5" opacity="0.6" />
+      <line x1="28" y1="117" x2="28" y2="121" stroke="var(--temp-cool)" strokeWidth="1.5" opacity="0.4" />
+      <rect x="40" y="117" width="36" height="4" rx="1" fill="var(--ember-border)" opacity="0.3" />
+
+      {/* ─── Divider ─── */}
+      <line x1="134" y1="8" x2="134" y2="130" stroke="var(--ember-border)" strokeWidth="0.5" opacity="0.6" />
+
+      {/* ─── Right: Intelligence Sidebar (138–192) ─── */}
+
+      {/* Identity: name + emotion dot */}
+      <rect x="138" y="12" width="24" height="4" rx="1" fill="var(--ember-accent)" opacity="0.5" />
+      <circle cx="166" cy="14" r="2" fill="var(--temp-warm)" opacity="0.6" />
+
+      {/* Situation */}
+      <rect x="138" y="22" width="50" height="3" rx="1" fill="var(--ember-border)" opacity="0.5" />
+      <rect x="138" y="28" width="40" height="3" rx="1" fill="var(--ember-border)" opacity="0.3" />
+
+      {/* Section label: THEMES */}
+      <rect x="138" y="38" width="18" height="2.5" rx="0.5" fill="var(--ember-muted)" opacity="0.5" />
+      {/* Theme tags */}
+      <rect x="138" y="44" width="20" height="6" rx="1" fill="none" stroke="var(--temp-cool)" strokeWidth="0.5" opacity="0.5" />
+      <rect x="161" y="44" width="16" height="6" rx="1" fill="none" stroke="var(--temp-cool)" strokeWidth="0.5" opacity="0.5" />
+      <rect x="138" y="53" width="24" height="6" rx="1" fill="none" stroke="var(--temp-cool)" strokeWidth="0.5" opacity="0.4" />
+
+      {/* Section label: PATTERNS */}
+      <rect x="138" y="66" width="22" height="2.5" rx="0.5" fill="var(--ember-muted)" opacity="0.5" />
+      {/* Pattern lines with left border */}
+      <line x1="138" y1="72" x2="138" y2="90" stroke="var(--temp-warm)" strokeWidth="1" opacity="0.4" />
+      <rect x="142" y="73" width="38" height="3" rx="1" fill="var(--ember-border)" opacity="0.4" />
+      <rect x="142" y="79" width="30" height="3" rx="1" fill="var(--ember-border)" opacity="0.3" />
+      <rect x="142" y="85" width="34" height="3" rx="1" fill="var(--ember-border)" opacity="0.3" />
+
+      {/* Section label: WORK ON */}
+      <rect x="138" y="96" width="20" height="2.5" rx="0.5" fill="var(--ember-muted)" opacity="0.5" />
+      {/* Action items (checkboxes) */}
+      <rect x="138" y="102" width="5" height="5" rx="1" fill="none" stroke="var(--ember-border)" strokeWidth="0.5" opacity="0.5" />
+      <rect x="146" y="103" width="34" height="3" rx="1" fill="var(--ember-border)" opacity="0.4" />
+      <rect x="138" y="110" width="5" height="5" rx="1" fill="none" stroke="var(--ember-border)" strokeWidth="0.5" opacity="0.5" />
+      <rect x="146" y="111" width="28" height="3" rx="1" fill="var(--ember-border)" opacity="0.3" />
+      {/* Completed item (with check) */}
+      <rect x="138" y="118" width="5" height="5" rx="1" fill="var(--temp-cool)" opacity="0.2" stroke="var(--temp-cool)" strokeWidth="0.5" />
+      <rect x="146" y="119" width="32" height="3" rx="1" fill="var(--ember-border)" opacity="0.2" />
+
+      {/* Label */}
+      <text x="100" y="155" textAnchor="middle" className="font-mono" fill="var(--ember-muted)" fontSize="6" letterSpacing="0.1em">
+        1:1 COACHING VIEW
+      </text>
+    </svg>
+  );
+}
+
+export function ModePreview({ mode }: { mode: "in_person" | "remote" | "solo" }) {
+  if (mode === "in_person") return <InPersonWireframe />;
+  if (mode === "solo") return <SoloWireframe />;
+  return <RemoteWireframe />;
 }

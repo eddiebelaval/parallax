@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { buildSessionSummaryHtml } from '@/lib/export-html'
 import type { SessionSummaryData } from '@/types/database'
 
 interface SessionSummaryProps {
   roomCode: string
   personAName: string
   personBName: string
+  mode?: 'in_person' | 'remote'
 }
 
 type LoadState =
@@ -14,7 +16,7 @@ type LoadState =
   | { status: 'error'; message: string }
   | { status: 'ready'; data: SessionSummaryData }
 
-export function SessionSummary({ roomCode, personAName, personBName }: SessionSummaryProps) {
+export function SessionSummary({ roomCode, personAName, personBName, mode = 'remote' }: SessionSummaryProps) {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   useEffect(() => {
@@ -40,6 +42,23 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
     fetchSummary()
     return () => { cancelled = true }
   }, [roomCode])
+
+  const handleExport = useCallback(() => {
+    if (state.status !== 'ready') return
+    const html = buildSessionSummaryHtml(state.data, roomCode, personAName, personBName, mode)
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `parallax-${roomCode.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 100)
+  }, [state, roomCode, personAName, personBName, mode])
 
   if (state.status === 'loading') {
     return (
@@ -68,6 +87,19 @@ export function SessionSummary({ roomCode, personAName, personBName }: SessionSu
   return (
     <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
       <div className="max-w-2xl mx-auto space-y-8 sm:space-y-10">
+        {/* Export header */}
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+            Session Summary
+          </p>
+          <button
+            onClick={handleExport}
+            className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-3 py-1.5 hover:border-foreground/20"
+          >
+            Export HTML
+          </button>
+        </div>
+
         {/* Overall Insight — hero quote */}
         <div className="border-l-2 border-accent pl-5 py-2">
           <p className="text-foreground text-lg leading-relaxed font-serif">
