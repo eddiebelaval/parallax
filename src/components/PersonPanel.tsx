@@ -2,9 +2,7 @@
 
 import { ReactNode } from "react";
 import { MessageArea } from "./MessageArea";
-import { MessageInput } from "./MessageInput";
-import { VoiceInput } from "./VoiceInput";
-import { MicIcon, KeyboardIcon } from "./icons";
+import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
 import type { Message } from "@/types/database";
 
 type InputMode = "text" | "voice";
@@ -97,32 +95,12 @@ export function PersonPanel({
               <p className="font-mono text-xs text-accent-secondary">{mediationError}</p>
             </div>
           )}
-          <div className="border-t border-border">
-            <div className="flex items-center">
-              <button
-                onClick={() => onInputModeChange(inputMode === "text" ? "voice" : "text")}
-                disabled={!isMyTurn}
-                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-ember-500 hover:text-foreground transition-colors disabled:opacity-40"
-                aria-label={inputMode === "text" ? "Switch to voice" : "Switch to text"}
-              >
-                {inputMode === "text" ? <MicIcon size={14} /> : <KeyboardIcon size={14} />}
-              </button>
-              <div className="flex-1">
-                {inputMode === "text" ? (
-                  <MessageInput
-                    onSend={onSend}
-                    disabled={!isMyTurn}
-                    placeholder={isMyTurn ? "Type your message..." : `Waiting for ${otherName}...`}
-                  />
-                ) : (
-                  <VoiceInput
-                    onTranscript={onSend}
-                    disabled={!isMyTurn}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          <ActiveSpeakerBar
+            activeSpeakerName={name}
+            onSend={onSend}
+            disabled={!isMyTurn}
+            autoListen={false}
+          />
         </>
       )}
     </div>

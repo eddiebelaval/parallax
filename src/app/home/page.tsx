@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { getServerUser } from '@/lib/auth/server-auth'
 import { getUserData } from '@/lib/data/user-profile'
@@ -8,28 +7,14 @@ import { ProfileSummary } from '@/components/home/ProfileSummary'
 import { SessionHistorySkeleton } from '@/components/home/SessionHistorySkeleton'
 import { ProfileSummarySkeleton } from '@/components/home/ProfileSummarySkeleton'
 
-/**
- * Home Page - Server Component
- *
- * Converted from client component to server component for:
- * - Server-side auth check with redirect
- * - Parallel data fetching at the server level
- * - Automatic caching and deduplication via React cache()
- * - Streaming with Suspense boundaries
- */
-
 export default async function HomePage() {
-  // Server-side auth check
-  const user = await getServerUser()
+  // Try to get user but don't block — hackathon: no auth walls
+  const user = await getServerUser().catch(() => null)
 
-  if (!user) {
-    redirect('/auth')
-  }
+  const userData = user ? await getUserData(user.id).catch(() => ({ profile: null, signals: [], sessions: [] })) : { profile: null, signals: [], sessions: [] }
+  const { profile, signals, sessions } = userData
 
-  // Fetch all user data in parallel (cached via React cache())
-  const { profile, signals, sessions } = await getUserData(user.id)
-
-  const displayName = profile?.display_name ?? user.email ?? 'there'
+  const displayName = profile?.display_name ?? user?.email ?? 'there'
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
@@ -60,7 +45,7 @@ export default async function HomePage() {
           </span>
         </div>
         <Suspense fallback={<SessionHistorySkeleton />}>
-          <SessionHistory sessions={sessions} userId={user.id} />
+          <SessionHistory sessions={sessions} userId={user?.id ?? ''} />
         </Suspense>
       </div>
 

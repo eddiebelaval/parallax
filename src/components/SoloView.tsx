@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ParallaxPresence } from "@/components/inperson/ParallaxPresence";
 import { ActiveSpeakerBar } from "@/components/inperson/ActiveSpeakerBar";
 import { SoloSidebar } from "@/components/SoloSidebar";
 import { useSoloChat } from "@/hooks/useSoloChat";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
+import { useAutoListen } from "@/hooks/useAutoListen";
 import { useAuth } from "@/hooks/useAuth";
 import { buildExportHtml } from "@/lib/export-html";
 import type { Session } from "@/types/database";
@@ -52,6 +53,8 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
   const greetingTriggered = useRef(false);
   const lastSpokenRef = useRef<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [handsFree, setHandsFree] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -84,9 +87,17 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
     }
   }, [messages, speak]);
 
-  function handleSend(content: string) {
+  const handleSend = useCallback((content: string) => {
     sendMessage(content);
-  }
+  }, [sendMessage]);
+
+  // Auto-listen: hands-free mode for solo therapy
+  const autoListen = useAutoListen({
+    enabled: handsFree && !muted && !loading,
+    isTTSPlaying: isSpeaking,
+    onTranscript: handleSend,
+    silenceTimeoutMs: 5000,
+  });
 
   function handleExport() {
     if (messages.length === 0) return;
@@ -187,6 +198,26 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
           activeSpeakerName="You"
           onSend={handleSend}
           disabled={loading}
+          autoListen={handsFree}
+          autoListenState={{
+            isListening: autoListen.isListening,
+            interimText: autoListen.interimText,
+            isSpeechActive: autoListen.isSpeechActive,
+            silenceCountdown: autoListen.silenceCountdown,
+          }}
+          isTTSSpeaking={isSpeaking}
+          isProcessing={loading}
+          isMuted={muted}
+          onToggleMute={() => setMuted((v) => !v)}
+          onModeChange={(mode) => {
+            if (mode === "auto") {
+              setHandsFree(true);
+              setMuted(false);
+            } else {
+              setHandsFree(false);
+              setMuted(false);
+            }
+          }}
         />
       </div>
 

@@ -1058,6 +1058,35 @@ li {
   50% { opacity: 0.5; }
 }
 
+/* ─── Turn Timer: Screen Flash on Expire ─── */
+/* Full-viewport red flash that fires once when time runs out */
+
+@keyframes timer-expire-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.timer-expire-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(196, 92, 60, 0.25) 0%,
+    rgba(196, 92, 60, 0.08) 60%,
+    transparent 100%
+  );
+  animation: timer-expire-flash 1.5s ease-out forwards;
+}
+
 /* ─── Hero Preview: Looping Melt Animation ─── */
 /* 6-second loop: raw fades in (0-1s), holds (1-2.5s), fades out (2.5-3s),
    NVC fades in (3-4s), holds (4-5.5s), fades out (5.5-6s) */

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { buildSessionSummaryHtml } from '@/lib/export-html'
 import type { SessionSummaryData } from '@/types/database'
 
@@ -17,6 +18,7 @@ type LoadState =
   | { status: 'ready'; data: SessionSummaryData }
 
 export function SessionSummary({ roomCode, personAName, personBName, mode = 'remote' }: SessionSummaryProps) {
+  const router = useRouter()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   useEffect(() => {
@@ -78,6 +80,12 @@ export function SessionSummary({ roomCode, personAName, personBName, mode = 'rem
           Failed to generate summary
         </p>
         <p className="text-ember-500 text-sm text-center">{state.message}</p>
+        <button
+          onClick={() => router.push('/home')}
+          className="mt-4 font-mono text-xs uppercase tracking-wider text-accent hover:text-foreground transition-colors border border-accent/30 px-6 py-3 hover:border-foreground/20"
+        >
+          Back to Home
+        </button>
       </div>
     )
   }
@@ -92,12 +100,20 @@ export function SessionSummary({ roomCode, personAName, personBName, mode = 'rem
           <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
             Session Summary
           </p>
-          <button
-            onClick={handleExport}
-            className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-3 py-1.5 hover:border-foreground/20"
-          >
-            Export HTML
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExport}
+              className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-3 py-1.5 hover:border-foreground/20"
+            >
+              Export HTML
+            </button>
+            <button
+              onClick={() => router.push('/home')}
+              className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors border border-accent/30 px-3 py-1.5 hover:border-foreground/20"
+            >
+              Home
+            </button>
+          </div>
         </div>
 
         {/* Overall Insight — hero quote */}
@@ -165,6 +181,16 @@ export function SessionSummary({ roomCode, personAName, personBName, mode = 'rem
             takeaway={data.personBTakeaway}
             strength={data.personBStrength}
           />
+        </div>
+
+        {/* Navigation — clear path forward */}
+        <div className="flex items-center justify-center gap-4 pt-4 pb-8">
+          <button
+            onClick={() => router.push('/home')}
+            className="font-mono text-xs uppercase tracking-wider text-accent hover:text-foreground transition-colors border border-accent/30 px-6 py-3 hover:border-foreground/20"
+          >
+            Back to Home
+          </button>
         </div>
       </div>
     </div>

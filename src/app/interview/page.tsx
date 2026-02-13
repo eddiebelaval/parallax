@@ -52,12 +52,12 @@ export default function InterviewPage() {
   const voice = useParallaxVoice()
   const typewriter = useTypewriter()
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth')
-    }
-  }, [authLoading, user, router])
+  // Hackathon: no auth walls — skip redirect
+  // useEffect(() => {
+  //   if (!authLoading && !user) {
+  //     router.push('/auth')
+  //   }
+  // }, [authLoading, user, router])
 
   // Auto-start interview once user and displayName are resolved
   useEffect(() => {

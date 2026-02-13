@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { getServerUser } from '@/lib/auth/server-auth'
 import { getUserData } from '@/lib/data/user-profile'
@@ -7,26 +6,12 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileActions } from '@/components/profile/ProfileActions'
 import { EmptySignalsState } from '@/components/profile/EmptySignalsState'
 
-/**
- * Profile Page - Server Component
- *
- * Converted from client component to server component for:
- * - Server-side auth check with redirect
- * - Parallel data fetching at the server level
- * - Automatic caching and deduplication via React cache()
- * - Streaming with Suspense boundaries
- */
-
 export default async function ProfilePage() {
-  // Server-side auth check
-  const user = await getServerUser()
+  // Try to get user but don't block — hackathon: no auth walls
+  const user = await getServerUser().catch(() => null)
 
-  if (!user) {
-    redirect('/auth')
-  }
-
-  // Fetch all user data in parallel (cached via React cache())
-  const { profile, signals } = await getUserData(user.id)
+  const userData = user ? await getUserData(user.id).catch(() => ({ profile: null, signals: [] })) : { profile: null, signals: [] }
+  const { profile, signals } = userData
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">

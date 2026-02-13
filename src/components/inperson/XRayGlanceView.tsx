@@ -7,6 +7,7 @@ import { ActionPanel } from "./ActionPanel";
 import { IssueDrawer } from "./IssueDrawer";
 import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
 import { TurnTimer } from "./TurnTimer";
+import { TurnProgressBar } from "./TurnProgressBar";
 import { TimerSettings } from "./TimerSettings";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
@@ -41,6 +42,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
   const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
   const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
+  const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -65,11 +67,34 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000; // 3 minutes
   const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
 
+  // Interruption messages — Parallax takes command of the room
+  const TURN_OVER_MESSAGES = [
+    (current: string, next: string) =>
+      `${current}, I need to pause you there. Let's give ${next} a chance to respond now.`,
+    (current: string, next: string) =>
+      `Thank you ${current}. Let's hear from ${next} now — ${next}, what's on your mind?`,
+    (current: string, next: string) =>
+      `I appreciate you sharing, ${current}. ${next}, it's your turn — take your time.`,
+    (current: string, next: string) =>
+      `Let's pause here, ${current}. ${next}, I'd love to hear your perspective on this.`,
+  ];
+
   const handleTurnExpire = useCallback(() => {
-    // Switch to next speaker
+    const currentName = activeSender === "person_a" ? personAName : personBName;
     const nextSender = activeSender === "person_a" ? "person_b" : "person_a";
+    const nextName = nextSender === "person_a" ? personAName : personBName;
+
+    // 1. Flash the screen red
+    setTimerFlash(true);
+    setTimeout(() => setTimerFlash(false), 1500);
+
+    // 2. Parallax speaks to take control of the room
+    const msg = TURN_OVER_MESSAGES[Math.floor(Math.random() * TURN_OVER_MESSAGES.length)];
+    speak(msg(currentName, nextName));
+
+    // 3. Switch to next speaker
     setDirectedTo(nextSender);
-  }, [activeSender]);
+  }, [activeSender, personAName, personBName, speak]);
 
   const handleTimerDurationChange = useCallback(async (newDuration: number) => {
     try {
@@ -555,6 +580,16 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         </div>
       )}
 
+      {/* Turn progress bar — right above input for maximum visibility */}
+      {turnBasedMode && isActive && (
+        <TurnProgressBar
+          progress={progress}
+          timeRemaining={timeRemaining}
+          speakerName={activeSpeaker}
+          isActive={true}
+        />
+      )}
+
       {/* Input bar */}
       <div className="flex-shrink-0">
         <ActiveSpeakerBar
@@ -605,6 +640,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onClose={() => setTimerSettingsOpen(false)}
         />
       )}
+
+      {/* Full-screen red flash when timer expires */}
+      {timerFlash && <div className="timer-expire-overlay" />}
     </div>
   );
 }

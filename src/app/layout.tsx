@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -36,52 +37,6 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
   display: "swap",
 });
-
-function ThemeToggle() {
-  const [isLight, setIsLight] = useState(true);
-
-  useEffect(() => {
-    setIsLight(document.documentElement.classList.contains("light"));
-  }, []);
-
-  function toggle() {
-    const next = !isLight;
-    setIsLight(next);
-    if (next) {
-      document.documentElement.classList.add("light");
-      localStorage.setItem("parallax-theme", "light");
-    } else {
-      document.documentElement.classList.remove("light");
-      localStorage.setItem("parallax-theme", "dark");
-    }
-  }
-
-  return (
-    <button
-      onClick={toggle}
-      aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
-      className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-foreground/20 transition-colors"
-    >
-      {isLight ? (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-        </svg>
-      ) : (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="5" />
-          <line x1="12" y1="1" x2="12" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="23" />
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-          <line x1="1" y1="12" x2="3" y2="12" />
-          <line x1="21" y1="12" x2="23" y2="12" />
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-        </svg>
-      )}
-    </button>
-  );
-}
 
 function AuthSlot() {
   const { user, loading } = useAuth();
@@ -136,20 +91,47 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
 
   const isLandingNarrating = narrationPhase === "idle" || narrationPhase === "narrating" || narrationPhase === "chat";
 
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+  const isLandingPage = pathname === "/";
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <header
-        className={`border-b border-border px-6 py-4 grid grid-cols-3 items-center transition-opacity duration-500 ${
+        className={`border-b border-border px-6 py-3 flex items-center justify-between transition-opacity duration-500 flex-shrink-0 ${
           isLandingNarrating ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
       >
-        <div className="flex items-center gap-3">
+        {/* Left: Logo + Nav */}
+        <div className="flex items-center gap-6">
           <a href="/" className="text-lg tracking-widest uppercase text-accent hover:text-foreground transition-colors" style={{ fontFamily: 'var(--font-bitcount)' }}>
             Parallax
           </a>
+          {isAuthenticated && !isSessionPage && (
+            <nav className="hidden sm:flex items-center gap-4">
+              <Link
+                href="/home"
+                className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                  pathname === "/home" ? "text-foreground" : "text-muted hover:text-foreground"
+                }`}
+              >
+                Home
+              </Link>
+              <Link
+                href="/profile"
+                className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                  pathname === "/profile" ? "text-foreground" : "text-muted hover:text-foreground"
+                }`}
+              >
+                Profile
+              </Link>
+            </nav>
+          )}
         </div>
+
+        {/* Center: Listen (landing only) */}
         <div className="flex justify-center">
-          {narrationPhase === "complete" && !isSessionPage && (
+          {narrationPhase === "complete" && isLandingPage && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("parallax-replay-narration"))}
               className="liquid-glass liquid-glass--sm rounded-full font-serif text-sm text-foreground/80 hover:text-foreground transition-colors"
@@ -160,12 +142,37 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
             </button>
           )}
         </div>
-        <div className="flex justify-end items-center gap-3">
+
+        {/* Right: Auth + Theme */}
+        <div className="flex items-center gap-3">
           <AuthSlot />
           <ThemeToggle />
         </div>
       </header>
       <main className="flex-1 overflow-y-auto">{children}</main>
+      {/* Footer — visible on non-session pages */}
+      {!isSessionPage && (
+        <footer className="border-t border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted">
+            Parallax by id8Labs
+          </span>
+          <div className="flex items-center gap-4">
+            {isAuthenticated && (
+              <>
+                <Link href="/home" className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+                  Home
+                </Link>
+                <Link href="/profile" className="font-mono text-[9px] uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+                  Profile
+                </Link>
+              </>
+            )}
+            <span className="font-mono text-[9px] tracking-widest text-ember-700">
+              Claude Code Hackathon 2026
+            </span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

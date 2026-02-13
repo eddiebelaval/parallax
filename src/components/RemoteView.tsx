@@ -12,6 +12,7 @@ import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
+import { useAutoListen } from "@/hooks/useAutoListen";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type {
   Session,
@@ -85,6 +86,8 @@ export function RemoteView({
   const [mediationError, setMediationError] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
+  const [handsFree, setHandsFree] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const conductorFired = useRef(false);
@@ -361,6 +364,14 @@ export function RemoteView({
     ],
   );
 
+  // Auto-listen: hands-free mode for remote conversations
+  const autoListen = useAutoListen({
+    enabled: handsFree && !muted && (isMyTurn || !isActive) && !conductorLoading,
+    isTTSPlaying: isSpeaking,
+    onTranscript: handleSend,
+    silenceTimeoutMs: 5000,
+  });
+
   // End session
   const endSession = useCallback(async () => {
     if (endingSession) return;
@@ -589,6 +600,26 @@ export function RemoteView({
               activeSpeakerName={inputTab === "coaching" ? localName : activeSpeaker}
               onSend={inputTab === "coaching" ? coaching.sendMessage : handleSend}
               disabled={inputTab === "coaching" ? coaching.loading : (!isMyTurn || conductorLoading)}
+              autoListen={inputTab === "coaching" ? false : handsFree && (isMyTurn || !isActive)}
+              autoListenState={inputTab === "conversation" ? {
+                isListening: autoListen.isListening,
+                interimText: autoListen.interimText,
+                isSpeechActive: autoListen.isSpeechActive,
+                silenceCountdown: autoListen.silenceCountdown,
+              } : undefined}
+              isTTSSpeaking={isSpeaking}
+              isProcessing={!!analyzingMessageId || conductorLoading}
+              isMuted={muted}
+              onToggleMute={() => setMuted((v) => !v)}
+              onModeChange={(mode) => {
+                if (mode === "auto") {
+                  setHandsFree(true);
+                  setMuted(false);
+                } else {
+                  setHandsFree(false);
+                  setMuted(false);
+                }
+              }}
             />
           </div>
         </div>

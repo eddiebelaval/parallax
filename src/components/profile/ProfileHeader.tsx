@@ -6,7 +6,7 @@ import type { User } from '@supabase/supabase-js'
 
 interface ProfileHeaderProps {
   profile: UserProfile | null
-  user: User
+  user: User | null
   signalsCount: number
 }
 
@@ -25,7 +25,7 @@ export function ProfileHeader({ profile, user, signalsCount }: ProfileHeaderProp
         </span>
       </div>
       <h1 className="font-serif text-3xl text-foreground tracking-tight">
-        {profile?.display_name ?? user.email ?? 'Your Profile'}
+        {profile?.display_name ?? user?.email ?? 'Your Profile'}
       </h1>
       <div className="flex items-center gap-4 mt-3">
         {profile?.interview_completed ? (
