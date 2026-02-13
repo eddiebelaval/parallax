@@ -44,6 +44,7 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [antState, setAntState] = useState<AntState>("entering");
+  const [isPaused, setIsPaused] = useState(false);
   const stateTimer = useRef<number>(0);
   const targetPoint = useRef({ x: 0, y: 0 });
   const directionChangeTimer = useRef<number>(0);
@@ -121,7 +122,7 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
   // Main animation loop with state machine
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible || isPaused) return; // Don't animate when paused!
 
     let animationFrame: number;
     const WANDER_MAX_TIME = 15000; // Force exit after 15 seconds
@@ -236,10 +237,12 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isVisible, velocity, position, antState, allowedPaths]);
+  }, [isVisible, isPaused, velocity, position, antState, allowedPaths]);
 
   // Handle ant click
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+
     const newClickCount = clickCount + 1;
     setClickCount(newClickCount);
 
@@ -256,6 +259,8 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
     setMessage(selectedMessage);
     setShowMessage(true);
+    setIsPaused(true); // Stop the ant!
+    setVelocity({ x: 0, y: 0 }); // Stop movement immediately
   };
 
   if (!isVisible || position.x === 0) {
@@ -369,33 +374,46 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
         </svg>
       </div>
 
-      {/* Easter egg message modal */}
+      {/* Easter egg message - simple text bubble */}
       {showMessage && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowMessage(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={() => {
+            setShowMessage(false);
+            setIsPaused(false); // Resume ant movement
+          }}
         >
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-black/70" />
+
+          {/* Message card */}
           <div
-            className="relative bg-surface border border-border rounded-lg max-w-md p-6 shadow-xl"
+            className="relative bg-white dark:bg-[#1a1410] border-2 border-black dark:border-[#3a2e22] rounded-lg max-w-md p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setShowMessage(false)}
-              className="absolute top-3 right-3 text-muted hover:text-foreground transition-colors"
+              onClick={() => {
+                setShowMessage(false);
+                setIsPaused(false); // Resume ant movement
+              }}
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-black dark:text-[#c9b9a3] hover:text-gray-600 dark:hover:text-white transition-colors font-bold text-lg"
               aria-label="Close"
             >
               ✕
             </button>
-            <div className="pr-6">
-              <p className="text-base text-foreground leading-relaxed">
+            <div className="pr-8">
+              <p className="text-sm text-black dark:text-[#c9b9a3] leading-relaxed">
                 {message}
               </p>
             </div>
             <button
-              onClick={() => setShowMessage(false)}
-              className="mt-6 w-full px-4 py-2 bg-accent text-background rounded font-mono text-sm uppercase tracking-wider hover:bg-accent/90 transition-colors"
+              onClick={() => {
+                setShowMessage(false);
+                setIsPaused(false); // Resume ant movement
+              }}
+              className="mt-6 w-full px-4 py-2 bg-black dark:bg-[#d4a040] text-white dark:text-black rounded font-mono text-xs uppercase tracking-wider hover:bg-gray-800 dark:hover:bg-[#d4a040]/90 transition-colors"
             >
-              Close
+              Got it!
             </button>
           </div>
         </div>
