@@ -28,12 +28,17 @@ const THANK_YOU_MESSAGES = [
   "🐜 Thank you, truly! Building Parallax for this hackathon was one of the best experiences we've had. Your support and attention to the little details like me means everything.",
 ];
 
-type AntState = "entering" | "wandering" | "exiting";
+type AntState = "trapped" | "escaping" | "entering" | "wandering" | "exiting";
 
 /**
- * FooterAnt - A free-roaming ant that wanders the entire page.
- * Enters from off-screen, wanders around, exits off-screen, repeat.
- * Clickable for easter egg messages (2nd click shows thank you).
+ * FooterAnt - The Great Escape
+ *
+ * NARRATIVE:
+ * 1. Starts trapped inside "Built with Claude Code" badge on landing page
+ * 2. Click to release (no message, just freedom!)
+ * 3. Runs off screen, appears on another page
+ * 4. Click again = joke message
+ * 5. Click again = thank you message
  */
 export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   const antRef = useRef<HTMLDivElement>(null);
@@ -42,83 +47,111 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   const [showMessage, setShowMessage] = useState(false);
   const [message, setMessage] = useState("");
   const [isVisible, setIsVisible] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-  const [antState, setAntState] = useState<AntState>("entering");
+  const [antState, setAntState] = useState<AntState>("trapped");
   const [isPaused, setIsPaused] = useState(false);
+  const [isReleased, setIsReleased] = useState(false);
+  const [encounterCount, setEncounterCount] = useState(0);
   const stateTimer = useRef<number>(0);
   const targetPoint = useRef({ x: 0, y: 0 });
   const directionChangeTimer = useRef<number>(0);
   const nextDirectionChange = useRef<number>(3000);
 
-  // Check if ant should be visible on this page
+  // Check release status and visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
     const currentPath = window.location.pathname;
 
-    // Check localStorage for ant's current page
-    const antLocation = localStorage.getItem("parallax-ant-location");
+    // Check if ant has been released
+    const releasedFlag = localStorage.getItem("parallax-ant-released");
+    const released = releasedFlag === "true";
+    setIsReleased(released);
 
-    if (!antLocation) {
-      // First time - ant starts on landing page
-      localStorage.setItem("parallax-ant-location", "/");
+    // Check encounter count
+    const encounters = parseInt(localStorage.getItem("parallax-ant-encounters") || "0", 10);
+    setEncounterCount(encounters);
+
+    if (!released) {
+      // Ant not released yet - only visible on landing page, trapped state
       setIsVisible(currentPath === "/");
+      setAntState("trapped");
     } else {
-      // Ant is on the page stored in localStorage
-      // For dynamic routes like /session/[code], match the base path
-      const isOnAntPage =
-        currentPath === antLocation ||
-        (antLocation.startsWith("/session") && currentPath.startsWith("/session"));
-
+      // Ant released - check which page it's on
+      const antLocation = localStorage.getItem("parallax-ant-location") || "/profile";
+      const isOnAntPage = allowedPaths.some(path => currentPath === path && currentPath === antLocation);
       setIsVisible(isOnAntPage);
+
+      if (isOnAntPage && currentPath !== "/") {
+        setAntState("entering"); // Enter from edge on non-landing pages
+      }
     }
   }, [allowedPaths]);
 
-  // Initialize ant position (enter from random edge)
+  // Initialize ant position
   useEffect(() => {
     if (!isVisible) return;
 
     const spawnAnt = () => {
-      const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      if (antState === "trapped") {
+        // Find the badge and position ant inside it
+        const findBadge = () => {
+          const badge = document.getElementById("claude-code-badge");
+          if (badge) {
+            const rect = badge.getBoundingClientRect();
+            // Position ant in center of badge
+            setPosition({
+              x: rect.left + rect.width / 2 - 7, // Center (ant is ~14px wide)
+              y: rect.top + rect.height / 2 - 7,
+            });
+          }
+        };
 
-      let startX = 0, startY = 0, targetX = 0, targetY = 0;
+        findBadge();
+        // Re-check in case badge hasn't rendered yet
+        const interval = setInterval(findBadge, 500);
+        setTimeout(() => clearInterval(interval), 3000);
+      } else if (antState === "entering") {
+        // Enter from random edge (released ant on other pages)
+        const edge = Math.floor(Math.random() * 4);
+        const w = window.innerWidth;
+        const h = window.innerHeight;
 
-      switch (edge) {
-        case 0: // Enter from top
-          startX = Math.random() * w;
-          startY = -50;
-          targetX = w * (0.2 + Math.random() * 0.6);
-          targetY = h * (0.3 + Math.random() * 0.4);
-          break;
-        case 1: // Enter from right
-          startX = w + 50;
-          startY = Math.random() * h;
-          targetX = w * (0.4 + Math.random() * 0.4);
-          targetY = h * (0.2 + Math.random() * 0.6);
-          break;
-        case 2: // Enter from bottom
-          startX = Math.random() * w;
-          startY = h + 50;
-          targetX = w * (0.2 + Math.random() * 0.6);
-          targetY = h * (0.4 + Math.random() * 0.4);
-          break;
-        case 3: // Enter from left
-          startX = -50;
-          startY = Math.random() * h;
-          targetX = w * (0.2 + Math.random() * 0.4);
-          targetY = h * (0.2 + Math.random() * 0.6);
-          break;
+        let startX = 0, startY = 0, targetX = 0, targetY = 0;
+
+        switch (edge) {
+          case 0:
+            startX = Math.random() * w;
+            startY = -50;
+            targetX = w * (0.2 + Math.random() * 0.6);
+            targetY = h * (0.3 + Math.random() * 0.4);
+            break;
+          case 1:
+            startX = w + 50;
+            startY = Math.random() * h;
+            targetX = w * (0.4 + Math.random() * 0.4);
+            targetY = h * (0.2 + Math.random() * 0.6);
+            break;
+          case 2:
+            startX = Math.random() * w;
+            startY = h + 50;
+            targetX = w * (0.2 + Math.random() * 0.6);
+            targetY = h * (0.4 + Math.random() * 0.4);
+            break;
+          case 3:
+            startX = -50;
+            startY = Math.random() * h;
+            targetX = w * (0.2 + Math.random() * 0.4);
+            targetY = h * (0.2 + Math.random() * 0.6);
+            break;
+        }
+
+        setPosition({ x: startX, y: startY });
+        targetPoint.current = { x: targetX, y: targetY };
+        stateTimer.current = 0;
       }
-
-      setPosition({ x: startX, y: startY });
-      targetPoint.current = { x: targetX, y: targetY };
-      setAntState("entering");
-      stateTimer.current = 0;
     };
 
     spawnAnt();
-  }, [isVisible]);
+  }, [isVisible, antState]);
 
   // Main animation loop with state machine
   useEffect(() => {
@@ -132,7 +165,35 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
       directionChangeTimer.current += 16;
 
       // State machine
-      if (antState === "entering") {
+      if (antState === "trapped") {
+        // Ant is trapped - no movement!
+        // Just sit there waiting to be clicked
+        return;
+      } else if (antState === "escaping") {
+        // Ant has been released! Run to freedom!
+        const dx = targetPoint.current.x - position.x;
+        const dy = targetPoint.current.y - position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 10) {
+          // Escaped! Move to another page
+          const nextPage = allowedPaths.filter(p => p !== "/")[Math.floor(Math.random() * 2)];
+          localStorage.setItem("parallax-ant-location", nextPage);
+          setIsVisible(false);
+          setPosition({ x: -200, y: -200 });
+          return;
+        } else {
+          // Sprint toward freedom!
+          const speed = 3;
+          const targetVelX = (dx / distance) * speed;
+          const targetVelY = (dy / distance) * speed;
+
+          setVelocity((v) => ({
+            x: v.x + (targetVelX - v.x) * 0.3,
+            y: v.y + (targetVelY - v.y) * 0.3,
+          }));
+        }
+      } else if (antState === "entering") {
         // Walk toward target point
         const dx = targetPoint.current.x - position.x;
         const dy = targetPoint.current.y - position.y;
@@ -241,29 +302,59 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
   // Handle ant click
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event bubbling
+    e.stopPropagation();
 
-    const newClickCount = clickCount + 1;
-    setClickCount(newClickCount);
+    if (antState === "trapped") {
+      // RELEASE THE ANT! No message, just freedom.
+      console.log("🐜 ANT RELEASED!");
+      localStorage.setItem("parallax-ant-released", "true");
+      localStorage.setItem("parallax-ant-encounters", "0");
+      setIsReleased(true);
 
-    let selectedMessage: string;
+      // Set exit target (run off screen)
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const edge = Math.floor(Math.random() * 4);
 
-    if (newClickCount >= 2) {
-      // Second+ click: Always show a thank you message
-      selectedMessage = THANK_YOU_MESSAGES[Math.floor(Math.random() * THANK_YOU_MESSAGES.length)];
-      setClickCount(0); // Reset for next cycle
+      switch (edge) {
+        case 0: targetPoint.current = { x: Math.random() * w, y: -50 }; break;
+        case 1: targetPoint.current = { x: w + 50, y: Math.random() * h }; break;
+        case 2: targetPoint.current = { x: Math.random() * w, y: h + 50 }; break;
+        case 3: targetPoint.current = { x: -50, y: Math.random() * h }; break;
+      }
+
+      setAntState("escaping");
+      stateTimer.current = 0;
     } else {
-      // First click: Random joke
-      selectedMessage = ANT_JOKES[Math.floor(Math.random() * ANT_JOKES.length)];
-    }
+      // Ant is free and wandering - show message
+      const currentEncounters = encounterCount + 1;
+      localStorage.setItem("parallax-ant-encounters", currentEncounters.toString());
+      setEncounterCount(currentEncounters);
 
-    setMessage(selectedMessage);
-    setShowMessage(true);
-    setIsPaused(true); // Stop the ant!
-    setVelocity({ x: 0, y: 0 }); // Stop movement immediately
+      let selectedMessage: string;
+
+      if (currentEncounters === 1) {
+        // First encounter after release: joke
+        selectedMessage = ANT_JOKES[Math.floor(Math.random() * ANT_JOKES.length)];
+      } else {
+        // Second+ encounter: thank you
+        selectedMessage = THANK_YOU_MESSAGES[Math.floor(Math.random() * THANK_YOU_MESSAGES.length)];
+      }
+
+      console.log("🐜 Message:", selectedMessage);
+      setMessage(selectedMessage);
+      setShowMessage(true);
+      setIsPaused(true);
+      setVelocity({ x: 0, y: 0 });
+    }
   };
 
-  if (!isVisible || position.x === 0) {
+  if (!isVisible) {
+    return null;
+  }
+
+  // Don't render if position hasn't been set yet (except for trapped state)
+  if (position.x === -100 && position.y === -100 && antState !== "trapped") {
     return null;
   }
 
@@ -374,44 +465,58 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
         </svg>
       </div>
 
-      {/* Easter egg message - simple text bubble */}
+      {/* Easter egg message - SUPER VISIBLE */}
       {showMessage && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
           onClick={() => {
             setShowMessage(false);
-            setIsPaused(false); // Resume ant movement
+            setIsPaused(false);
           }}
         >
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-black/70" />
-
-          {/* Message card */}
+          {/* Message card - WHITE in light, DARK in dark mode */}
           <div
-            className="relative bg-white dark:bg-[#1a1410] border-2 border-black dark:border-[#3a2e22] rounded-lg max-w-md p-6 shadow-2xl"
+            className="relative rounded-lg max-w-lg p-8 shadow-2xl animate-[scale-in_0.2s_ease-out]"
+            style={{
+              backgroundColor: document.documentElement.classList.contains("light") ? "#ffffff" : "#1a1410",
+              border: "3px solid " + (document.documentElement.classList.contains("light") ? "#000000" : "#d4a040"),
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => {
                 setShowMessage(false);
-                setIsPaused(false); // Resume ant movement
+                setIsPaused(false);
               }}
-              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-black dark:text-[#c9b9a3] hover:text-gray-600 dark:hover:text-white transition-colors font-bold text-lg"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold text-xl"
+              style={{
+                color: document.documentElement.classList.contains("light") ? "#000000" : "#c9b9a3",
+              }}
               aria-label="Close"
             >
               ✕
             </button>
-            <div className="pr-8">
-              <p className="text-sm text-black dark:text-[#c9b9a3] leading-relaxed">
+            <div className="pr-10 mb-6">
+              <p
+                className="text-base leading-relaxed"
+                style={{
+                  color: document.documentElement.classList.contains("light") ? "#000000" : "#c9b9a3",
+                }}
+              >
                 {message}
               </p>
             </div>
             <button
               onClick={() => {
                 setShowMessage(false);
-                setIsPaused(false); // Resume ant movement
+                setIsPaused(false);
               }}
-              className="mt-6 w-full px-4 py-2 bg-black dark:bg-[#d4a040] text-white dark:text-black rounded font-mono text-xs uppercase tracking-wider hover:bg-gray-800 dark:hover:bg-[#d4a040]/90 transition-colors"
+              className="w-full px-6 py-3 rounded font-mono text-sm uppercase tracking-wider transition-colors"
+              style={{
+                backgroundColor: document.documentElement.classList.contains("light") ? "#000000" : "#d4a040",
+                color: document.documentElement.classList.contains("light") ? "#ffffff" : "#000000",
+              }}
             >
               Got it!
             </button>
