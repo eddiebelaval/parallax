@@ -104,6 +104,7 @@ export function SessionView({ roomCode }: SessionViewProps) {
           roomCode={roomCode}
           personAName={personAName}
           personBName={personBName}
+          mode={session?.mode === 'in_person' ? 'in_person' : 'remote'}
         />
       </div>
     );

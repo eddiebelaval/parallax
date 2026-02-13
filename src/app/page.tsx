@@ -386,6 +386,9 @@ export default function Home() {
 
                 {/* Solo */}
                 <div className="border border-border border-t-2 border-t-success p-5">
+                  <div className="mb-4">
+                    <ModePreview mode="solo" />
+                  </div>
                   <p className="font-mono text-sm uppercase tracking-wider text-success mb-2">Solo</p>
                   <p className="text-ember-400 text-xs leading-relaxed mb-3">
                     1:1 with Parallax — a friend who listens, remembers, and shows up informed
