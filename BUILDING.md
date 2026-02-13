@@ -43,6 +43,10 @@
 - [Turn-Based Timer](#turn-based-timer) — Configurable turn timer for in-person mediation
 - [Remote Session Flow](#remote-session-flow-create-or-join) — Create-or-join choice for remote sessions
 - [PR #34: Merge to Main](#pr-34-merge-to-main) — All Day 4 work consolidated and merged
+- [Home-First Flow](#home-first-flow--embedded-assistant) — Embedded Parallax assistant, settings page, auth wall removal
+- [ParallaxOrb](#parallaxorb--canvas-waveform) — Canvas-based orb with inner waveform + orbiting particles
+- [Anonymous Auth + Hands-Free Everywhere](#anonymous-auth--hands-free-everywhere) — Zero-friction entry, auto-listen in all modes
+- [Mic Tuning](#mic-sensitivity-tuning) — Reduced sensitivity + faster silence timeout
 
 **Philosophy**
 - [Opus at the Edge](#opus-at-the-edge-why-this-matters) — Token dashboard, self-assessment, building for Opus 5
@@ -1792,6 +1796,96 @@ After merge, deleted stale branches:
 - `parallax/conversational-layer` — orphaned lockfile fix
 
 All work now lives on `main`.
+
+---
+
+## Home-First Flow + Embedded Assistant
+
+**Commit:** `69a3f42`, `3a2d571` | Direct to `main` | 2026-02-13
+
+### The Problem
+
+The landing page presented three mode cards (In-Person, Remote, Solo) immediately. Users had to understand the product before choosing. There was no ambient way to just _talk_ to Parallax without committing to a session mode. The auth wall also blocked exploration — you had to sign up before seeing anything.
+
+### What Changed
+
+1. **Home page (`/home`)** — New authenticated home with `HomeContent.tsx` showing a profile setup CTA, session history, and an embedded Parallax floating action button (`ParallaxFAB.tsx`)
+2. **Settings page (`/settings`)** — Full settings page with profile management, theme toggle, and session preferences
+3. **Auth walls removed** — Navigation no longer gates pages behind authentication. Value is accessible; auth is required only for persistent features (profile, interview)
+4. **Global mode strip** — Mode indicators (In-Person / Remote / Solo) appear in the nav bar as context, not as a selection gate
+5. **Turn progress bar** — `TurnProgressBar.tsx` added to in-person mode with circular countdown and auto-advance
+6. **Dead code cleanup** — Removed `MessageInput.tsx`, `NameEntry.tsx`, `PersonOrbPanel.tsx`, `VoiceInput.tsx`, `WaitingState.tsx` (548 lines deleted)
+
+### Architecture Decisions
+
+1. **FAB pattern for ambient access** — The floating action button lets users talk to Parallax from any page without navigating to a session. Inspired by chat widgets but with full Parallax intelligence.
+2. **Guide tools expansion** — `guide-tools.ts` grew from simple navigation to a full tool-use system (158 line expansion) that lets the Parallax assistant create sessions, check profiles, and navigate the app.
+3. **Auth wall inversion** — Instead of blocking access, the app shows everything and gates _persistence_. Users can try a session anonymously; signing up saves their profile and history.
+
+**Stats:** 18 files changed, 338 insertions, 548 deletions (net negative — cleanup)
+Then: 15 files changed, 694 insertions, 94 deletions (home + settings)
+
+---
+
+## ParallaxOrb — Canvas Waveform
+
+**Commits:** `0db025a`, `9984107` | Direct to `main` | 2026-02-13
+
+### What It Is
+
+A canvas-based generative orb that replaced the simpler SVG waveform. The ParallaxOrb renders:
+
+- **Inner waveform ring** — Real-time mic audio data mapped to a radial bezier path inside the orb
+- **Orbiting particles** — Small dots orbiting the perimeter at varying speeds and distances
+- **Temperature-reactive color** — Glow color shifts based on emotional temperature (warm amber → hot rust → cool teal)
+- **Idle animation** — Gentle breathing/pulse when mic is inactive
+
+### Why Canvas Over SVG
+
+The SVG `AudioWaveformOrb` worked but had two issues at 60fps: (1) DOM thrashing from frequent path attribute updates, and (2) no particle system without creating hundreds of SVG elements. Canvas gives direct pixel control with a single composite operation per frame.
+
+### TheDoor Integration
+
+The landing page mode cards (In-Person, Remote, Solo) each got a `ModeCardScene.tsx` (291 lines) that renders a unique canvas scene previewing what each mode looks like — the orb with mode-specific particle behavior and color.
+
+---
+
+## Anonymous Auth + Hands-Free Everywhere
+
+**Commit:** `6634e41` | Direct to `main` | 2026-02-13
+
+### The Problem
+
+Two friction points were killing the hackathon demo:
+1. **Auth requirement** — Users had to create an account before trying anything. For a 2-minute demo, that's fatal.
+2. **Auto-listen was only in-person** — Solo and Remote modes required manual mic toggling, breaking the voice-first promise.
+
+### What Changed
+
+1. **Anonymous auth** — `useAuth.ts` expanded (68 lines) to support Supabase anonymous sessions. Users get a temporary identity that can be upgraded to a real account later. No email, no password, no friction.
+2. **Hands-free in all modes** — `useAutoListen.ts` hook deployed across `SoloView.tsx`, `RemoteView.tsx`, and `XRayGlanceView.tsx`. After speaking, Parallax responds, then automatically re-enables the mic.
+3. **Interview anonymous support** — The interview API route now handles anonymous users, storing partial profiles that merge on account upgrade.
+
+### Architecture Decision
+
+**Anonymous-first, upgrade-later** — This is the Spotify pattern. Let users experience the product with zero friction. When they hit a value moment (their first NVC translation, their first profile insight), _then_ ask them to create an account to save it. Conversion happens after value delivery, not before.
+
+---
+
+## Mic Sensitivity Tuning
+
+**Commit:** `e085ada` | Direct to `main` | 2026-02-13
+
+### The Problem
+
+The auto-listen feature was too sensitive — background noise triggered recording, and the silence detection waited too long before stopping. In a demo environment (conference, noisy room), this made hands-free mode unreliable.
+
+### What Changed
+
+- **Reduced mic sensitivity threshold** across all 4 voice-enabled views (`interview/page.tsx`, `RemoteView.tsx`, `SoloView.tsx`, `XRayGlanceView.tsx`)
+- **Faster silence timeout** in `useAutoListen.ts` — stops recording sooner when speech ends
+
+5 files changed, 6 insertions, 6 deletions. Small diff, big UX impact.
 
 ---
 
