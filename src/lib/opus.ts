@@ -81,6 +81,24 @@ export async function conductorMessage(
 }
 
 /**
+ * Multi-turn Claude wrapper for solo mode conversations.
+ * Takes the full message history as alternating user/assistant messages.
+ */
+export async function soloMessage(
+  systemPrompt: string,
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  maxTokens = 1024,
+): Promise<string> {
+  const response = await getClient().messages.create({
+    model: 'claude-opus-4-6',
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages,
+  })
+  return extractText(response)
+}
+
+/**
  * Call Claude to analyze a message for issues (extract new + grade existing).
  *
  * Returns the raw text. Caller should parse with parseIssueAnalysis().
