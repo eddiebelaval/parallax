@@ -37,8 +37,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
   const [mediationError, setMediationError] = useState<string | null>(null);
   const [isMicHot, setIsMicHot] = useState(false);
-  const [turnBasedMode, setTurnBasedMode] = useState(true); // Enable turn-based timer mode
+  const [turnBasedMode, setTurnBasedMode] = useState(true);
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
+  const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
 
   // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
@@ -275,9 +276,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
   );
 
-  // Auto-listen: hands-free voice detection (Claude mobile app style — 1.5s silence = done)
+  // Auto-listen: hands-free from session start (togglable)
   const autoListen = useAutoListen({
-    enabled: turnBasedMode && isActive && !conductorLoading && !isAnalyzing,
+    enabled: handsFree && (isOnboarding || isActive) && !conductorLoading && !isAnalyzing,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
     silenceTimeoutMs: 1500,
@@ -387,6 +388,18 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Hands-free / Tap-to-talk toggle */}
+          <button
+            onClick={() => setHandsFree((v) => !v)}
+            className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              handsFree
+                ? "text-temp-cool hover:text-temp-cool/80"
+                : "text-ember-600 hover:text-foreground"
+            }`}
+            title={handsFree ? "Switch to tap-to-talk" : "Switch to hands-free"}
+          >
+            {handsFree ? "Hands-free" : "Tap to talk"}
+          </button>
           {!isOnboarding && (
             <button
               onClick={() => setIssueDrawerOpen(true)}
@@ -562,7 +575,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           onMicStateChange={setIsMicHot}
           isYourTurn={true}
           timeRemaining={turnBasedMode && isActive ? timeRemaining : undefined}
-          autoListen={turnBasedMode && isActive}
+          autoListen={handsFree && (isOnboarding || isActive)}
           autoListenState={{
             isListening: autoListen.isListening,
             interimText: autoListen.interimText,
