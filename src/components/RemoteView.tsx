@@ -369,7 +369,7 @@ export function RemoteView({
     enabled: handsFree && !muted && !conductorLoading,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
-    silenceTimeoutMs: 5000,
+    silenceTimeoutMs: 3500,
   });
 
   // End session

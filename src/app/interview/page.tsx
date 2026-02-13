@@ -129,7 +129,7 @@ export default function InterviewPage() {
     enabled: handsFree && !muted && !isBusy,
     isTTSPlaying: voice.isSpeaking,
     onTranscript: handleSend,
-    silenceTimeoutMs: 5000,
+    silenceTimeoutMs: 3500,
   });
 
   if (authLoading || displayName === undefined) {

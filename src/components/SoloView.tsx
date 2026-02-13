@@ -96,7 +96,7 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
     enabled: handsFree && !muted && !loading,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
-    silenceTimeoutMs: 5000,
+    silenceTimeoutMs: 3500,
   });
 
   function handleExport() {

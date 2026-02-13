@@ -307,7 +307,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     enabled: handsFree && !muted && !conductorLoading && !isAnalyzing,
     isTTSPlaying: isSpeaking,
     onTranscript: handleSend,
-    silenceTimeoutMs: 5000,
+    silenceTimeoutMs: 3500,
   });
 
   const endSession = useCallback(async () => {

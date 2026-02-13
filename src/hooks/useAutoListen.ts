@@ -77,8 +77,8 @@ export function useAutoListen({
 
   // VAD for silence detection — store in ref to prevent callback instability
   const vad = useVoiceActivityDetection({
-    silenceThreshold: 0.01,
-    minSpeechDurationMs: 300,
+    silenceThreshold: 0.025,
+    minSpeechDurationMs: 500,
   });
 
   // Stable refs for VAD methods (prevents startListening/stopListening from recreating every render)
