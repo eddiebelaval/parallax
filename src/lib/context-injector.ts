@@ -1,9 +1,11 @@
 import { createServerClient } from '@/lib/supabase'
-import type { BehavioralSignal, ConsentLevel } from '@/types/database'
+import type { BehavioralSignal, ConsentLevel, SoloMemory } from '@/types/database'
 
 interface InjectionContext {
   speakerContext: string
   otherPartyContext: string
+  speakerFacilitation: string
+  otherPartyFacilitation: string
 }
 
 /**
@@ -19,7 +21,12 @@ export async function buildIntelligenceContext(
   speakerUserId: string | null,
   otherPartyUserId: string | null,
 ): Promise<InjectionContext> {
-  const empty: InjectionContext = { speakerContext: '', otherPartyContext: '' }
+  const empty: InjectionContext = {
+    speakerContext: '',
+    otherPartyContext: '',
+    speakerFacilitation: '',
+    otherPartyFacilitation: '',
+  }
 
   if (!speakerUserId) return empty
 
@@ -35,8 +42,26 @@ export async function buildIntelligenceContext(
     ? formatSignalsForClaude(speakerSignals as BehavioralSignal[], 'Current Speaker')
     : ''
 
+  // Load speaker's solo_memory for communication facilitation
+  let speakerFacilitation = ''
+  const { data: speakerProfile } = await supabase
+    .from('user_profiles')
+    .select('solo_memory')
+    .eq('user_id', speakerUserId)
+    .single()
+
+  if (speakerProfile?.solo_memory &&
+    typeof speakerProfile.solo_memory === 'object' &&
+    Object.keys(speakerProfile.solo_memory).length > 0) {
+    speakerFacilitation = formatFacilitationBlock(
+      speakerProfile.solo_memory as SoloMemory,
+      'Current Speaker',
+    )
+  }
+
   // Check for cross-party signals (requires consent from both parties)
   let otherPartyContext = ''
+  let otherPartyFacilitation = ''
   if (otherPartyUserId) {
     const bothConsented = await checkMutualConsent(supabase, sessionId, speakerUserId, otherPartyUserId)
 
@@ -61,10 +86,26 @@ export async function buildIntelligenceContext(
           })),
         )
       }
+
+      // Load other party's solo_memory (anonymized, consent required)
+      const { data: otherProfile } = await supabase
+        .from('user_profiles')
+        .select('solo_memory')
+        .eq('user_id', otherPartyUserId)
+        .single()
+
+      if (otherProfile?.solo_memory &&
+        typeof otherProfile.solo_memory === 'object' &&
+        Object.keys(otherProfile.solo_memory).length > 0) {
+        otherPartyFacilitation = formatFacilitationBlock(
+          otherProfile.solo_memory as SoloMemory,
+          'Other Party (anonymized)',
+        )
+      }
     }
   }
 
-  return { speakerContext, otherPartyContext }
+  return { speakerContext, otherPartyContext, speakerFacilitation, otherPartyFacilitation }
 }
 
 /**
@@ -91,6 +132,41 @@ async function checkMutualConsent(
     aConsent?.consent_level === 'anonymous_signals' &&
     bConsent?.consent_level === 'anonymous_signals'
   )
+}
+
+/**
+ * Format solo_memory into an abstracted facilitation block for mediation.
+ *
+ * Privacy rules:
+ * - NEVER include specific things said in solo sessions
+ * - NEVER reveal personal details shared privately
+ * - Only include abstracted patterns: communication style, values, strengths, triggers
+ */
+function formatFacilitationBlock(memory: SoloMemory, label: string): string {
+  const lines: string[] = [`--- ${label} Communication Profile ---`]
+
+  if (memory.values?.length) {
+    lines.push(`Core values: ${memory.values.join(', ')}`)
+  }
+
+  if (memory.strengths?.length) {
+    lines.push(`Communication strengths: ${memory.strengths.join(', ')}`)
+  }
+
+  if (memory.patterns?.length) {
+    lines.push(`Behavioral patterns: ${memory.patterns.join(', ')}`)
+  }
+
+  if (memory.themes?.length) {
+    lines.push(`Recurring themes: ${memory.themes.join(', ')}`)
+  }
+
+  if (memory.emotionalState) {
+    lines.push(`Recent emotional state: ${memory.emotionalState}`)
+  }
+
+  lines.push(`--- End ${label} Communication Profile ---`)
+  return lines.join('\n')
 }
 
 /**
@@ -161,37 +237,81 @@ function formatSignalsForClaude(signals: BehavioralSignal[], label: string): str
  * Build the full intelligence injection block for the mediation system prompt.
  */
 export function buildIntelligencePromptSection(context: InjectionContext): string {
-  if (!context.speakerContext && !context.otherPartyContext) return ''
+  const hasSignals = context.speakerContext || context.otherPartyContext
+  const hasFacilitation = context.speakerFacilitation || context.otherPartyFacilitation
 
-  const sections: string[] = [
-    '\n\n=== PROFILE INTELLIGENCE (use to inform your analysis, not to diagnose) ===',
-    '',
-    'You have access to behavioral signals extracted from the participants\' profiles.',
-    'Use these to:',
-    '- Predict likely escalation patterns before they happen',
-    '- Tailor your language to their communication style',
-    '- Identify the dynamic between them (e.g., pursuer-distancer)',
-    '- Name patterns by their framework names when helpful',
-    '',
-    'Do NOT:',
-    '- Mention that you have a "profile" on them',
-    '- Use clinical language unless they use it first',
-    '- Make assumptions beyond what the signals indicate',
-    '- Reveal one party\'s signals to the other',
-    '',
-  ]
+  if (!hasSignals && !hasFacilitation) return ''
 
-  if (context.speakerContext) {
-    sections.push(context.speakerContext)
-    sections.push('')
+  const sections: string[] = []
+
+  // Behavioral signals section (existing)
+  if (hasSignals) {
+    sections.push(
+      '\n\n=== PROFILE INTELLIGENCE (use to inform your analysis, not to diagnose) ===',
+      '',
+      'You have access to behavioral signals extracted from the participants\' profiles.',
+      'Use these to:',
+      '- Predict likely escalation patterns before they happen',
+      '- Tailor your language to their communication style',
+      '- Identify the dynamic between them (e.g., pursuer-distancer)',
+      '- Name patterns by their framework names when helpful',
+      '',
+      'Do NOT:',
+      '- Mention that you have a "profile" on them',
+      '- Use clinical language unless they use it first',
+      '- Make assumptions beyond what the signals indicate',
+      '- Reveal one party\'s signals to the other',
+      '',
+    )
+
+    if (context.speakerContext) {
+      sections.push(context.speakerContext)
+      sections.push('')
+    }
+
+    if (context.otherPartyContext) {
+      sections.push(context.otherPartyContext)
+      sections.push('')
+    }
+
+    sections.push('=== END PROFILE INTELLIGENCE ===')
   }
 
-  if (context.otherPartyContext) {
-    sections.push(context.otherPartyContext)
-    sections.push('')
-  }
+  // Communication facilitation section (from solo memory)
+  if (hasFacilitation) {
+    sections.push(
+      '\n\n=== COMMUNICATION FACILITATION CONTEXT ===',
+      '',
+      'This context helps you facilitate understanding between both parties.',
+      'You are NOT taking sides. You are helping each person be UNDERSTOOD.',
+      '',
+      'Use this to:',
+      '- Translate ambiguous statements charitably based on their values',
+      '- Anticipate misunderstandings before they happen',
+      '- Frame needs in ways the other person can hear',
+      '- Recognize when someone\'s communication style is being misread',
+      '- Notice when stress is affecting their ability to express themselves',
+      '',
+      'NEVER:',
+      '- Reveal anything from private/solo sessions',
+      '- Take one person\'s side over the other',
+      '- Reference "your profile" or "I know from before"',
+      '- Make either person feel surveilled or analyzed',
+      '',
+    )
 
-  sections.push('=== END PROFILE INTELLIGENCE ===')
+    if (context.speakerFacilitation) {
+      sections.push(context.speakerFacilitation)
+      sections.push('')
+    }
+
+    if (context.otherPartyFacilitation) {
+      sections.push(context.otherPartyFacilitation)
+      sections.push('')
+    }
+
+    sections.push('=== END COMMUNICATION FACILITATION ===')
+  }
 
   return sections.join('\n')
 }
