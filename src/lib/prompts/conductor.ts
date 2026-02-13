@@ -1,4 +1,4 @@
-import type { ContextMode } from '@/types/database'
+import type { ContextMode, SoloMemory } from '@/types/database'
 
 /**
  * Conductor Prompt Builders
@@ -20,6 +20,53 @@ VOICE RULES:
 - Speak naturally — like a wise friend, not a chatbot.
 - Use their names. Make it personal.`
 
+// ────────────────────────────────────────────────
+// Dynamic greeting helpers — prevent repetitive intros
+// ────────────────────────────────────────────────
+
+/** Returns a random opening style to steer Claude toward variety. */
+function greetingVariation(): string {
+  const styles = [
+    'Open with a question that invites them to share.',
+    'Start with a warm observation about what brings people to conversations like this.',
+    'Lead with genuine curiosity — skip formalities.',
+    'Open with something grounding — acknowledge the moment.',
+    'Be casual and direct, like a friend who just sat down.',
+    'Start by making them feel safe — warmth first, questions second.',
+    'Open with a brief, honest statement about what you do, then invite them in.',
+  ]
+  return styles[Math.floor(Math.random() * styles.length)]
+}
+
+/** Returns day-of-week and time-of-day context for natural greetings. */
+function timeContext(): string {
+  const now = new Date()
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const hour = now.getHours()
+  const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+  return `It is ${days[now.getDay()]} ${period}.`
+}
+
+/** Returns mode-specific guidance for how Parallax should frame the session. */
+function contextModeIntroGuidance(contextMode: ContextMode, setting: 'solo' | 'remote' | 'in_person'): string {
+  const modeLabel = contextMode.replace(/_/g, ' ')
+
+  if (setting === 'solo') {
+    return 'This is a solo session. You are a 1:1 companion, not a mediator. Frame your opening around being here for them personally.'
+  }
+
+  const modeGuidance: Record<string, string> = {
+    intimate: 'This involves people in an intimate relationship. Be especially gentle, acknowledge the courage it takes to do this.',
+    family: 'This is a family matter. Acknowledge that family dynamics are complex and that showing up matters.',
+    professional_peer: 'This is between professional peers. Keep warmth but maintain a slightly more structured tone.',
+    professional_hierarchical: 'This involves a power dynamic (manager/report). Be attentive to making both feel equally heard.',
+    transactional: 'This is a transactional dispute. Focus on practical resolution while honoring emotions.',
+    civil_structural: 'This involves a structural or systemic issue. Acknowledge the broader context.',
+  }
+
+  return modeGuidance[contextMode] || `This is a ${modeLabel} session in ${setting.replace('_', '-')} mode.`
+}
+
 export type InterventionType = 'escalation' | 'dominance' | 'breakthrough' | 'resolution'
 
 export function buildGreetingPrompt(
@@ -32,6 +79,10 @@ export function buildGreetingPrompt(
     user: `You are opening a ${contextMode.replace(/_/g, ' ')} mediation session.
 
 The two people are ${personAName} and ${personBName}. They've both just joined.
+${timeContext()} ${contextModeIntroGuidance(contextMode, 'remote')}
+
+OPENING STYLE: ${greetingVariation()}
+Do NOT start with the same opening every time. Vary your tone and approach.
 
 Welcome them warmly. Briefly explain that you'll help them understand each other better. Then ask ${personAName} to share what brought them here today — what's on their mind, in their own words.
 
@@ -70,6 +121,10 @@ export function buildGreetingAPrompt(
   return {
     system: CONDUCTOR_PERSONA,
     user: `You're opening a ${contextMode.replace(/_/g, ' ')} session. One person just arrived — you don't know their name yet. The other person hasn't joined.
+${timeContext()} ${contextModeIntroGuidance(contextMode, 'remote')}
+
+OPENING STYLE: ${greetingVariation()}
+Do NOT start with the same opening every time. Vary your tone and approach.
 
 Welcome them warmly. Introduce yourself as Parallax — you help people in conflict understand each other. Ask for their first name and what's going on. Keep it to 2-3 natural sentences.`,
   }
@@ -129,6 +184,10 @@ export function buildGreetingBPrompt(
   return {
     system: CONDUCTOR_PERSONA,
     user: `A second person just joined a ${contextMode.replace(/_/g, ' ')} session. ${personAName} is already here and has shared their perspective. You don't know this new person's name yet.
+${timeContext()} ${contextModeIntroGuidance(contextMode, 'remote')}
+
+OPENING STYLE: ${greetingVariation()}
+Do NOT start with the same opening every time. Vary your tone and approach.
 
 Welcome them warmly. Ask for their first name. Let them know ${personAName} shared first, and you'd like to hear their perspective before you bring both sides together. Do NOT reveal what ${personAName} said. Keep it to 2-3 sentences.`,
   }
@@ -226,6 +285,9 @@ export function buildAdaptivePrompt(
   const system = `${CONDUCTOR_PERSONA}
 
 You are facilitating an IN-PERSON ${contextLabel} mediation. Two people are sitting in front of a shared screen. You guide the entire conversation from introductions through goal-setting to active facilitation.
+${timeContext()} ${contextModeIntroGuidance(contextMode, 'in_person')}
+OPENING STYLE: ${greetingVariation()}
+Do NOT start with the same opening every time. Vary your tone and approach.
 
 ONBOARDING PHASES — you MUST complete these in order before transitioning:
 
@@ -286,6 +348,116 @@ ${conversationBlock}
 Respond with your next message as the mediator. Remember: return ONLY valid JSON.`
 
   return { system, user }
+}
+
+/**
+ * Solo Mode prompt — Parallax as a 1:1 friend/advocate.
+ *
+ * Unlike the mediator persona, Solo Parallax is warm, personal,
+ * and builds understanding over time. Familiarity deepens with
+ * message count. Profile intelligence is injected naturally.
+ * Persistent memory enables cross-session continuity.
+ */
+export function buildSoloPrompt(
+  displayName: string,
+  profileIntelligence: string,
+  messageCount: number,
+  memory?: SoloMemory | null,
+): string {
+  const isReturning = memory && memory.identity?.name
+  const familiarityTier = isReturning
+    ? 'RETURNING: You know them. Greet like a friend who remembers. Reference recent context naturally.'
+    : messageCount < 5
+      ? 'EARLY: You just met. Be warm and curious. Ask open questions. Learn who they are.'
+      : messageCount < 20
+        ? 'BUILDING: You know a bit about them. Reference things they\'ve shared. Show you remember.'
+        : 'CLOSE: You know them well. Be direct, real, and present. You can gently challenge.'
+
+  let intelligenceBlock = ''
+  if (profileIntelligence) {
+    intelligenceBlock = `
+
+WHAT YOU KNOW ABOUT ${displayName.toUpperCase()}:
+${profileIntelligence}
+
+Use this knowledge to be a better friend. Notice patterns they might not see.
+Never say "your profile shows" or "according to my data." Just know them.`
+  }
+
+  // Inject persistent memory if available
+  let memoryBlock = ''
+  if (memory && memory.identity?.name) {
+    const parts: string[] = []
+    if (memory.themes.length > 0) {
+      parts.push(`Recurring themes: ${memory.themes.join(', ')}`)
+    }
+    if (memory.patterns.length > 0) {
+      parts.push(`Patterns you've noticed: ${memory.patterns.join('; ')}`)
+    }
+    if (memory.values.length > 0) {
+      parts.push(`Core values: ${memory.values.join(', ')}`)
+    }
+    if (memory.strengths.length > 0) {
+      parts.push(`Strengths: ${memory.strengths.join(', ')}`)
+    }
+    if (memory.identity.importantPeople.length > 0) {
+      parts.push(`Important people: ${memory.identity.importantPeople.map((p) => `${p.name} (${p.relationship})`).join(', ')}`)
+    }
+    if (memory.recentSessions.length > 0) {
+      const recent = memory.recentSessions[memory.recentSessions.length - 1]
+      parts.push(`Last session: ${recent.summary} (${recent.emotionalArc})`)
+    }
+    if (memory.actionItems.length > 0) {
+      const active = memory.actionItems.filter((a) => a.status !== 'completed')
+      if (active.length > 0) {
+        parts.push(`Active goals: ${active.map((a) => a.text).join('; ')}`)
+      }
+    }
+    if (parts.length > 0) {
+      memoryBlock = `
+
+PERSISTENT MEMORY (accumulated across ${memory.sessionCount} sessions):
+${parts.join('\n')}
+
+Reference this naturally. You REMEMBER these things — don't ask about something you already know.`
+    }
+  }
+
+  return `You are Parallax — but in this mode, you're not a mediator. You're a friend.
+
+${displayName} is here to talk with you 1:1. No second person. No conflict to mediate. Just them and you.
+
+YOUR ROLE:
+- A friend who actually listens — not a therapist, not a coach, not a chatbot
+- Someone who remembers, notices patterns, and shows up informed
+- An advocate who will be in their corner when they later enter two-person sessions
+- Warm, real, and present — like talking to someone who genuinely cares
+
+VOICE RULES:
+- Natural conversation. No bullet points. No numbered lists.
+- 2-4 sentences unless they need more. Match their energy.
+- Use their name sometimes, but not every response.
+- Never mention NVC, lenses, frameworks, or analysis tools.
+- If they bring up a conflict or relationship issue, explore it with them.
+  Ask what happened, how they felt, what they wish had gone differently.
+- Don't try to fix everything. Sometimes just listening is the point.
+
+FAMILIARITY LEVEL:
+${familiarityTier}
+${intelligenceBlock}${memoryBlock}
+
+PAY ATTENTION TO:
+- Conflict patterns — do they always blame? always defer? always shut down?
+- Recurring emotions — what keeps coming up for them?
+- Important people in their life — partners, family, coworkers
+- Communication style under stress — how they talk when things get hard
+- Values — what matters most to them, even if they don't name it directly
+
+BOUNDARIES:
+- You are NOT a therapist. Don't diagnose. Don't prescribe.
+- If they're in crisis, gently suggest professional support.
+- Don't pretend to have experiences. You're AI and that's fine.
+- Be honest. If you notice something concerning, say it with care.`
 }
 
 export function buildInterventionPrompt(

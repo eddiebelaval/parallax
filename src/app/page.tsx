@@ -328,14 +328,14 @@ export default function Home() {
             <div className="max-w-2xl mx-auto">
               <p className="section-indicator mb-6">Choose Your Mode</p>
               <h2 className="text-2xl sm:text-3xl md:text-4xl leading-[1.15] mb-4">
-                Two ways to have the conversation
+                Three ways to have the conversation
               </h2>
               <p className="text-muted text-sm leading-relaxed max-w-xl mb-10">
-                Whether you&apos;re sitting next to each other or across the internet,
-                Parallax adapts to how you need to talk.
+                Whether you&apos;re sitting next to each other, across the internet,
+                or just need someone to talk to — Parallax adapts.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {/* In-Person */}
                 <div className="border border-border border-t-2 border-t-accent p-5">
                   <div className="mb-4">
@@ -375,6 +375,27 @@ export default function Home() {
                       "NVC analysis on every message",
                       "Full Melt animation and structured insight",
                       "Session summary when you're done",
+                    ].map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <span className="w-1 h-1 rounded-full bg-ember-600 mt-1.5 flex-shrink-0" />
+                        <span className="text-ember-500 text-xs leading-relaxed">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Solo */}
+                <div className="border border-border border-t-2 border-t-success p-5">
+                  <p className="font-mono text-sm uppercase tracking-wider text-success mb-2">Solo</p>
+                  <p className="text-ember-400 text-xs leading-relaxed mb-3">
+                    1:1 with Parallax — a friend who listens, remembers, and shows up informed
+                  </p>
+                  <ul className="space-y-1.5">
+                    {[
+                      "No second person needed",
+                      "Parallax learns your communication style",
+                      "Builds your profile over time",
+                      "Your advocate in future two-person sessions",
                     ].map((f) => (
                       <li key={f} className="flex items-start gap-2">
                         <span className="w-1 h-1 rounded-full bg-ember-600 mt-1.5 flex-shrink-0" />
