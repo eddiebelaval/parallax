@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
-import { AudioWaveformOrb } from "@/components/AudioWaveformOrb";
+import { ParallaxOrb } from "@/components/ParallaxOrb";
 
 interface ParallaxPresenceProps {
   isAnalyzing: boolean;
@@ -69,9 +69,8 @@ export function ParallaxPresence({
   voiceEnergy,
 }: ParallaxPresenceProps) {
   const isActive = isAnalyzing || isSpeaking;
-  // Use real voice waveform when speaking, synthetic when just analyzing
+  // Use real voice energy when speaking, synthetic when just analyzing
   const synthetic = useSyntheticWaveform(isActive && !isSpeaking);
-  const waveform = isSpeaking && voiceWaveform ? voiceWaveform : synthetic.waveform;
   const energy = isSpeaking && voiceEnergy != null ? voiceEnergy : synthetic.energy;
 
   const effectiveLabel = useMemo(() => {
@@ -107,13 +106,11 @@ export function ParallaxPresence({
             />
           </>
         )}
-        <AudioWaveformOrb
-          name="Parallax"
-          role="claude"
-          waveform={waveform}
-          energy={energy}
-          active={isActive}
+        <ParallaxOrb
           size={80}
+          energy={energy}
+          isSpeaking={isSpeaking}
+          isAnalyzing={isAnalyzing}
         />
       </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { isValidRoomCode } from '@/lib/room-code'
 import { ContextModePicker } from '@/components/ContextModePicker'
 import { AudioWaveformOrb } from '@/components/AudioWaveformOrb'
+import { ParallaxOrb } from '@/components/ParallaxOrb'
 import { useAuth } from '@/hooks/useAuth'
 import type { SessionMode, ContextMode } from '@/types/database'
 
@@ -317,7 +318,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
               <div className="relative h-40 bg-gradient-to-br from-accent/10 to-accent/5 border-b border-border overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center gap-3">
                   <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={40} />
-                  <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.2} active={false} size={28} />
+                  <ParallaxOrb size={28} energy={0.2} isSpeaking={false} particles={false} />
                   <AudioWaveformOrb name="" role="b" waveform={null} energy={0.3} active={false} size={40} />
                 </div>
               </div>
@@ -375,7 +376,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
                   <AudioWaveformOrb name="" role="a" waveform={null} energy={0.25} active={false} size={40} />
                   <div className="flex flex-col items-center gap-1">
                     <div className="h-px w-10 bg-success/40" />
-                    <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.15} active={false} size={20} />
+                    <ParallaxOrb size={20} energy={0.15} isSpeaking={false} particles={false} />
                     <div className="h-px w-10 bg-success/40" />
                   </div>
                   <AudioWaveformOrb name="" role="b" waveform={null} energy={0.25} active={false} size={40} />
@@ -433,7 +434,7 @@ export function TheDoor({ onTalkToParallax }: TheDoorProps) {
               <div className="relative h-40 bg-gradient-to-br from-success/10 to-success/5 border-b border-border overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center gap-4">
                   <AudioWaveformOrb name="" role="a" waveform={null} energy={0.3} active={false} size={44} />
-                  <AudioWaveformOrb name="" role="claude" waveform={null} energy={0.2} active={false} size={36} />
+                  <ParallaxOrb size={36} energy={0.2} isSpeaking={false} />
                 </div>
               </div>
 
