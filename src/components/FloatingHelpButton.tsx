@@ -100,47 +100,41 @@ export function FloatingHelpButton() {
   }
 
   return (
-    <>
-      {/* Collapsed FAB */}
-      <button
-        onClick={handleOpen}
-        className={`fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full transition-all duration-300 ease-out hover:scale-105 ${
-          isOpen
-            ? 'w-0 h-0 opacity-0 scale-0 pointer-events-none'
-            : 'w-12 h-12 opacity-100 scale-100'
-        }`}
-        style={{
-          backgroundColor: 'var(--temp-cool)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 16px var(--glow-cool-soft), 0 0 32px var(--glow-cool-soft)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'none'
-        }}
-        aria-label="Ask Parallax for help"
-      >
-        <span
-          className={`font-mono text-lg font-semibold transition-opacity duration-200 ${
-            isOpen ? 'opacity-0' : 'opacity-100'
-          }`}
-          style={{ color: 'var(--ember-dark)' }}
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Collapsed FAB — anchored in place */}
+      {!isOpen && (
+        <button
+          onClick={handleOpen}
+          className="w-12 h-12 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: 'var(--temp-cool)',
+            boxShadow: '0 4px 16px rgba(106, 171, 142, 0.2)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 24px rgba(106, 171, 142, 0.4)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(106, 171, 142, 0.2)'
+          }}
+          aria-label="Ask Parallax for help"
         >
-          ?
-        </span>
-      </button>
+          <span className="font-mono text-lg font-semibold" style={{ color: 'var(--ember-dark)' }}>
+            ?
+          </span>
+        </button>
+      )}
 
-      {/* Expanded panel */}
-      <div
-        className={`fixed bottom-6 right-6 z-50 flex flex-col bg-background border border-border rounded-lg overflow-hidden transition-all duration-300 ease-out ${
-          isOpen
-            ? 'w-[360px] max-h-[480px] opacity-100 scale-100'
-            : 'w-0 max-h-0 opacity-0 scale-95 pointer-events-none'
-        }`}
-        style={{
-          boxShadow: isOpen ? '0 8px 32px rgba(0,0,0,0.3)' : 'none',
-        }}
-      >
+      {/* Expanded panel — grows from the FAB position */}
+      {isOpen && (
+        <div
+          className="flex flex-col bg-background border border-border rounded-lg overflow-hidden"
+          style={{
+            width: '360px',
+            maxHeight: '480px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            transformOrigin: 'bottom right',
+          }}
+        >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -372,6 +366,7 @@ export function FloatingHelpButton() {
           </div>
         </div>
       </div>
-    </>
+      )}
+    </div>
   )
 }
