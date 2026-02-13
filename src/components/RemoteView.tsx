@@ -5,6 +5,7 @@ import { ParallaxPresence } from "./inperson/ParallaxPresence";
 import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
+import { InlineSessionSummary } from "./InlineSessionSummary";
 import { CoachingPanel } from "./CoachingPanel";
 import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
@@ -14,11 +15,10 @@ import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { useSessionSummary } from "@/hooks/useSessionSummary";
 import { SoloSidebar } from "./SoloSidebar";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
-import { buildSessionSummaryHtml } from "@/lib/export-html";
-import { useRouter } from "next/navigation";
-import type { SessionSummaryData } from "@/types/database";
+import { senderLabel, senderColor } from "@/lib/conversation";
 import type {
   Session,
   ContextMode,
@@ -94,9 +94,6 @@ export function RemoteView({
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
   const [handsFree, setHandsFree] = useState(true);
   const [muted, setMuted] = useState(false);
-  const [summaryData, setSummaryData] = useState<SessionSummaryData | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const router = useRouter();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const conductorFired = useRef(false);
@@ -113,36 +110,31 @@ export function RemoteView({
   const personBName = activeSession.person_b_name ?? "Person B";
   const localName = localSide === "a" ? personAName : personBName;
 
+  const isMyTurn = effectiveTurn === localPerson;
+  const isCompleted = activeSession.status === "completed";
+  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
+
+  const { summaryData, summaryLoading, handleExportSummary } = useSessionSummary({
+    roomCode,
+    personAName,
+    personBName,
+    mode: "remote",
+    isCompleted,
+  });
+
   const contextMode =
     (activeSession.context_mode as ContextMode) || "intimate";
   const contextModeLabel =
     CONTEXT_MODE_INFO[contextMode]?.name || "Intimate Partners";
 
-  const isMyTurn = effectiveTurn === localPerson;
-  const isCompleted = activeSession.status === "completed";
-  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
-
   // Active speaker name for ActiveSpeakerBar
-  const activeSpeaker = isMyTurn
-    ? localName
-    : effectiveTurn === "mediator"
-      ? "Parallax"
-      : effectiveTurn === "person_a"
-        ? personAName
-        : personBName;
-
-  // Helper for sender display
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
-    if (sender === "person_a") return personAName;
+  function getActiveSpeakerName(): string {
+    if (isMyTurn) return localName;
+    if (effectiveTurn === "mediator") return "Parallax";
+    if (effectiveTurn === "person_a") return personAName;
     return personBName;
   }
-
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
-  }
+  const activeSpeaker = getActiveSpeakerName();
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -150,39 +142,6 @@ export function RemoteView({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
-
-  // Fetch summary when session is completed
-  const summaryFetched = useRef(false);
-  useEffect(() => {
-    if (!isCompleted || summaryFetched.current) return;
-    summaryFetched.current = true;
-    setSummaryLoading(true);
-    fetch(`/api/sessions/${roomCode}/summary`, { method: "POST" })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.summary) setSummaryData(data.summary);
-      })
-      .catch(() => {})
-      .finally(() => setSummaryLoading(false));
-  }, [isCompleted, roomCode]);
-
-  // Export summary as HTML download
-  const handleExportSummary = useCallback(() => {
-    if (!summaryData) return;
-    const html = buildSessionSummaryHtml(summaryData, roomCode, personAName, personBName, "remote");
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parallax-${roomCode.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-  }, [summaryData, roomCode, personAName, personBName]);
 
   // Speak new mediator messages via TTS
   useEffect(() => {
@@ -538,11 +497,9 @@ export function RemoteView({
                       }`}
                     >
                       <span
-                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(
-                          msg.sender,
-                        )}`}
+                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(msg.sender)}`}
                       >
-                        {senderLabel(msg.sender)}
+                        {senderLabel(msg.sender, personAName, personBName)}
                       </span>
                       <p
                         className={`text-sm mt-0.5 leading-relaxed ${
@@ -604,65 +561,11 @@ export function RemoteView({
           {/* Session completed — inline summary + export */}
           {isCompleted && (
             <div className="flex-shrink-0 border-t border-border">
-              {summaryLoading && (
-                <div className="px-4 py-6 flex items-center justify-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
-                    Generating summary...
-                  </span>
-                </div>
-              )}
-              {summaryData && (
-                <div className="px-4 py-4 space-y-4 max-h-[50vh] overflow-y-auto">
-                  <div className="border-l-2 border-accent pl-4 py-1">
-                    <p className="text-foreground text-sm leading-relaxed font-serif">
-                      {summaryData.overallInsight}
-                    </p>
-                  </div>
-                  {summaryData.keyMoments.length > 0 && (
-                    <div>
-                      <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
-                        Key Moments
-                      </p>
-                      <ul className="space-y-1.5">
-                        {summaryData.keyMoments.map((moment, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-ember-300">
-                            <span className="mt-1 block w-1 h-1 rounded-full bg-accent flex-shrink-0" />
-                            {moment}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      onClick={handleExportSummary}
-                      className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-4 py-2 hover:border-foreground/20"
-                    >
-                      Export
-                    </button>
-                    <button
-                      onClick={() => router.push("/home")}
-                      className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors border border-accent/30 px-4 py-2 hover:border-foreground/20"
-                    >
-                      Home
-                    </button>
-                  </div>
-                </div>
-              )}
-              {!summaryLoading && !summaryData && (
-                <div className="px-4 py-4 flex items-center gap-3">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
-                    Session ended
-                  </span>
-                  <button
-                    onClick={() => router.push("/home")}
-                    className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors"
-                  >
-                    Home
-                  </button>
-                </div>
-              )}
+              <InlineSessionSummary
+                summaryData={summaryData}
+                summaryLoading={summaryLoading}
+                onExport={handleExportSummary}
+              />
             </div>
           )}
 
@@ -726,13 +629,8 @@ export function RemoteView({
               isMuted={muted}
               onToggleMute={() => setMuted((v) => !v)}
               onModeChange={(mode) => {
-                if (mode === "auto") {
-                  setHandsFree(true);
-                  setMuted(false);
-                } else {
-                  setHandsFree(false);
-                  setMuted(false);
-                }
+                setHandsFree(mode === "auto");
+                setMuted(false);
               }}
             />
           </div>

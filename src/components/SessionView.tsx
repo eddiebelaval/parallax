@@ -20,7 +20,6 @@ function SideChooser({
   onChoose,
 }: {
   roomCode: string;
-  session: ReturnType<typeof useSession>["session"];
   onChoose: (side: "a" | "b") => void;
 }) {
   function chooseSide(side: "a" | "b") {
@@ -141,7 +140,6 @@ export function SessionView({ roomCode }: SessionViewProps) {
   return (
     <SideChooser
       roomCode={roomCode}
-      session={session}
       onChoose={setLocalSide}
     />
   );

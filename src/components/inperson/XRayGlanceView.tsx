@@ -9,6 +9,7 @@ import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
 import { TurnTimer } from "./TurnTimer";
 import { TurnProgressBar } from "./TurnProgressBar";
 import { TimerSettings } from "./TimerSettings";
+import { InlineSessionSummary } from "@/components/InlineSessionSummary";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
@@ -16,14 +17,10 @@ import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { useSessionSummary } from "@/hooks/useSessionSummary";
 import { SoloSidebar } from "@/components/SoloSidebar";
-import { buildSessionSummaryHtml } from "@/lib/export-html";
-import { useRouter } from "next/navigation";
-import type {
-  Session,
-  OnboardingContext,
-  SessionSummaryData,
-} from "@/types/database";
+import { senderLabel, senderColor } from "@/lib/conversation";
+import type { Session, OnboardingContext } from "@/types/database";
 
 interface XRayGlanceViewProps {
   session: Session;
@@ -47,19 +44,16 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [isMicHot, setIsMicHot] = useState(false);
   const [turnBasedMode, setTurnBasedMode] = useState(true);
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
-  const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
-  const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
-  const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
-  const [summaryData, setSummaryData] = useState<SessionSummaryData | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const router = useRouter();
+  const [handsFree, setHandsFree] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [timerFlash, setTimerFlash] = useState(false);
 
-  // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
   const conductorFired = useRef(false);
   const prevPhaseRef = useRef<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Derived state
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
   const conductorPhase = onboarding.conductorPhase;
   const isOnboarding = conductorPhase === "onboarding";
@@ -68,6 +62,14 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   const personAName = activeSession.person_a_name ?? "Person A";
   const personBName = activeSession.person_b_name ?? "Person B";
+
+  const { summaryData, summaryLoading, handleExportSummary } = useSessionSummary({
+    roomCode,
+    personAName,
+    personBName,
+    mode: "in_person",
+    isCompleted,
+  });
 
   const activeSender = isOnboarding ? directedTo : currentTurn;
   const activeSpeaker = activeSender === "person_a" ? personAName : personBName;
@@ -142,57 +144,12 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     }
   }, [activeSender, turnBasedMode, isActive, resetTimer]);
 
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
-  }
-
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
-    if (sender === "person_a") return personAName;
-    return personBName;
-  }
-
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
-
-  // Fetch summary when session is completed
-  const summaryFetched = useRef(false);
-  useEffect(() => {
-    if (!isCompleted || summaryFetched.current) return;
-    summaryFetched.current = true;
-    setSummaryLoading(true);
-    fetch(`/api/sessions/${roomCode}/summary`, { method: "POST" })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.summary) setSummaryData(data.summary);
-      })
-      .catch(() => {})
-      .finally(() => setSummaryLoading(false));
-  }, [isCompleted, roomCode]);
-
-  // Export summary as HTML download
-  const handleExportSummary = useCallback(() => {
-    if (!summaryData) return;
-    const html = buildSessionSummaryHtml(summaryData, roomCode, personAName, personBName, "in_person");
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parallax-${roomCode.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-  }, [summaryData, roomCode, personAName, personBName]);
 
   // Fire conductor on mount (greeting) for in-person mode
   // Wait for messagesLoading to finish so we know if messages already exist (reload case)
@@ -373,6 +330,13 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   const totalIssues = personAIssues.length + personBIssues.length;
 
+  function getPresenceStatusLabel(): string | undefined {
+    if (autoListen.isListening && autoListen.isSpeechActive) return "Listening...";
+    if (autoListen.isListening) return "Waiting...";
+    if (isMicHot) return "Recording...";
+    return undefined;
+  }
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header with visual temperature scoreboard */}
@@ -504,15 +468,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <ParallaxPresence
           isAnalyzing={isAnalyzing || conductorLoading}
           isSpeaking={isSpeaking}
-          statusLabel={
-            autoListen.isListening
-              ? autoListen.isSpeechActive
-                ? "Listening..."
-                : "Waiting..."
-              : isMicHot
-              ? "Recording..."
-              : undefined
-          }
+          statusLabel={getPresenceStatusLabel()}
           voiceWaveform={voiceWaveform}
           voiceEnergy={voiceEnergy}
         />
@@ -546,9 +502,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-2xl mx-auto px-3 py-3 space-y-2">
             {messages.map((msg) => {
-              const isPersonA = msg.sender === "person_a";
               const isMediator = msg.sender === "mediator";
-
               return (
                 <div key={msg.id} className="signal-card-enter">
                   <div
@@ -556,13 +510,12 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
                       isMediator ? "bg-transparent" : "bg-surface"
                     }`}
                   >
-                    {/* Sender label */}
                     <span
                       className={`font-mono text-[9px] uppercase tracking-widest ${
                         senderColor(msg.sender)
                       }`}
                     >
-                      {senderLabel(msg.sender)}
+                      {senderLabel(msg.sender, personAName, personBName)}
                     </span>
                     <p
                       className={`text-sm mt-0.5 leading-relaxed ${
@@ -644,65 +597,11 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       {/* Session completed — inline summary + export */}
       {isCompleted && (
         <div className="flex-shrink-0 border-t border-border">
-          {summaryLoading && (
-            <div className="px-4 py-6 flex items-center justify-center gap-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
-                Generating summary...
-              </span>
-            </div>
-          )}
-          {summaryData && (
-            <div className="px-4 py-4 space-y-4 max-h-[50vh] overflow-y-auto">
-              <div className="border-l-2 border-accent pl-4 py-1">
-                <p className="text-foreground text-sm leading-relaxed font-serif">
-                  {summaryData.overallInsight}
-                </p>
-              </div>
-              {summaryData.keyMoments.length > 0 && (
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
-                    Key Moments
-                  </p>
-                  <ul className="space-y-1.5">
-                    {summaryData.keyMoments.map((moment, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-ember-300">
-                        <span className="mt-1 block w-1 h-1 rounded-full bg-accent flex-shrink-0" />
-                        {moment}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={handleExportSummary}
-                  className="font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors border border-border px-4 py-2 hover:border-foreground/20"
-                >
-                  Export
-                </button>
-                <button
-                  onClick={() => router.push("/home")}
-                  className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors border border-accent/30 px-4 py-2 hover:border-foreground/20"
-                >
-                  Home
-                </button>
-              </div>
-            </div>
-          )}
-          {!summaryLoading && !summaryData && (
-            <div className="px-4 py-4 flex items-center gap-3">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500">
-                Session ended
-              </span>
-              <button
-                onClick={() => router.push("/home")}
-                className="font-mono text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors"
-              >
-                Home
-              </button>
-            </div>
-          )}
+          <InlineSessionSummary
+            summaryData={summaryData}
+            summaryLoading={summaryLoading}
+            onExport={handleExportSummary}
+          />
         </div>
       )}
 
@@ -738,13 +637,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           isMuted={muted}
           onToggleMute={() => setMuted((v) => !v)}
           onModeChange={(mode) => {
-            if (mode === "auto") {
-              setHandsFree(true);
-              setMuted(false);
-            } else {
-              setHandsFree(false);
-              setMuted(false);
-            }
+            setHandsFree(mode === "auto");
+            setMuted(false);
           }}
         />
       </div>
