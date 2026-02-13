@@ -32,6 +32,7 @@ export function useConversationInsights(
     if (focusedMessages.length < 2 || focusedMessages.length === lastCount.current) return
     lastCount.current = focusedMessages.length
 
+    let cancelled = false
     setLoading(true)
 
     fetch('/api/insights', {
@@ -44,13 +45,15 @@ export function useConversationInsights(
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.insights) {
+        if (!cancelled && data.insights) {
           insightsRef.current = data.insights
           setInsights(data.insights)
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
   }, [focusedMessages]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { insights, loading }
