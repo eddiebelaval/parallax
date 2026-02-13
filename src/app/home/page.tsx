@@ -1,64 +1,35 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { useUserSessions } from '@/hooks/useUserSessions'
-import { supabase } from '@/lib/supabase'
+import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { getServerUser } from '@/lib/auth/server-auth'
+import { getUserData } from '@/lib/data/user-profile'
 import { TheDoor } from '@/components/landing/TheDoor'
 import { SessionHistory } from '@/components/home/SessionHistory'
 import { ProfileSummary } from '@/components/home/ProfileSummary'
-import type { UserProfile, BehavioralSignal } from '@/types/database'
+import { SessionHistorySkeleton } from '@/components/home/SessionHistorySkeleton'
+import { ProfileSummarySkeleton } from '@/components/home/ProfileSummarySkeleton'
 
-export default function HomePage() {
-  const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
-  const { sessions, loading: sessionsLoading } = useUserSessions(user?.id)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [signals, setSignals] = useState<BehavioralSignal[]>([])
-  const [loading, setLoading] = useState(true)
+/**
+ * Home Page - Server Component
+ *
+ * Converted from client component to server component for:
+ * - Server-side auth check with redirect
+ * - Parallel data fetching at the server level
+ * - Automatic caching and deduplication via React cache()
+ * - Streaming with Suspense boundaries
+ */
 
-  // Auth guard
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth')
-    }
-  }, [authLoading, user, router])
+export default async function HomePage() {
+  // Server-side auth check
+  const user = await getServerUser()
 
-  // Load profile + signals
-  useEffect(() => {
-    if (!user) return
-
-    async function loadProfile() {
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single()
-
-      const { data: signalData } = await supabase
-        .from('behavioral_signals')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('signal_type')
-
-      setProfile(profileData as UserProfile | null)
-      setSignals((signalData ?? []) as BehavioralSignal[])
-      setLoading(false)
-    }
-
-    loadProfile()
-  }, [user])
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center">
-        <div className="text-muted font-mono text-sm">Loading...</div>
-      </div>
-    )
+  if (!user) {
+    redirect('/auth')
   }
 
-  const displayName = profile?.display_name ?? user?.email ?? 'there'
+  // Fetch all user data in parallel (cached via React cache())
+  const { profile, signals, sessions } = await getUserData(user.id)
+
+  const displayName = profile?.display_name ?? user.email ?? 'there'
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
@@ -80,7 +51,7 @@ export default function HomePage() {
         <TheDoor />
       </div>
 
-      {/* Session History */}
+      {/* Session History with Suspense */}
       <div className="mb-10">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-1.5 h-1.5 rounded-full bg-accent" />
@@ -88,14 +59,12 @@ export default function HomePage() {
             Session History
           </span>
         </div>
-        {sessionsLoading ? (
-          <div className="text-muted font-mono text-sm">Loading sessions...</div>
-        ) : (
-          <SessionHistory sessions={sessions} userId={user!.id} />
-        )}
+        <Suspense fallback={<SessionHistorySkeleton />}>
+          <SessionHistory sessions={sessions} userId={user.id} />
+        </Suspense>
       </div>
 
-      {/* Profile Summary */}
+      {/* Profile Summary with Suspense */}
       <div>
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-1.5 h-1.5 rounded-full bg-accent" />
@@ -103,7 +72,9 @@ export default function HomePage() {
             Your Intelligence Profile
           </span>
         </div>
-        <ProfileSummary profile={profile} signals={signals} />
+        <Suspense fallback={<ProfileSummarySkeleton />}>
+          <ProfileSummary profile={profile} signals={signals} />
+        </Suspense>
       </div>
     </div>
   )

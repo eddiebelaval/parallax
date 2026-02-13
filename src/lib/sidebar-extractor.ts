@@ -122,13 +122,22 @@ export async function extractSidebarInsights(
     lastSeenAt: new Date().toISOString(),
   }
 
-  // Persist to DB if authenticated
+  // Persist to DB if authenticated (upsert creates row if missing)
   if (userId) {
     const supabase = createServerClient()
-    await supabase
+    const { error: upsertError } = await supabase
       .from('user_profiles')
-      .update({ solo_memory: merged })
-      .eq('user_id', userId)
+      .upsert(
+        { user_id: userId, solo_memory: merged },
+        { onConflict: 'user_id' },
+      )
+    if (upsertError) {
+      console.error('[sidebar-extractor] Failed to persist solo_memory:', {
+        userId,
+        error: upsertError.message,
+        code: upsertError.code,
+      })
+    }
   }
 
   return merged
