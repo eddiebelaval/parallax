@@ -8,10 +8,12 @@ interface SoloSidebarProps {
 }
 
 /**
- * Typewriter that captures delay at mount time via ref.
- * This prevents re-animation when parent state changes cause
- * the `isFirst` flag to flip (which would change delay values).
+ * Typewriter that only animates ONCE per unique text.
+ * Uses a module-level Set to track what's been typed before.
+ * If the text was already shown, it renders instantly.
  */
+const typedTexts = new Set<string>();
+
 function GhostTypewriter({
   text,
   delay = 0,
@@ -23,19 +25,30 @@ function GhostTypewriter({
   speed?: number;
   cursor?: boolean;
 }) {
-  const [charIndex, setCharIndex] = useState(0);
-  const [started, setStarted] = useState(false);
+  const alreadyTyped = typedTexts.has(text);
+  const [charIndex, setCharIndex] = useState(alreadyTyped ? text.length : 0);
+  const [started, setStarted] = useState(alreadyTyped);
   const mountDelayRef = useRef(delay);
 
   useEffect(() => {
+    if (alreadyTyped) {
+      setCharIndex(text.length);
+      setStarted(true);
+      return;
+    }
     setCharIndex(0);
     setStarted(false);
     const t = setTimeout(() => setStarted(true), mountDelayRef.current);
     return () => clearTimeout(t);
-  }, [text]);
+  }, [text, alreadyTyped]);
 
   useEffect(() => {
-    if (!started || charIndex >= text.length) return;
+    if (!started || charIndex >= text.length) {
+      if (started && charIndex >= text.length) {
+        typedTexts.add(text);
+      }
+      return;
+    }
     const t = setTimeout(() => setCharIndex((i) => i + 1), speed);
     return () => clearTimeout(t);
   }, [started, charIndex, text, speed]);
@@ -67,15 +80,31 @@ function emotionColor(state: string | null): string {
 }
 
 export function SoloSidebar({ insights }: SoloSidebarProps) {
-  const hasPopulatedRef = useRef(false);
+  // Track which list items have been rendered before.
+  // Items in this set render instantly; items NOT in it get entrance animation.
+  const seenItemsRef = useRef(new Set<string>());
+  const isFirstPopulation = useRef(true);
 
+  // After each render, mark all current items as "seen"
   useEffect(() => {
-    if (insights && !hasPopulatedRef.current) {
-      hasPopulatedRef.current = true;
+    if (!insights) return;
+    if (isFirstPopulation.current) {
+      isFirstPopulation.current = false;
     }
-  }, [insights]);
+    insights.themes.forEach((t) => seenItemsRef.current.add(`theme:${t.toLowerCase()}`));
+    insights.patterns.forEach((p) => seenItemsRef.current.add(`pattern:${p.toLowerCase()}`));
+    insights.values.forEach((v) => seenItemsRef.current.add(`value:${v.toLowerCase()}`));
+    insights.strengths.forEach((s) => seenItemsRef.current.add(`strength:${s.toLowerCase()}`));
+    insights.actionItems.forEach((a) => seenItemsRef.current.add(`action:${a.id}`));
+    insights.identity?.importantPeople?.forEach((p) =>
+      seenItemsRef.current.add(`person:${p.name.toLowerCase()}`),
+    );
+  });
 
-  const isFirst = !hasPopulatedRef.current;
+  /** Returns true if this is a brand new item that should animate in. */
+  function isNew(prefix: string, key: string): boolean {
+    return !seenItemsRef.current.has(`${prefix}:${key.toLowerCase()}`);
+  }
 
   if (!insights) {
     return (
@@ -90,162 +119,188 @@ export function SoloSidebar({ insights }: SoloSidebarProps) {
     );
   }
 
+  // Count new items for staggered animation delays
+  let newItemIndex = 0;
+
   return (
     <div className="px-4 py-4 space-y-5">
-      {/* Identity Hero */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
+      {/* ─── Identity Hero (wiki-style) ─── */}
+      <div className="pb-3 border-b border-border">
+        <div className="flex items-center justify-between mb-2">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600">
             Insights
           </p>
           {insights.sessionCount > 0 && (
-            <p className="font-mono text-[9px] text-ember-700">
-              #{insights.sessionCount}
-            </p>
+            <span className="font-mono text-[8px] uppercase tracking-wider text-temp-cool/60 border border-temp-cool/20 rounded-sm px-1.5 py-0.5">
+              Session #{insights.sessionCount}
+            </span>
           )}
         </div>
         {insights.identity?.name && (
-          <p className="font-serif text-lg text-heading tracking-tight">
+          <p className="font-serif text-xl text-heading tracking-tight mb-1">
             <GhostTypewriter
               text={insights.identity.name}
-              delay={isFirst ? 100 : 50}
+              delay={isFirstPopulation.current ? 100 : 0}
               speed={20}
             />
           </p>
         )}
-        {insights.emotionalState && (
-          <p
-            className={`font-mono text-[10px] uppercase tracking-widest mt-1 ${emotionColor(insights.emotionalState)}`}
-          >
-            <GhostTypewriter
-              text={insights.emotionalState}
-              delay={isFirst ? 400 : 80}
-              speed={18}
-            />
-          </p>
-        )}
+        {/* Badge row under the name */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+          {insights.emotionalState && (
+            <span
+              className={`font-mono text-[8px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm border ${emotionColor(insights.emotionalState)} border-current/20`}
+            >
+              {insights.emotionalState}
+            </span>
+          )}
+          {insights.identity?.bio && (
+            <span className="font-mono text-[8px] tracking-wider text-ember-600 px-1.5 py-0.5">
+              {insights.identity.bio}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Situation */}
+      {/* ─── Situation ─── */}
       {insights.currentSituation && (
-        <div>
+        <div className="pb-3 border-b border-border/50">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
             Situation
           </p>
           <p className="text-ember-400 text-[11px] leading-relaxed">
             <GhostTypewriter
               text={insights.currentSituation}
-              delay={isFirst ? 800 : 100}
-              speed={12}
+              delay={isFirstPopulation.current ? 400 : 0}
+              speed={10}
+              cursor={false}
             />
           </p>
         </div>
       )}
 
-      {/* Themes */}
+      {/* ─── Themes ─── */}
       {insights.themes.length > 0 && (
-        <div>
+        <div className="pb-3 border-b border-border/50">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
             Themes
           </p>
           <div className="flex flex-wrap gap-1">
-            {insights.themes.map((theme, i) => (
-              <span
-                key={theme}
-                className="font-mono text-[8px] uppercase tracking-wider border border-ember-800 rounded-sm px-2 py-0.5 text-ember-500 signal-card-enter"
-                style={{
-                  animationDelay: isFirst ? `${1200 + i * 150}ms` : `${i * 50}ms`,
-                }}
-              >
-                {theme}
-              </span>
-            ))}
+            {insights.themes.map((theme) => {
+              const fresh = isNew("theme", theme);
+              const animDelay = fresh ? `${100 + newItemIndex++ * 120}ms` : "0ms";
+              return (
+                <span
+                  key={theme}
+                  className={`font-mono text-[8px] uppercase tracking-wider border border-ember-800 rounded-sm px-2 py-0.5 text-ember-500 ${fresh ? "signal-card-enter" : ""}`}
+                  style={fresh ? { animationDelay: animDelay } : undefined}
+                >
+                  {theme}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Patterns */}
+      {/* ─── Patterns ─── */}
       {insights.patterns.length > 0 && (
-        <div>
+        <div className="pb-3 border-b border-border/50">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
             Patterns
           </p>
           <div className="space-y-1.5">
-            {insights.patterns.map((pattern, i) => (
-              <div
-                key={pattern}
-                className="pl-3 border-l-2 border-temp-warm text-ember-400 text-[11px] leading-relaxed signal-card-enter"
-                style={{
-                  animationDelay: isFirst ? `${2000 + i * 200}ms` : `${i * 60}ms`,
-                }}
-              >
-                {pattern}
-              </div>
-            ))}
+            {insights.patterns.map((pattern) => {
+              const fresh = isNew("pattern", pattern);
+              const animDelay = fresh ? `${100 + newItemIndex++ * 120}ms` : "0ms";
+              return (
+                <div
+                  key={pattern}
+                  className={`pl-3 border-l-2 border-temp-warm text-ember-400 text-[11px] leading-relaxed ${fresh ? "signal-card-enter" : ""}`}
+                  style={fresh ? { animationDelay: animDelay } : undefined}
+                >
+                  {pattern}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Values + Strengths */}
-      {(insights.values.length > 0 || insights.strengths.length > 0) && (
-        <div>
-          {insights.values.length > 0 && (
-            <>
-              <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
-                Values
-              </p>
-              <div className="flex flex-wrap gap-1 mb-3">
-                {insights.values.map((v) => (
-                  <span
-                    key={v}
-                    className="font-mono text-[8px] uppercase tracking-wider text-temp-cool/70 border border-temp-cool/20 rounded-sm px-2 py-0.5"
-                  >
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-          {insights.strengths.length > 0 && (
-            <>
-              <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
-                Strengths
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {insights.strengths.map((s) => (
-                  <span
-                    key={s}
-                    className="font-mono text-[8px] uppercase tracking-wider text-temp-warm/70 border border-temp-warm/20 rounded-sm px-2 py-0.5"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
+      {/* ─── Values ─── */}
+      {insights.values.length > 0 && (
+        <div className="pb-3 border-b border-border/50">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
+            Values
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {insights.values.map((v) => {
+              const fresh = isNew("value", v);
+              const animDelay = fresh ? `${100 + newItemIndex++ * 120}ms` : "0ms";
+              return (
+                <span
+                  key={v}
+                  className={`font-mono text-[8px] uppercase tracking-wider text-temp-cool/70 border border-temp-cool/20 rounded-sm px-2 py-0.5 ${fresh ? "signal-card-enter" : ""}`}
+                  style={fresh ? { animationDelay: animDelay } : undefined}
+                >
+                  {v}
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Important People */}
+      {/* ─── Strengths ─── */}
+      {insights.strengths.length > 0 && (
+        <div className="pb-3 border-b border-border/50">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
+            Strengths
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {insights.strengths.map((s) => {
+              const fresh = isNew("strength", s);
+              const animDelay = fresh ? `${100 + newItemIndex++ * 120}ms` : "0ms";
+              return (
+                <span
+                  key={s}
+                  className={`font-mono text-[8px] uppercase tracking-wider text-temp-warm/70 border border-temp-warm/20 rounded-sm px-2 py-0.5 ${fresh ? "signal-card-enter" : ""}`}
+                  style={fresh ? { animationDelay: animDelay } : undefined}
+                >
+                  {s}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Important People ─── */}
       {insights.identity?.importantPeople?.length > 0 && (
-        <div>
+        <div className="pb-3 border-b border-border/50">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
             People
           </p>
           <div className="space-y-1">
-            {insights.identity.importantPeople.map((p) => (
-              <div key={p.name} className="flex items-baseline gap-2">
-                <span className="text-ember-400 text-[11px]">{p.name}</span>
-                <span className="font-mono text-[8px] uppercase tracking-wider text-ember-700">
-                  {p.relationship}
-                </span>
-              </div>
-            ))}
+            {insights.identity.importantPeople.map((p) => {
+              const fresh = isNew("person", p.name);
+              return (
+                <div
+                  key={p.name}
+                  className={`flex items-baseline gap-2 ${fresh ? "signal-card-enter" : ""}`}
+                >
+                  <span className="text-ember-400 text-[11px]">{p.name}</span>
+                  <span className="font-mono text-[8px] uppercase tracking-wider text-ember-700">
+                    {p.relationship}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Action Items */}
+      {/* ─── Action Items ─── */}
       {insights.actionItems.length > 0 && (
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-ember-600 mb-2">
@@ -254,10 +309,11 @@ export function SoloSidebar({ insights }: SoloSidebarProps) {
           <div className="space-y-2">
             {insights.actionItems.map((item) => {
               const done = item.status === "completed";
+              const fresh = isNew("action", item.id);
               return (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-2 ${done ? "opacity-50" : ""}`}
+                  className={`flex items-start gap-2 ${done ? "opacity-50" : ""} ${fresh ? "signal-card-enter" : ""}`}
                 >
                   <span
                     className={`mt-0.5 w-3 h-3 rounded-full border flex-shrink-0 ${
