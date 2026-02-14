@@ -437,13 +437,13 @@
 
 /* ── Orbiting hint text for idle pill ── */
 @keyframes orbit-text {
-  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius, 130px)) rotate(-90deg); }
-  100% { transform: rotate(360deg) translateX(var(--orbit-radius, 130px)) rotate(270deg); }
+  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius, 130px)) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(var(--orbit-radius, 130px)) rotate(-360deg); }
 }
 
 .orbit-hint {
   position: absolute;
-  bottom: -20px;
+  bottom: -24px;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;

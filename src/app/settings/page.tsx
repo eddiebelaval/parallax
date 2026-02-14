@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSettings, type ParallaxSettings } from '@/hooks/useSettings'
 import { useProfileConcierge } from '@/hooks/useProfileConcierge'
-import { ParallaxFAB } from '@/components/home/ParallaxFAB'
+
 
 const CONTEXT_MODE_OPTIONS: { value: string; label: string; desc: string }[] = [
   { value: 'intimate', label: 'Intimate', desc: 'Partners, close relationships' },
@@ -535,8 +535,6 @@ export default function SettingsPage() {
       {/* Toast Notification */}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
-      {/* Parallax Guide FAB */}
-      <ParallaxFAB />
     </div>
   )
 }

@@ -7,7 +7,6 @@ import { useNarrationController } from "@/hooks/useNarrationController";
 import { useAuth } from "@/hooks/useAuth";
 import { NarrationPanel } from "@/components/landing/NarrationPanel";
 import { NarrationStage } from "@/components/landing/NarrationStage";
-import { GlowChatInterface } from "@/components/landing/GlowChatInterface";
 import { TheDoor } from "@/components/landing/TheDoor";
 import { AntMarchBadge } from "@/components/landing/AntMarchBadge";
 import { HeroPreview } from "@/components/landing/HeroPreview";
@@ -59,8 +58,7 @@ export default function Home() {
   const { user } = useAuth();
   const isComplete = narration.phase === "complete";
   const isNarrating = narration.phase === "narrating";
-  const isChat = narration.phase === "chat";
-  const shouldDim = isNarrating || isChat;
+  const shouldDim = isNarrating;
 
   // Dispatch narration phase to layout via custom event
   useEffect(() => {
@@ -100,7 +98,7 @@ export default function Home() {
             onToggleMute={narration.toggleMute}
           />
         }
-        chatContent={<GlowChatInterface onClose={narration.exitChat} />}
+        chatContent={null}
       />
 
       {/* Skip intro — visible during idle phase */}

@@ -1,0 +1,806 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "Parallax",
+    "description": "Voice-first therapy coaching with NVC analysis",
+    "repo": "/Users/eddiebelaval/Development/id8/products/parallax"
+  },
+  "protocol": {
+    "steps": [
+      "created",
+      "wired",
+      "integrated",
+      "tested",
+      "documented"
+    ],
+    "labels": {
+      "created": "File / component exists",
+      "wired": "Connected to consumers",
+      "integrated": "Data flows end-to-end",
+      "tested": "Tests passing",
+      "documented": "Docs written"
+    }
+  },
+  "layers": [
+    {
+      "id": "frontend",
+      "label": "Frontend",
+      "accent": "#4ecdc4"
+    },
+    {
+      "id": "backend",
+      "label": "Backend",
+      "accent": "#ef6f2e"
+    },
+    {
+      "id": "database",
+      "label": "Database",
+      "accent": "#f59e0b"
+    },
+    {
+      "id": "integration",
+      "label": "External",
+      "accent": "#8b5cf6"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "landing",
+      "name": "Landing Page",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "yellow",
+      "x": 80,
+      "y": 50,
+      "files": [
+        "src/app/page.tsx",
+        "src/components/landing/TheDoor.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "auth",
+      "name": "Auth Flow",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "yellow",
+      "x": 300,
+      "y": 50,
+      "files": [
+        "src/app/auth/page.tsx",
+        "src/app/auth/callback/page.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "home",
+      "name": "Home Dashboard",
+      "layer": "frontend",
+      "phase": "built",
+      "status": "green",
+      "x": 520,
+      "y": 50,
+      "files": [
+        "src/app/home/page.tsx",
+        "src/components/home/HomeContent.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": false,
+        "documented": true
+      }
+    },
+    {
+      "id": "session",
+      "name": "Session View",
+      "layer": "frontend",
+      "phase": "built",
+      "status": "green",
+      "x": 760,
+      "y": 50,
+      "files": [
+        "src/app/session/[code]/page.tsx",
+        "src/components/SessionView.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": true,
+        "documented": true
+      }
+    },
+    {
+      "id": "remote",
+      "name": "Remote Mode",
+      "layer": "frontend",
+      "phase": "built",
+      "status": "green",
+      "x": 100,
+      "y": 190,
+      "files": [
+        "src/components/RemoteView.tsx",
+        "src/components/PersonPanel.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": true,
+        "documented": false
+      }
+    },
+    {
+      "id": "solo",
+      "name": "Solo Mode",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "yellow",
+      "x": 320,
+      "y": 190,
+      "files": [
+        "src/components/SoloView.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "voice-orb",
+      "name": "Voice & Orb",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "green",
+      "x": 540,
+      "y": 190,
+      "files": [
+        "src/components/ParallaxOrb.tsx",
+        "src/hooks/useParallaxVoice.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": true,
+        "documented": true
+      }
+    },
+    {
+      "id": "lenses",
+      "name": "Lens System",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "yellow",
+      "x": 760,
+      "y": 190,
+      "files": [
+        "src/components/lenses/LensBar.tsx",
+        "src/components/lenses/LensDetailPanel.tsx"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "coaching",
+      "name": "Coaching Panel",
+      "layer": "frontend",
+      "phase": "building",
+      "status": "yellow",
+      "x": 980,
+      "y": 190,
+      "files": [
+        "src/components/CoachingPanel.tsx",
+        "src/hooks/useCoaching.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": true
+      }
+    },
+    {
+      "id": "sessions-api",
+      "name": "Sessions API",
+      "layer": "backend",
+      "phase": "built",
+      "status": "yellow",
+      "x": 100,
+      "y": 350,
+      "files": [
+        "src/app/api/sessions/route.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "messages-api",
+      "name": "Messages API",
+      "layer": "backend",
+      "phase": "built",
+      "status": "yellow",
+      "x": 340,
+      "y": 350,
+      "files": [
+        "src/app/api/messages/route.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "mediate-api",
+      "name": "Mediate API",
+      "layer": "backend",
+      "phase": "built",
+      "status": "green",
+      "x": 580,
+      "y": 350,
+      "files": [
+        "src/app/api/mediate/route.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": false,
+        "documented": true
+      }
+    },
+    {
+      "id": "coach-api",
+      "name": "Coach API",
+      "layer": "backend",
+      "phase": "built",
+      "status": "green",
+      "x": 820,
+      "y": 350,
+      "files": [
+        "src/app/api/coach/route.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": false,
+        "documented": true
+      }
+    },
+    {
+      "id": "schema",
+      "name": "Core Schema",
+      "layer": "database",
+      "phase": "planned",
+      "status": "none",
+      "x": 400,
+      "y": 500,
+      "files": [
+        "src/supabase/migrations/20260210173017_create_parallax_schema.sql"
+      ],
+      "protocol": {
+        "created": false,
+        "wired": false,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "layer": "integration",
+      "phase": "building",
+      "status": "yellow",
+      "x": 160,
+      "y": 640,
+      "files": [
+        "src/lib/supabase.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": false
+      }
+    },
+    {
+      "id": "opus",
+      "name": "Opus Engine",
+      "layer": "integration",
+      "phase": "built",
+      "status": "green",
+      "x": 480,
+      "y": 640,
+      "files": [
+        "src/lib/opus.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": true,
+        "tested": true,
+        "documented": true
+      }
+    },
+    {
+      "id": "prompts",
+      "name": "NVC Prompts",
+      "layer": "integration",
+      "phase": "building",
+      "status": "yellow",
+      "x": 800,
+      "y": 640,
+      "files": [
+        "src/lib/prompts/index.ts"
+      ],
+      "protocol": {
+        "created": true,
+        "wired": true,
+        "integrated": false,
+        "tested": false,
+        "documented": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from": "landing",
+      "to": "auth",
+      "type": "navigation",
+      "flow": "wired"
+    },
+    {
+      "from": "auth",
+      "to": "home",
+      "type": "navigation",
+      "flow": "wired"
+    },
+    {
+      "from": "home",
+      "to": "session",
+      "type": "navigation",
+      "flow": "active"
+    },
+    {
+      "from": "session",
+      "to": "remote",
+      "type": "component",
+      "flow": "active"
+    },
+    {
+      "from": "session",
+      "to": "solo",
+      "type": "component",
+      "flow": "active"
+    },
+    {
+      "from": "remote",
+      "to": "voice-orb",
+      "type": "component",
+      "flow": "active"
+    },
+    {
+      "from": "session",
+      "to": "lenses",
+      "type": "component",
+      "flow": "active"
+    },
+    {
+      "from": "remote",
+      "to": "coaching",
+      "type": "component",
+      "flow": "active"
+    },
+    {
+      "from": "session",
+      "to": "sessions-api",
+      "type": "api",
+      "flow": "active"
+    },
+    {
+      "from": "remote",
+      "to": "messages-api",
+      "type": "api",
+      "flow": "active"
+    },
+    {
+      "from": "remote",
+      "to": "mediate-api",
+      "type": "api",
+      "flow": "active"
+    },
+    {
+      "from": "solo",
+      "to": "coach-api",
+      "type": "api",
+      "flow": "wired"
+    },
+    {
+      "from": "sessions-api",
+      "to": "schema",
+      "type": "data",
+      "flow": "planned"
+    },
+    {
+      "from": "messages-api",
+      "to": "schema",
+      "type": "data",
+      "flow": "planned"
+    },
+    {
+      "from": "mediate-api",
+      "to": "opus",
+      "type": "api",
+      "flow": "active"
+    },
+    {
+      "from": "coach-api",
+      "to": "opus",
+      "type": "api",
+      "flow": "active"
+    },
+    {
+      "from": "opus",
+      "to": "prompts",
+      "type": "data",
+      "flow": "active"
+    },
+    {
+      "from": "sessions-api",
+      "to": "supabase",
+      "type": "infra",
+      "flow": "active"
+    },
+    {
+      "from": "messages-api",
+      "to": "supabase",
+      "type": "infra",
+      "flow": "active"
+    },
+    {
+      "from": "schema",
+      "to": "supabase",
+      "type": "infra",
+      "flow": "planned"
+    }
+  ],
+  "heartbeat": {
+    "lastScan": "2026-02-14T19:25:17.915Z",
+    "version": 1,
+    "scanDurationMs": 9,
+    "blocksChanged": 84
+  },
+  "tasks": [
+    {
+      "id": "landing--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Landing Page",
+      "block": "landing",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.914Z"
+    },
+    {
+      "id": "landing--tested",
+      "priority": "medium",
+      "title": "Tests passing for Landing Page",
+      "block": "landing",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "landing--documented",
+      "priority": "low",
+      "title": "Docs written for Landing Page",
+      "block": "landing",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "auth--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Auth Flow",
+      "block": "auth",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "auth--tested",
+      "priority": "medium",
+      "title": "Tests passing for Auth Flow",
+      "block": "auth",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "auth--documented",
+      "priority": "low",
+      "title": "Docs written for Auth Flow",
+      "block": "auth",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "home--tested",
+      "priority": "medium",
+      "title": "Tests passing for Home Dashboard",
+      "block": "home",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "remote--documented",
+      "priority": "low",
+      "title": "Docs written for Remote Mode",
+      "block": "remote",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "solo--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Solo Mode",
+      "block": "solo",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "solo--tested",
+      "priority": "medium",
+      "title": "Tests passing for Solo Mode",
+      "block": "solo",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "solo--documented",
+      "priority": "low",
+      "title": "Docs written for Solo Mode",
+      "block": "solo",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "voice-orb--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Voice & Orb",
+      "block": "voice-orb",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "lenses--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Lens System",
+      "block": "lenses",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "lenses--tested",
+      "priority": "medium",
+      "title": "Tests passing for Lens System",
+      "block": "lenses",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "lenses--documented",
+      "priority": "low",
+      "title": "Docs written for Lens System",
+      "block": "lenses",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "coaching--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Coaching Panel",
+      "block": "coaching",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "coaching--tested",
+      "priority": "medium",
+      "title": "Tests passing for Coaching Panel",
+      "block": "coaching",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "sessions-api--tested",
+      "priority": "medium",
+      "title": "Tests passing for Sessions API",
+      "block": "sessions-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "sessions-api--documented",
+      "priority": "low",
+      "title": "Docs written for Sessions API",
+      "block": "sessions-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "messages-api--tested",
+      "priority": "medium",
+      "title": "Tests passing for Messages API",
+      "block": "messages-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "messages-api--documented",
+      "priority": "low",
+      "title": "Docs written for Messages API",
+      "block": "messages-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "mediate-api--tested",
+      "priority": "medium",
+      "title": "Tests passing for Mediate API",
+      "block": "mediate-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "coach-api--tested",
+      "priority": "medium",
+      "title": "Tests passing for Coach API",
+      "block": "coach-api",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "schema--created",
+      "priority": "high",
+      "title": "File / component exists for Core Schema",
+      "block": "schema",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "schema--wired",
+      "priority": "medium",
+      "title": "Connected to consumers for Core Schema",
+      "block": "schema",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "schema--integrated",
+      "priority": "medium",
+      "title": "Data flows end-to-end for Core Schema",
+      "block": "schema",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "schema--tested",
+      "priority": "medium",
+      "title": "Tests passing for Core Schema",
+      "block": "schema",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "schema--documented",
+      "priority": "low",
+      "title": "Docs written for Core Schema",
+      "block": "schema",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "supabase--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for Supabase",
+      "block": "supabase",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "supabase--tested",
+      "priority": "medium",
+      "title": "Tests passing for Supabase",
+      "block": "supabase",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "supabase--documented",
+      "priority": "low",
+      "title": "Docs written for Supabase",
+      "block": "supabase",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "prompts--integrated",
+      "priority": "high",
+      "title": "Data flows end-to-end for NVC Prompts",
+      "block": "prompts",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    },
+    {
+      "id": "prompts--tested",
+      "priority": "medium",
+      "title": "Tests passing for NVC Prompts",
+      "block": "prompts",
+      "source": "protocol",
+      "status": "open",
+      "createdAt": "2026-02-14T19:25:17.915Z"
+    }
+  ]
+}

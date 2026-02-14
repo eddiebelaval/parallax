@@ -89,6 +89,19 @@ export function useParallaxVoice(): {
     setIsSpeaking(false)
   }, [cleanup])
 
+  /** Pick the best available voice for Ava (warm, natural, female) */
+  const pickVoice = useCallback((): SpeechSynthesisVoice | null => {
+    const voices = window.speechSynthesis.getVoices()
+    // Priority order: natural-sounding English voices
+    const preferred = ['Samantha', 'Karen', 'Flo', 'Shelley', 'Sandy', 'Moira', 'Daniel']
+    for (const name of preferred) {
+      const match = voices.find((v) => v.name.includes(name) && v.lang.startsWith('en'))
+      if (match) return match
+    }
+    // Fallback: any English voice
+    return voices.find((v) => v.lang.startsWith('en')) ?? null
+  }, [])
+
   /** Speak via browser SpeechSynthesis (fallback) */
   const speakFallback = useCallback(
     (text: string, onEnd?: () => void) => {
@@ -98,6 +111,8 @@ export function useParallaxVoice(): {
       }
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
+      const voice = pickVoice()
+      if (voice) utterance.voice = voice
       utterance.rate = 0.95
       utterance.pitch = 1.0
       utterance.volume = 1.0
@@ -112,7 +127,7 @@ export function useParallaxVoice(): {
       }
       window.speechSynthesis.speak(utterance)
     },
-    [],
+    [pickVoice],
   )
 
   /** Core: fetch audio from /api/tts and play it. Returns a Promise that resolves when done. */

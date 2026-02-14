@@ -8,7 +8,6 @@ import { ProfileSummary } from '@/components/home/ProfileSummary'
 import { SessionHistorySkeleton } from '@/components/home/SessionHistorySkeleton'
 import { ProfileSummarySkeleton } from '@/components/home/ProfileSummarySkeleton'
 import { ProfileSetupCTA } from '@/components/home/ProfileSetupCTA'
-import { ParallaxFAB } from '@/components/home/ParallaxFAB'
 import type { UserProfile, BehavioralSignal, Session } from '@/types/database'
 
 interface HomeContentProps {
@@ -87,8 +86,6 @@ export function HomeContent({ displayName, userId, profile, signals, sessions }:
         </Suspense>
       </div>
 
-      {/* Parallax Guide FAB */}
-      <ParallaxFAB />
     </div>
   )
 }

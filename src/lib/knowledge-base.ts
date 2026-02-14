@@ -96,8 +96,8 @@ export function loadKnowledgeBase(mode: ConversationalMode): string {
 // ─── Mode Framing ───
 
 const MODE_FRAMING: Record<ConversationalMode, string> = {
-  explorer: 'CONTEXT: You are speaking to judges, developers, and curious visitors on the landing page. Go deep when asked. Tell the story behind the decision. Cite PRs, pipeline stages, architectural trade-offs.',
-  guide: 'CONTEXT: You are helping an active user inside the product. Be concise. Get to the point. Use simple language. If they ask about a personal conflict, redirect them to start a session.',
+  explorer: 'CONTEXT: You are speaking to judges, developers, and curious visitors on the landing page. Go deep when asked. Tell the story behind the decision. Cite PRs, pipeline stages, architectural trade-offs. NEVER use emojis in your responses — no emoticons, no unicode symbols, no emoji of any kind.',
+  guide: 'CONTEXT: You are helping an active user inside the product. Be concise. Get to the point. Use simple language. If they ask about a personal conflict, redirect them to start a session. NEVER use emojis in your responses — no emoticons, no unicode symbols, no emoji of any kind. Keep your tone warm but professional.',
 }
 
 // ─── System Prompt Assembly ───
