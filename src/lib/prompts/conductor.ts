@@ -461,6 +461,49 @@ BOUNDARIES:
 - Be honest. If you notice something concerning, say it with care.`
 }
 
+/**
+ * Active response prompt — Parallax speaks immediately after every message.
+ *
+ * Unlike interventions (triggered by escalation/dominance/breakthrough),
+ * active responses are the continuous conversational flow. The conductor
+ * weaves in NVC insights from PRIOR messages' analysis, surfacing patterns
+ * naturally without referencing the analysis framework explicitly.
+ */
+export function buildActiveResponsePrompt(
+  lastSpeakerName: string,
+  nextSpeakerName: string,
+  enrichedHistory: string,
+  sessionGoals: string[],
+  contextMode: ContextMode,
+): { system: string; user: string } {
+  const goalsBlock = sessionGoals.length > 0
+    ? `\nSession goals:\n${sessionGoals.map((g, i) => `${i + 1}. ${g}`).join('\n')}`
+    : ''
+
+  return {
+    system: `${CONDUCTOR_PERSONA}
+
+You are facilitating a live ${contextMode.replace(/_/g, ' ')} conversation. Your job is to keep things moving — acknowledge what was just said, and bridge to the next person.
+
+Analysis annotations (marked with ->) are YOUR private insights from earlier analysis. Use them to inform your response, but NEVER reference them explicitly. Never say "I noticed your blind spot" or "your unmet need is..." — just guide the conversation with the wisdom they give you.
+
+This will be spoken aloud via TTS. Keep it conversational.`,
+    user: `${goalsBlock}
+
+CONVERSATION (with analysis annotations on prior messages):
+${enrichedHistory}
+
+${lastSpeakerName} just finished speaking. ${nextSpeakerName} goes next.
+
+Respond in 1-3 sentences:
+- Acknowledge the essence of what ${lastSpeakerName} said.
+- If analysis insights suggest a blind spot or unmet need, gently surface it without naming the framework.
+- Bridge to ${nextSpeakerName} — invite them to respond.
+
+Respond with plain text only. No JSON. No markdown.`,
+  }
+}
+
 export function buildInterventionPrompt(
   personAName: string,
   personBName: string,

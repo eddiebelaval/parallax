@@ -12,6 +12,7 @@ import {
   buildSynthesisPrompt,
   buildInterventionPrompt,
   buildAdaptivePrompt,
+  buildActiveResponsePrompt,
 } from '@/lib/prompts/conductor'
 import { checkForIntervention } from '@/lib/conductor/interventions'
 import type { Message, ContextMode, ConductorPhase, ConflictAnalysis, OnboardingContext } from '@/types/database'
@@ -23,6 +24,7 @@ type ConductorTrigger =
   | 'message_sent'
   | 'check_intervention'
   | 'in_person_message'
+  | 'active_response'
 
 /**
  * POST /api/conductor
@@ -510,6 +512,83 @@ export async function POST(request: Request) {
       intervened: true,
       interventionType: check.type,
       message: interventionText,
+    })
+  }
+
+  // --- Trigger: active_response ---
+  // Immediate conductor response during active phase — Parallax speaks after every message.
+  // Weaves NVC analysis from prior messages into natural conversation flow.
+  if (trigger === 'active_response') {
+    if (phase !== 'active') {
+      return NextResponse.json({ phase, responded: false })
+    }
+
+    // Fetch all messages with their analysis data
+    const { data: allMessages } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', session_id)
+      .order('created_at', { ascending: true })
+
+    if (!allMessages || allMessages.length === 0) {
+      return NextResponse.json({ phase: 'active', responded: false })
+    }
+
+    const nameMap: Record<string, string> = {
+      person_a: personAName,
+      person_b: personBName,
+      mediator: 'Parallax',
+    }
+
+    // Build analysis-enriched conversation history
+    const enrichedLines = (allMessages as Message[]).map((m) => {
+      const senderLabel = nameMap[m.sender] || m.sender
+      let line = `[${senderLabel}]: ${m.content}`
+
+      // Annotate human messages that have NVC analysis
+      if (m.sender !== 'mediator' && m.nvc_analysis) {
+        const a = m.nvc_analysis as ConflictAnalysis
+        if (a.subtext) line += `\n  -> Insight: ${a.subtext}`
+        if (a.blindSpots && a.blindSpots.length > 0) line += `\n  -> Blind spot: ${a.blindSpots[0]}`
+        if (a.unmetNeeds && a.unmetNeeds.length > 0) line += `\n  -> Needs: ${a.unmetNeeds.join(', ')}`
+      }
+
+      return line
+    })
+
+    // Determine last speaker and next speaker
+    const lastHuman = [...allMessages].reverse().find((m) => m.sender !== 'mediator')
+    const lastSpeakerName = lastHuman
+      ? nameMap[lastHuman.sender] || lastHuman.sender
+      : personAName
+    const nextSpeakerName = lastHuman?.sender === 'person_a' ? personBName : personAName
+
+    const { system, user } = buildActiveResponsePrompt(
+      lastSpeakerName,
+      nextSpeakerName,
+      enrichedLines.join('\n'),
+      onboarding.sessionGoals || [],
+      contextMode,
+    )
+
+    let responseText: string
+    try {
+      responseText = await conductorMessage(system, user, 256)
+    } catch {
+      return NextResponse.json({ phase: 'active', responded: false, error: 'Active response failed' })
+    }
+
+    // Insert mediator message — TTS auto-fires via existing useEffect
+    await supabase.from('messages').insert({
+      session_id,
+      sender: 'mediator',
+      content: responseText,
+    })
+
+    return NextResponse.json({
+      phase: 'active',
+      responded: true,
+      message: responseText,
     })
   }
 

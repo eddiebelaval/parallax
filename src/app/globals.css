@@ -904,6 +904,32 @@ li {
   filter: blur(10px);
 }
 
+/* ─── Analyzing Glow: warm amber pulse while NVC analysis processes ─── */
+
+@keyframes analyzing-breathe {
+  0%, 100% {
+    opacity: 0.12;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.30;
+    filter: blur(12px);
+  }
+}
+
+.backlit-analyzing::before {
+  background: radial-gradient(ellipse at right center, var(--glow-warm) 0%, transparent 70%);
+  animation: analyzing-breathe 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backlit-analyzing::before {
+    animation: none;
+    opacity: 0.18;
+    filter: blur(10px);
+  }
+}
+
 /* ─── Light Mode Backlit Adaptation ─── */
 /* On light backgrounds, glow shifts from "luminous bloom" to "watercolor stain". */
 /* A solid left border anchors the color; wider blur spreads the wash. */

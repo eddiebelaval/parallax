@@ -6,6 +6,7 @@ import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
 import { CoachingPanel } from "./CoachingPanel";
+import { MessageCard } from "./MessageCard";
 import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
@@ -522,43 +523,29 @@ export function RemoteView({
             className="flex-1 overflow-y-auto min-h-0"
           >
             <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
-              {messages.map((msg) => {
-                const isMediator = msg.sender === "mediator";
-                return (
-                  <div key={msg.id} className="signal-card-enter">
-                    <div
-                      className={`px-3 py-2 rounded ${
-                        isMediator ? "bg-transparent" : "bg-surface"
-                      }`}
-                    >
-                      <span
-                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(
-                          msg.sender,
-                        )}`}
-                      >
-                        {senderLabel(msg.sender)}
+              {messages.map((msg, i) => (
+                <div key={msg.id}>
+                  <MessageCard
+                    sender={msg.sender}
+                    senderName={senderLabel(msg.sender)}
+                    content={msg.content}
+                    timestamp={new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    nvcAnalysis={msg.nvc_analysis}
+                    isLatest={i === messages.length - 1}
+                  />
+                  {analyzingMessageId === msg.id && !msg.nvc_analysis && (
+                    <div className="pl-4 mt-1 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                        Analyzing
                       </span>
-                      <p
-                        className={`text-sm mt-0.5 leading-relaxed ${
-                          isMediator
-                            ? "text-temp-cool/80 italic"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {msg.content}
-                      </p>
                     </div>
-                    {analyzingMessageId === msg.id && !msg.nvc_analysis && (
-                      <div className="pl-4 mt-1 flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                          Analyzing
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              ))}
 
               {/* Waiting for B — prominent room code display */}
               {conductorPhase === "waiting_for_b" && localSide === "a" && (

@@ -7,6 +7,7 @@ import {
   getBacklitClass,
 } from "@/lib/temperature";
 import { useMelt, MeltText } from "./TheMelt";
+import { EssenceBullets } from "./EssenceBullets";
 import { LensBar } from "./lenses/LensBar";
 import type {
   NvcAnalysis,
@@ -21,6 +22,7 @@ interface MessageCardProps {
   timestamp: string;
   nvcAnalysis?: NvcAnalysis | ConflictAnalysis | null;
   isLatest?: boolean;
+  isAnalyzing?: boolean;
 }
 
 const SENDER_STYLES: Record<
@@ -58,8 +60,10 @@ export function MessageCard({
   timestamp,
   nvcAnalysis,
   isLatest = false,
+  isAnalyzing = false,
 }: MessageCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
   const style = SENDER_STYLES[sender];
   const hasAnalysis = nvcAnalysis != null;
 
@@ -86,10 +90,13 @@ export function MessageCard({
     ? getTemperatureLabel(nvcAnalysis.emotionalTemperature)
     : undefined;
 
-  // Backlit glow class — stronger for latest message
-  const backlitClass = hasAnalysis
-    ? getBacklitClass(nvcAnalysis.emotionalTemperature, isLatest)
-    : "";
+  // Backlit glow class — analyzing pulse, then temperature-based when analysis arrives
+  const backlitClass =
+    isAnalyzing && !hasAnalysis
+      ? "backlit backlit-analyzing"
+      : hasAnalysis
+        ? getBacklitClass(nvcAnalysis.emotionalTemperature, isLatest)
+        : "";
 
   return (
     <div
@@ -129,24 +136,55 @@ export function MessageCard({
           )}
         </div>
 
-        {/* V3 Tier 1: Primary insight sentence (always visible when analysis present) */}
-        {v3Analysis && meltPhase === "settled" && (
-          <p className="text-ember-300 text-xs leading-relaxed mb-2 italic">
-            {v3Analysis.meta.primaryInsight}
-          </p>
+        {/* Message content — dissolves during The Melt, then essence bullets crystallize in */}
+        {hasAnalysis &&
+        sender !== "mediator" &&
+        (meltPhase === "crystallizing" || meltPhase === "settled") &&
+        !showTranscript ? (
+          <EssenceBullets
+            analysis={nvcAnalysis!}
+            phase={meltPhase}
+            temperatureColor={tempColor}
+          />
+        ) : (
+          <MeltText
+            content={content}
+            phase={showTranscript ? "settled" : meltPhase}
+            temperatureColor={tempColor}
+            className={`text-sm leading-relaxed ${
+              sender === "mediator"
+                ? "text-ember-300 italic"
+                : "text-foreground"
+            }`}
+          />
         )}
 
-        {/* Message content — dissolves during The Melt */}
-        <MeltText
-          content={content}
-          phase={meltPhase}
-          temperatureColor={tempColor}
-          className={`text-sm leading-relaxed ${
-            sender === "mediator"
-              ? "text-ember-300 italic"
-              : "text-foreground"
-          }`}
-        />
+        {/* Essence / transcript toggle — settled phase only */}
+        {hasAnalysis && sender !== "mediator" && meltPhase === "settled" && (
+          <button
+            onClick={() => setShowTranscript(!showTranscript)}
+            className="flex items-center gap-1.5 mt-2 font-mono text-[10px] uppercase tracking-widest text-ember-600 hover:text-ember-400 transition-colors"
+          >
+            {showTranscript ? "Show essence" : "Show transcript"}
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 8 8"
+              className={`transition-transform duration-200 ${
+                showTranscript ? "rotate-180" : ""
+              }`}
+            >
+              <path
+                d="M1 3L4 6L7 3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
 
         {/* NVC Analysis — expand/collapse */}
         {hasAnalysis && (

@@ -9,6 +9,7 @@ import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
 import { TurnTimer } from "./TurnTimer";
 import { TurnProgressBar } from "./TurnProgressBar";
 import { TimerSettings } from "./TimerSettings";
+import { MessageCard } from "../MessageCard";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
@@ -36,7 +37,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const profileConcierge = useProfileConcierge();
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(null);
+  const isAnalyzing = analyzingMessageId !== null; // derived for existing consumers
   const [conductorLoading, setConductorLoading] = useState(false);
   const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
   const [mediationError, setMediationError] = useState<string | null>(null);
@@ -288,29 +290,43 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           setConductorLoading(false);
         }
       } else {
-        // During active phase: fire NVC mediation + issue analysis
-        setIsAnalyzing(true);
-        try {
-          const res = await fetch("/api/mediate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              session_id: activeSession.id,
-              message_id: sent.id,
-            }),
-          });
-          if (!res.ok) {
-            setMediationError("Analysis unavailable -- message saved");
-          }
-          // Refresh to pick up NVC analysis update + any mediator messages
-          await refreshMessages();
-        } catch {
-          setMediationError("Connection lost -- analysis skipped");
-        } finally {
-          setIsAnalyzing(false);
-        }
+        // During active phase: fire conductor + mediation + issues in PARALLEL
+        setAnalyzingMessageId(sent.id);
 
-        // Issue analysis — refresh issues when done
+        // 1. Conductor — Parallax speaks immediately (fire-and-forget)
+        fetch("/api/conductor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: activeSession.id,
+            trigger: "active_response",
+          }),
+        })
+          .then(() => refreshMessages())
+          .catch(() => {}); // Silent fail — Melt still fires, no bridge response
+
+        // 2. NVC mediation analysis (fire-and-forget, clears analyzing glow)
+        fetch("/api/mediate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: activeSession.id,
+            message_id: sent.id,
+          }),
+        })
+          .then((res) => {
+            if (!res.ok) setMediationError("Analysis unavailable -- message saved");
+            return refreshMessages();
+          })
+          .catch(() => {
+            setMediationError("Connection lost -- analysis skipped");
+          })
+          .finally(() => {
+            // Only clear if this is still the message being analyzed (rapid-fire safety)
+            setAnalyzingMessageId((prev) => (prev === sent.id ? null : prev));
+          });
+
+        // 3. Issue analysis — refresh issues when done (unchanged)
         fetch("/api/issues/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -322,7 +338,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           .then(() => refreshIssues())
           .catch(() => {});
 
-        // Intervention check after delay (includes resolution detection)
+        // 4. Intervention check after delay — additive, for escalation/breakthrough
         setTimeout(async () => {
           try {
             const intRes = await fetch("/api/conductor", {
@@ -528,38 +544,22 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         {/* Center column — Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-2xl mx-auto px-3 py-3 space-y-2">
-            {messages.map((msg) => {
-              const isPersonA = msg.sender === "person_a";
-              const isMediator = msg.sender === "mediator";
-
-              return (
-                <div key={msg.id} className="signal-card-enter">
-                  <div
-                    className={`px-3 py-2 rounded ${
-                      isMediator ? "bg-transparent" : "bg-surface"
-                    }`}
-                  >
-                    {/* Sender label */}
-                    <span
-                      className={`font-mono text-[9px] uppercase tracking-widest ${
-                        senderColor(msg.sender)
-                      }`}
-                    >
-                      {senderLabel(msg.sender)}
-                    </span>
-                    <p
-                      className={`text-sm mt-0.5 leading-relaxed ${
-                        isMediator
-                          ? "text-temp-cool/80 italic"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {msg.content}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+            {messages.map((msg, i) => (
+              <div key={msg.id}>
+                <MessageCard
+                  sender={msg.sender}
+                  senderName={senderLabel(msg.sender)}
+                  content={msg.content}
+                  timestamp={new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  nvcAnalysis={msg.nvc_analysis}
+                  isLatest={i === messages.length - 1}
+                  isAnalyzing={analyzingMessageId === msg.id}
+                />
+              </div>
+            ))}
 
             {/* Loading indicator */}
             {(conductorLoading || isAnalyzing) && (
