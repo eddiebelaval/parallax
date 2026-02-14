@@ -23,7 +23,7 @@ vi.mock('@/hooks/useSyntheticWaveform', () => ({
 }))
 
 // Mock AudioWaveformOrb to inspect props
-vi.mock('../AudioWaveformOrb', () => ({
+vi.mock('../_deprecated/AudioWaveformOrb', () => ({
   AudioWaveformOrb: ({ name, role }: { name: string; role: string }) => (
     <div data-testid={`orb-${role}`}>{name}</div>
   ),
