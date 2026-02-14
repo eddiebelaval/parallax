@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   // Fetch session + target message + all messages + existing issues in parallel
   const [sessionResult, messageResult, messagesResult, issuesResult] = await Promise.all([
     supabase.from('sessions').select('*').eq('id', session_id).single(),
-    supabase.from('messages').select('*').eq('id', message_id).single(),
+    supabase.from('messages').select('*').eq('id', message_id).eq('session_id', session_id).single(),
     supabase.from('messages').select('*').eq('session_id', session_id).order('created_at', { ascending: true }),
     supabase.from('issues').select('*').eq('session_id', session_id),
   ])
@@ -86,12 +86,15 @@ export async function POST(request: Request) {
       position: maxPosition + i + 1,
     }))
 
-    await supabase.from('issues').insert(inserts)
+    const { error: insertError } = await supabase.from('issues').insert(inserts)
+    if (insertError) {
+      console.error('Failed to insert issues:', insertError)
+    }
   }
 
   // Update graded issues
   for (const graded of result.gradedIssues) {
-    await supabase
+    const { error: updateError } = await supabase
       .from('issues')
       .update({
         status: graded.status,
@@ -100,6 +103,9 @@ export async function POST(request: Request) {
       })
       .eq('id', graded.issueId)
       .eq('session_id', session_id)
+    if (updateError) {
+      console.error(`Failed to update issue ${graded.issueId}:`, updateError)
+    }
   }
 
   return NextResponse.json({

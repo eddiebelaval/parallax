@@ -61,6 +61,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const conductorFired = useRef(false);
   const prevPhaseRef = useRef<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const interventionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
   const conductorPhase = onboarding.conductorPhase;
@@ -133,12 +134,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       resetTimer();
     }
   }, [activeSender, turnBasedMode, isActive, resetTimer]);
-
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
-  }
 
   function senderLabel(sender: string): string {
     if (sender === "mediator") return "Ava";
@@ -339,7 +334,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           .catch(() => {});
 
         // 4. Intervention check after delay — additive, for escalation/breakthrough
-        setTimeout(async () => {
+        if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+        interventionTimerRef.current = setTimeout(async () => {
           try {
             const intRes = await fetch("/api/conductor", {
               method: "POST",
@@ -360,6 +356,13 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     },
     [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak],
   );
+
+  // Cleanup intervention timer on unmount
+  useEffect(() => {
+    return () => {
+      if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+    };
+  }, []);
 
   // Auto-listen: hands-free from session start (togglable)
   const autoListen = useAutoListen({

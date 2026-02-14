@@ -8,7 +8,7 @@ import { getServerUser } from '@/lib/auth/server-auth'
  * Exports all user data as a downloadable JSON file.
  * Includes profile, sessions, messages, and solo memory.
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const user = await getServerUser()
 

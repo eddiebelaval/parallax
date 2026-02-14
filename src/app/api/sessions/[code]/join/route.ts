@@ -8,10 +8,14 @@ export async function POST(
 ) {
   const { code } = await params
   const body = await request.json()
-  const { name, side, user_id } = body as { name: string; side: 'a' | 'b'; user_id?: string }
+  const { name, side, user_id } = body as { name: string; side: string; user_id?: string }
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  }
+
+  if (side !== 'a' && side !== 'b') {
+    return NextResponse.json({ error: 'side must be "a" or "b"' }, { status: 400 })
   }
 
   const supabase = createServerClient()
@@ -29,17 +33,12 @@ export async function POST(
 
   // Determine which field to update
   const field = side === 'a' ? 'person_a_name' : 'person_b_name'
-
-  // Check if slot is already taken
-  if (session[field] !== null) {
-    return NextResponse.json({ error: `Person ${side.toUpperCase()} has already joined` }, { status: 409 })
-  }
-
-  // Build update — if both will be present, set status to active
   const otherField = side === 'a' ? 'person_b_name' : 'person_a_name'
-  const bothPresent = session[otherField] !== null
-
   const userIdField = side === 'a' ? 'person_a_user_id' : 'person_b_user_id'
+
+  // Atomic conditional update: only succeeds if the slot is still null.
+  // Prevents race condition where two requests try to claim the same slot.
+  const bothPresent = session[otherField] !== null
 
   const { data, error } = await supabase
     .from('sessions')
@@ -49,10 +48,15 @@ export async function POST(
       ...(bothPresent ? { status: 'active' as const } : {}),
     })
     .eq('id', session.id)
+    .is(field, null)
     .select()
     .single()
 
   if (error) {
+    // If no rows matched, the slot was already taken (race condition resolved)
+    if (error.code === 'PGRST116') {
+      return NextResponse.json({ error: `Person ${side.toUpperCase()} has already joined` }, { status: 409 })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

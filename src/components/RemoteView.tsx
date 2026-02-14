@@ -104,6 +104,7 @@ export function RemoteView({
   const conductorFired = useRef(false);
   const lastSpokenRef = useRef<string | null>(null);
   const lastSpokenCoachRef = useRef<string | null>(null);
+  const interventionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derived state
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
@@ -137,12 +138,6 @@ export function RemoteView({
     if (sender === "mediator") return "Ava";
     if (sender === "person_a") return personAName;
     return personBName;
-  }
-
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
   }
 
   // Auto-scroll to bottom on new messages
@@ -390,8 +385,9 @@ export function RemoteView({
         })
           .then(() => refreshIssues())
           .catch(() => {});
-        // Intervention check after delay
-        setTimeout(() => triggerInterventionCheck(), 5000);
+        // Intervention check after delay (tracked for cleanup)
+        if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+        interventionTimerRef.current = setTimeout(() => triggerInterventionCheck(), 5000);
       }
     },
     [
@@ -406,6 +402,13 @@ export function RemoteView({
       profileConcierge,
     ],
   );
+
+  // Cleanup intervention timer on unmount
+  useEffect(() => {
+    return () => {
+      if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+    };
+  }, []);
 
   // Auto-listen: hands-free mode for remote conversations
   const autoListen = useAutoListen({

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const MAX_RETRIES = 3
 
@@ -10,6 +11,9 @@ const VALID_CONTEXT_MODES = [
 
 // POST /api/sessions — create a new session
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request, 10, 60_000)
+  if (rateLimited) return rateLimited
+
   const supabase = createServerClient()
   const body = await request.json()
   const { person_a_name, mode, context_mode, user_id } = body

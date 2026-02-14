@@ -26,7 +26,11 @@ export default function InterviewPage() {
 
   // Fetch display_name from user_profiles
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+    if (!user) {
+      setDisplayName(null)
+      return
+    }
     supabase
       .from('user_profiles')
       .select('display_name')
@@ -35,7 +39,7 @@ export default function InterviewPage() {
       .then(({ data }) => {
         setDisplayName(data?.display_name ?? null)
       })
-  }, [user])
+  }, [user, authLoading])
 
   const {
     phase,
@@ -52,13 +56,6 @@ export default function InterviewPage() {
 
   const voice = useParallaxVoice()
   const typewriter = useTypewriter()
-
-  // Hackathon: no auth walls — skip redirect
-  // useEffect(() => {
-  //   if (!authLoading && !user) {
-  //     router.push('/auth')
-  //   }
-  // }, [authLoading, user, router])
 
   // Auto-start interview once user and displayName are resolved
   useEffect(() => {
