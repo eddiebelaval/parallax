@@ -114,23 +114,25 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
     const spawnAnt = () => {
       if (antState === "trapped") {
-        // Find the badge and position ant inside it
+        // Find the badge and position ant inside it - ONCE
+        let intervalId: ReturnType<typeof setInterval> | null = null;
         const findBadge = () => {
           const badge = document.getElementById("claude-code-badge");
           if (badge) {
             const rect = badge.getBoundingClientRect();
-            // Position ant in center of badge
             setPosition({
               x: rect.left + rect.width / 2 - 7, // Center (ant is ~14px wide)
               y: rect.top + rect.height / 2 - 7,
             });
+            // Clear interval once badge is found - prevents jumping!
+            if (intervalId) clearInterval(intervalId);
           }
         };
 
         findBadge();
-        // Re-check in case badge hasn't rendered yet
-        const interval = setInterval(findBadge, 500);
-        setTimeout(() => clearInterval(interval), 3000);
+        // Re-check in case badge hasn't rendered yet, but stop once found
+        intervalId = setInterval(findBadge, 500);
+        setTimeout(() => { if (intervalId) clearInterval(intervalId); }, 3000);
       } else if (antState === "entering") {
         // Enter from random edge (released ant on other pages)
         const edge = Math.floor(Math.random() * 4);
