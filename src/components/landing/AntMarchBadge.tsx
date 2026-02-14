@@ -6,6 +6,29 @@ interface AntMarchBadgeProps {
   onClick: () => void
 }
 
+/**
+ * Check if the ant has been released (easter egg state)
+ */
+function useAntReleased(): boolean {
+  const [isReleased, setIsReleased] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const released = localStorage.getItem('parallax-ant-released') === 'true'
+    setIsReleased(released)
+
+    // Poll for changes (in case user releases ant in another tab)
+    const interval = setInterval(() => {
+      const released = localStorage.getItem('parallax-ant-released') === 'true'
+      setIsReleased(released)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return isReleased
+}
+
 /** Compute an SVG path tracing a pill/stadium shape clockwise. */
 function stadiumPath(w: number, h: number): string {
   const r = h / 2
@@ -28,6 +51,7 @@ export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
   const pillRef = useRef<HTMLDivElement>(null)
   const [path, setPath] = useState('')
   const [spawnedCount, setSpawnedCount] = useState(0)
+  const antReleased = useAntReleased()
 
   // Measure the pill and compute the marching path
   useEffect(() => {
@@ -107,17 +131,20 @@ export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
         ))}
       </div>
 
-      {/* Easter egg: hover lifts badge, reveals "Under the Hood" */}
-      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
-        <div className="overflow-hidden">
-          <button
-            onClick={onClick}
-            className="pt-1 pb-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-success/70 hover:text-success opacity-0 group-hover:opacity-100 transition-all duration-500 delay-150"
-          >
-            ^ Under the Hood ^
-          </button>
+      {/* Easter egg: "Under the Hood" only appears AFTER ant escapes */}
+      {antReleased && (
+        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+          <div className="overflow-hidden">
+            <button
+              onClick={onClick}
+              className="pt-1 pb-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-success/70 hover:text-success opacity-0 group-hover:opacity-100 transition-all duration-500 delay-150"
+              aria-label="Talk to Ava about how Parallax works"
+            >
+              ^ Under the Hood ^
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
