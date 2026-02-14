@@ -190,8 +190,33 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
       // State machine
       if (antState === "trapped") {
-        // Ant is trapped - no movement!
-        // Just sit there waiting to be clicked
+        // Ant is trapped - but watching for the mouse!
+        const dx = mousePos.current.x - position.x;
+        const dy = mousePos.current.y - position.y;
+        const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+        const scaredDistance = 100; // Feels mouse from 100px away
+
+        if (distanceToMouse < scaredDistance) {
+          // MOUSE DETECTED! ESCAPE NOW!
+          console.log("🐜 MOUSE DETECTED - ESCAPING!");
+          localStorage.setItem("parallax-ant-released", "true");
+          localStorage.setItem("parallax-ant-encounters", "0");
+          setIsReleased(true);
+
+          // Set exit target (run directly away from mouse)
+          const angle = Math.atan2(-dy, -dx); // Opposite direction from mouse
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+
+          // Run to nearest edge in the opposite direction
+          targetPoint.current = {
+            x: position.x + Math.cos(angle) * 1000, // Run far!
+            y: position.y + Math.sin(angle) * 1000,
+          };
+
+          setAntState("escaping");
+          stateTimer.current = 0;
+        }
         return;
       } else if (antState === "escaping") {
         // Ant has been released! Run to freedom!
@@ -342,31 +367,13 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isVisible, isPaused, velocity, position, antState, allowedPaths]);
 
-  // Handle ant click
+  // Handle ant click (only for wandering state - trapped escapes on hover)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Only handle clicks for wandering ant (trapped escapes on mouse proximity)
     if (antState === "trapped") {
-      // RELEASE THE ANT! No message, just freedom.
-      console.log("🐜 ANT RELEASED!");
-      localStorage.setItem("parallax-ant-released", "true");
-      localStorage.setItem("parallax-ant-encounters", "0");
-      setIsReleased(true);
-
-      // Set exit target (run off screen)
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const edge = Math.floor(Math.random() * 4);
-
-      switch (edge) {
-        case 0: targetPoint.current = { x: Math.random() * w, y: -200 }; break; // WAY off screen
-        case 1: targetPoint.current = { x: w + 200, y: Math.random() * h }; break; // WAY off screen
-        case 2: targetPoint.current = { x: Math.random() * w, y: h + 200 }; break; // WAY off screen
-        case 3: targetPoint.current = { x: -200, y: Math.random() * h }; break; // WAY off screen
-      }
-
-      setAntState("escaping");
-      stateTimer.current = 0;
+      return; // Handled by animation loop mouse detection
     } else {
       // Ant is free and wandering - show message
       const currentEncounters = encounterCount + 1;
@@ -414,13 +421,13 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
       <div
         ref={antRef}
         onClick={handleClick}
-        className="fixed z-50 cursor-pointer hover:scale-125 transition-transform"
+        className={`fixed z-50 ${antState === "trapped" ? "" : "cursor-pointer hover:scale-125"} transition-transform`}
         style={{
           left: position.x,
           top: position.y,
           transform: `rotate(${rotation}deg)`,
         }}
-        title="Click me!"
+        title={antState === "trapped" ? "Hover to scare me!" : "Click me!"}
       >
         {/* Ant SVG - simple black silhouette */}
         <svg
