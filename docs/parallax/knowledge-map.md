@@ -16,6 +16,7 @@ Table of contents for Ava's brain. Every topic she can speak about, where it's d
 | Hackathon build journey | `docs/explorer/hackathon-journey.md` | Explorer |
 | PR history | `docs/explorer/architecture.md` | Explorer |
 | Narration intro context | `docs/explorer/narration-intro.md` | Explorer |
+| Milo's sprint journal | `docs/explorer/milo.md` | Explorer |
 | Build journal (full) | `BUILDING.md` | Explorer |
 | Project architecture (full) | `CLAUDE.md` | Explorer |
 | User Intelligence Layer research | `docs/research/user-intelligence-layer.md` | Explorer |
