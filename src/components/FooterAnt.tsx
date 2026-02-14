@@ -357,10 +357,10 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
       const edge = Math.floor(Math.random() * 4);
 
       switch (edge) {
-        case 0: targetPoint.current = { x: Math.random() * w, y: -50 }; break;
-        case 1: targetPoint.current = { x: w + 50, y: Math.random() * h }; break;
-        case 2: targetPoint.current = { x: Math.random() * w, y: h + 50 }; break;
-        case 3: targetPoint.current = { x: -50, y: Math.random() * h }; break;
+        case 0: targetPoint.current = { x: Math.random() * w, y: -200 }; break; // WAY off screen
+        case 1: targetPoint.current = { x: w + 200, y: Math.random() * h }; break; // WAY off screen
+        case 2: targetPoint.current = { x: Math.random() * w, y: h + 200 }; break; // WAY off screen
+        case 3: targetPoint.current = { x: -200, y: Math.random() * h }; break; // WAY off screen
       }
 
       setAntState("escaping");

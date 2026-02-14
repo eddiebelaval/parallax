@@ -60,6 +60,7 @@ export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
       <div className="relative inline-flex">
         {/* The crab pill badge */}
         <div
+          id="claude-code-badge"
           ref={pillRef}
           className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:opacity-40"
         >
