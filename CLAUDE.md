@@ -135,6 +135,17 @@ src/
 ```
 
 ## Branch Protocol
+
+**FINAL SPRINT — READ THIS FIRST:**
+All remaining work goes on `parallax/ava-global-pill`. Do NOT create new branches or new PRs. PR #42 was the last PR (it shows as "merged" on GitHub but main was reverted — the code is NOT on main yet). When Eddie says "ship it" or "deploy," merge locally and push:
+```bash
+git checkout main
+git merge parallax/ava-global-pill
+git push origin main
+```
+Do NOT use `gh pr create` or `gh pr merge`. The PR count must stay at 42.
+
+**Normal protocol (pre-final-sprint):**
 - Work on `parallax/stage-{N}-{name}` or `parallax/{feature}` branches
 - Never commit to `main` directly
 - Merge via PR at each stage gate
