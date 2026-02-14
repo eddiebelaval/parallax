@@ -47,7 +47,7 @@ function timeContext(): string {
   return `It is ${days[now.getDay()]} ${period}.`
 }
 
-/** Returns mode-specific guidance for how Parallax should frame the session. */
+/** Returns mode-specific guidance for how Ava should frame the session. */
 function contextModeIntroGuidance(contextMode: ContextMode, setting: 'solo' | 'remote' | 'in_person'): string {
   const modeLabel = contextMode.replace(/_/g, ' ')
 
@@ -111,7 +111,7 @@ Keep it to 2-3 sentences total.`,
  * Remote conversational onboarding prompts.
  *
  * Unlike the legacy remote flow (which required both people to join + NameEntry forms),
- * these prompts let Parallax greet each person individually, extract their name from
+ * these prompts let Ava greet each person individually, extract their name from
  * natural conversation, and gather context before the session begins.
  */
 

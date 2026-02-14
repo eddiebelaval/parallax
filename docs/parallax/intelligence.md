@@ -1,4 +1,4 @@
-# Parallax — Intelligence Network
+# Ava — Intelligence Network
 
 ## What It Is
 
@@ -23,4 +23,4 @@ The profile is free, private, encrypted. Only the user can see their raw data. I
 
 ## The Flow
 
-Experience Parallax freely (no sign-up required) -> Want more depth -> Build a profile (sign up + interview) -> Future sessions are automatically enriched. No walls. No gates. Just pull.
+Experience the platform freely (no sign-up required) -> Want more depth -> Build a profile (sign up + interview) -> Future sessions are automatically enriched. No walls. No gates. Just pull.

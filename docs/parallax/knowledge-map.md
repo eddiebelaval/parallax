@@ -1,6 +1,6 @@
-# Parallax — Knowledge Map
+# Ava — Knowledge Map
 
-Table of contents for Parallax's brain. Every topic she can speak about, where it's documented, and which modes have access.
+Table of contents for Ava's brain. Every topic she can speak about, where it's documented, and which modes have access.
 
 | Topic | Source File | Modes |
 |-------|-----------|-------|
@@ -31,8 +31,8 @@ Table of contents for Parallax's brain. Every topic she can speak about, where i
 
 ## Updating
 
-- To change who Parallax IS: edit files in `docs/parallax/`
-- To change what Explorer Parallax knows: edit files in `docs/explorer/`
-- To change what Guide Parallax knows: edit files in `docs/guide/`
+- To change who Ava IS: edit files in `docs/parallax/`
+- To change what Explorer Ava knows: edit files in `docs/explorer/`
+- To change what Guide Ava knows: edit files in `docs/guide/`
 - To add new research: add `.md` files to `docs/research/` (Explorer-only)
 - This file should be updated whenever a new knowledge source is added
