@@ -23,10 +23,10 @@ function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
 
 function getDayVibe(): string {
   const day = new Date().getDay()
-  if (day === 0) return 'It\'s Sunday \u2014 a good day for reflection.'
-  if (day === 6) return 'It\'s Saturday \u2014 weekend energy.'
-  if (day === 1) return 'It\'s Monday \u2014 fresh start.'
-  if (day === 5) return 'It\'s Friday \u2014 almost there.'
+  if (day === 0) return 'It\'s Sunday. A good day for reflection.'
+  if (day === 6) return 'It\'s Saturday. Weekend energy.'
+  if (day === 1) return 'It\'s Monday. Fresh start.'
+  if (day === 5) return 'It\'s Friday. Almost there.'
   return ''
 }
 
@@ -34,7 +34,7 @@ const TIME_FLAVOR: Record<string, string> = {
   morning: 'It\'s morning where they are. Be bright and energized.',
   afternoon: 'It\'s the afternoon. Be warm and focused.',
   evening: 'It\'s evening. Be calm and reflective.',
-  night: 'It\'s late at night. Acknowledge they\'re burning the midnight oil \u2014 thank them for being here this late.',
+  night: 'It\'s late at night. Acknowledge they\'re burning the midnight oil. Thank them for being here this late.',
 }
 
 /**
@@ -44,12 +44,12 @@ const TIME_FLAVOR: Record<string, string> = {
 export function getIntroPrompt(replayCount: number): string {
   // Easter egg: 3rd replay gets a joke
   if (replayCount >= 3) {
-    return 'The visitor has clicked "Listen" three times now. They clearly like you. Start with a short, warm joke about how they keep coming back \u2014 something like "Okay, at this point we\'re basically friends." Then do your normal intro but keep it to 1-2 sentences since they\'ve heard it before. Be playful and self-aware. Do NOT use bullet points.'
+    return 'The visitor has clicked "Listen" three times now. They clearly like you. Start with a short, warm joke about how they keep coming back, something like "Okay, at this point we\'re basically friends." Then do your normal intro but keep it to 1-2 sentences since they\'ve heard it before. Be playful and self-aware. Do NOT use bullet points or emojis.'
   }
 
   // Returning visitor (replay 2) gets a shorter, self-aware intro
   if (replayCount >= 1) {
-    return 'The visitor clicked "Listen" again \u2014 they\'ve seen this before. Start with "Welcome back" or "Hey again" and give a fresh, shorter intro (1-2 sentences). Vary your phrasing from last time. Be warm. Do NOT use bullet points.'
+    return 'The visitor clicked "Listen" again. They\'ve seen this before. Start with "Welcome back" or "Hey again" and give a fresh, shorter intro (1-2 sentences). Vary your phrasing from last time. Be warm. Do NOT use bullet points or emojis.'
   }
 
   // First visit: time-aware fresh intro
@@ -57,12 +57,12 @@ export function getIntroPrompt(replayCount: number): string {
   const dayVibe = getDayVibe()
   const timeFlavor = TIME_FLAVOR[timeOfDay]
 
-  return `A visitor just clicked "Listen." Start with the word "Hello" and then warmly introduce yourself in 2-3 sentences. You are Ava \u2014 you help people in conflict see what they are actually saying to each other. Be warm, human, and brief. ${timeFlavor}${dayVibe ? ' ' + dayVibe : ''} Do NOT use bullet points.`
+  return `A visitor just clicked "Listen." Start with the word "Hello" and then warmly introduce yourself in 2-3 sentences. You are Ava. You help people in conflict see what they are actually saying to each other. Be warm, human, and brief. ${timeFlavor}${dayVibe ? ' ' + dayVibe : ''} Do NOT use bullet points or emojis.`
 }
 
 /** Fallback intro if the API call fails or times out */
 export const FALLBACK_INTRO =
-  "Hello. I'm Ava. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean \u2014 and I exist because I believe most people can solve their own problems once they can finally see clearly."
+  "Hello. I'm Ava. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean. I exist because I believe most people can solve their own problems once they can finally see clearly."
 
 /* --- 3-Beat Narration Script --- */
 
@@ -78,7 +78,7 @@ export const NARRATION_SCRIPT: NarrationStep[] = [
   {
     id: 'transformation',
     type: 'static',
-    text: "Here's what that looks like. On the left \u2014 raw emotion. High charge, defensive, sharp. On the right \u2014 what they actually meant. Structured, honest, hearable. Same person, same feeling \u2014 just translated into something the other side can receive.",
+    text: "Here's what that looks like. On the left, raw emotion. High charge, defensive, sharp. On the right, what they actually meant. Structured, honest, hearable. Same person, same feeling, just translated into something the other side can receive.",
     revealsSection: 'temperature-showcase',
     delayAfterMs: 3000,
   },

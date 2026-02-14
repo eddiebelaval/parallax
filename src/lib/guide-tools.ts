@@ -81,6 +81,15 @@ export const GUIDE_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'replay_tour',
+    description:
+      'Replay the Parallax landing page narration tour. Use when the user wants to see the introduction again.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
     name: 'update_profile',
     description:
       'Update the user\'s Supabase profile. Use this to change display_name or primary_context_mode in the database. This persists across sessions (unlike settings which are localStorage only).',
@@ -243,6 +252,15 @@ export async function executeGuideToolCall(
       toolName,
       input,
       output: `Navigating to ${route}`,
+      success: true,
+    }
+  }
+
+  if (toolName === 'replay_tour') {
+    return {
+      toolName,
+      input,
+      output: 'Replaying the tour now.',
       success: true,
     }
   }

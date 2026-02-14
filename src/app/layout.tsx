@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Cormorant_Garamond, Raleway, IBM_Plex_Mono } from "next/font/google";
@@ -10,6 +10,8 @@ import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalkingAnt } from "@/components/WalkingAnt";
+import { AvaConcierge } from "@/components/AvaConcierge";
+import { ParallaxOrb } from "@/components/ParallaxOrb";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -78,7 +80,13 @@ function AuthSlot() {
 function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isSessionPage = pathname?.startsWith("/session/");
+  const isLandingPage = pathname === "/";
   const [narrationPhase, setNarrationPhase] = useState<NarrationPhase>("complete");
+
+  // Ava concierge state
+  const [showConcierge, setShowConcierge] = useState(false);
+  const [voiceEnergy, setVoiceEnergy] = useState(0);
+  const [isAvaActive, setIsAvaActive] = useState(false);
 
   // Listen for narration phase changes from page.tsx
   useEffect(() => {
@@ -94,12 +102,33 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
 
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const isLandingPage = pathname === "/";
+
+  // Determine Ava context based on current page
+  const avaContext = isLandingPage ? 'landing' : isSessionPage ? 'session' : 'general';
+
+  // Handle voice state from AvaConcierge
+  const handleVoiceState = useCallback((energy: number, isSpeaking: boolean) => {
+    setVoiceEnergy(energy);
+    setIsAvaActive(isSpeaking);
+  }, []);
+
+  // Handle replay tour — dispatch event to landing page
+  const handleReplayTour = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("parallax-replay-narration"));
+  }, []);
+
+  // Sync active state with concierge open/close
+  useEffect(() => {
+    if (!showConcierge) {
+      setIsAvaActive(false);
+      setVoiceEnergy(0);
+    }
+  }, [showConcierge]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <header
-        className={`border-b border-border px-6 py-3 flex items-center justify-between transition-opacity duration-500 flex-shrink-0 ${
+        className={`border-b border-border px-6 py-3 flex items-center justify-between relative transition-opacity duration-500 flex-shrink-0 ${
           isLandingNarrating ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
       >
@@ -138,8 +167,20 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Center: spacer (NarrationPanel owns the pill in complete state) */}
-        <div className="flex justify-center" />
+        {/* Center: Ava orb — absolutely centered */}
+        <button
+          onClick={() => setShowConcierge((prev) => !prev)}
+          className="ava-pill-orb"
+          aria-label="Talk to Ava"
+        >
+          <ParallaxOrb
+            size={36}
+            energy={voiceEnergy}
+            isSpeaking={isAvaActive}
+            isAnalyzing={showConcierge && !isAvaActive}
+            particles={showConcierge}
+          />
+        </button>
 
         {/* Right: Auth + Theme */}
         <div className="flex items-center gap-3">
@@ -147,6 +188,16 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
         </div>
       </header>
+
+      {/* Ava Concierge popover */}
+      <AvaConcierge
+        isOpen={showConcierge}
+        onClose={() => setShowConcierge(false)}
+        onReplayTour={isLandingPage ? handleReplayTour : undefined}
+        onVoiceState={handleVoiceState}
+        context={avaContext}
+      />
+
       <main className="flex-1 overflow-y-auto">{children}</main>
       {/* Footer — visible on non-session pages */}
       {!isSessionPage && (
@@ -186,7 +237,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
  * NOTE: This uses a static string literal with zero user input.
  * The content is hardcoded — no dynamic values, no user data.
  */
-const THEME_INIT_SCRIPT = `(function(){var t=localStorage.getItem('parallax-theme')||'light';if(t==='light')document.documentElement.classList.add('light');else document.documentElement.classList.remove('light')})()`;
+const themeScript = '(function(){var t=localStorage.getItem("parallax-theme")||"light";if(t==="light")document.documentElement.classList.add("light");else document.documentElement.classList.remove("light")})()';
 
 export default function RootLayout({
   children,
@@ -198,7 +249,7 @@ export default function RootLayout({
       <head>
         <script
           // SAFE: static string literal, no user input — prevents theme flash
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+          dangerouslySetInnerHTML={{ __html: themeScript }}
         />
       </head>
       <body

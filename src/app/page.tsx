@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useNarrationController } from "@/hooks/useNarrationController";
 import { NarrationPanel } from "@/components/landing/NarrationPanel";
 import { NarrationStage } from "@/components/landing/NarrationStage";
-import { GlowChatInterface } from "@/components/landing/GlowChatInterface";
 import { TheDoor } from "@/components/landing/TheDoor";
 import { HeroPreview } from "@/components/landing/HeroPreview";
 
@@ -52,8 +51,7 @@ export default function Home() {
   const narration = useNarrationController();
   const isComplete = narration.phase === "complete";
   const isNarrating = narration.phase === "narrating";
-  const isChat = narration.phase === "chat";
-  const shouldDim = isNarrating || isChat;
+  const shouldDim = isNarrating;
 
   // Dispatch narration phase to layout via custom event
   useEffect(() => {
@@ -93,7 +91,7 @@ export default function Home() {
             onToggleMute={narration.toggleMute}
           />
         }
-        chatContent={<GlowChatInterface onClose={narration.exitChat} />}
+        chatContent={null}
       />
 
       {/* Skip intro — visible during idle phase */}

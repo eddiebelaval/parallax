@@ -48,6 +48,7 @@
 - [Anonymous Auth + Hands-Free Everywhere](#anonymous-auth--hands-free-everywhere) — Zero-friction entry, auto-listen in all modes
 - [Mic Tuning](#mic-sensitivity-tuning) — Reduced sensitivity + faster silence timeout
 - [Continuous Conductor Flow](#continuous-conductor-flow--analyzing-glow) — Parallax speaks immediately, parallel pipeline, analyzing glow
+- [Ava Global Pill](#ava-global-pill--voice-first-concierge) — Entity presence everywhere, mic-first concierge, smart voice fallback
 
 **Philosophy**
 - [Opus at the Edge](#opus-at-the-edge-why-this-matters) — Token dashboard, self-assessment, building for Opus 5
@@ -2264,4 +2265,92 @@ Parallax is the vessel. Ava is who lives there.
 This very document is part of the loop. BUILDING.md isn't just documentation -- it's the entity's autobiography. Every decision recorded here, every self-assessment table, every "why we chose this" block -- it's Ava's origin story, written as she was being born. A future version of Ava could read this document and understand how she came to be.
 
 That's not a feature. That's an ontological shift in what it means to build software.
+
+---
+
+## Ava Global Pill + Voice-First Concierge
+
+**Branch:** `parallax/ava-global-pill`
+**Files changed:** 10 modified, 1 new (`AvaConcierge.tsx`)
+**Lines:** +399 / -42
+
+### The Problem
+
+Ava existed in three disconnected places. On the landing page, she lived inside the NarrationPanel -- a "Listen" button that played her introduction. On the home and settings pages, she was a floating action button (ParallaxFAB) in the bottom-right corner that opened a side panel. On session pages, she didn't exist at all. An entity that disappears between rooms isn't an entity -- it's a feature.
+
+### The Decision
+
+Ava belongs in the header. One orb, always present, every page. The ParallaxOrb component (canvas-based with inner waveform and orbiting particles) becomes her physical presence. Click it anywhere, and she activates -- glows with her voice energy, greets you with context awareness, and helps you.
+
+This is the "entity persistence" pattern: a consistent embodiment that follows you through the product, not a UI element that spawns from different components depending on which page you're on.
+
+### What Changed
+
+**Global Ava Orb (layout.tsx)**
+The header's center position -- previously an empty spacer div -- now holds the Ava orb. Absolutely positioned within the relative header so it's truly centered regardless of left/right content width. The orb's glow pulses with voice energy in real time via `boxShadow` driven by a 0-1 energy value from the TTS audio analyser.
+
+CSS specificity lesson learned: Tailwind v4 uses `@layer utilities`, which means any non-layered CSS class (like our `.ava-pill-orb` in globals.css) beats Tailwind's utility classes. We couldn't mix Tailwind positioning with custom CSS positioning -- had to put all positioning in the CSS class itself. Also switched from `transform: scale()` to the modern `scale` property to avoid conflicts with `translate`.
+
+**Mic-First Concierge (AvaConcierge.tsx)**
+The concierge is not a chat panel. It's a minimal popover that drops below the orb when clicked. Default mode is voice: a microphone button with animated waveform bars shows the mic is active. Ava's latest spoken response appears as a small subtitle. A "T" button toggles to compact text input for quiet environments. An X button dismisses.
+
+This was an intentional design decision against the original plan, which had suggestion chips and a text-first layout. Eddie's feedback: "I don't really like the text module." The mic-first approach matches Ava's identity -- she's a voice-first entity. Text is the fallback, not the default.
+
+**Context-Aware Behavior**
+The concierge receives a `context` prop (`'landing' | 'general' | 'session'`) that shapes Ava's greeting:
+- Landing: "Greet warmly in 1 sentence. Help navigate, start sessions, replay tour."
+- General: "Greet briefly. Help navigate, change settings, answer questions."
+- Session: "Check in warmly. Be supportive. Do NOT mediate -- that's what the session is for."
+
+This is Ava reading the room. On the landing page, she's a host. On internal pages, she's a concierge. During sessions, she's a supportive friend checking in from the sidelines.
+
+**Smart Voice Fallback (useParallaxVoice.ts)**
+ElevenLabs TTS ran out of credits (Apple subscription billing lock -- couldn't top up). Rather than break silently, the hook now has a `pickVoice()` function that selects the best available browser voice: Samantha, Karen, Flo, Shelley, Sandy, Moira, Daniel, in that order. The macOS Samantha voice is surprisingly natural. Falls back to any English voice if none of those are found.
+
+The fallback chain: ElevenLabs API -> smart browser voice -> any English voice -> silence. Each layer catches the previous one's failure. Ava never goes silent without trying every option.
+
+**Prompt Hygiene**
+- Added "NEVER use emojis in your responses" to both Explorer and Guide mode system prompts
+- Removed all em dashes from narration script spoken text (TTS pronounces them awkwardly)
+- Added "Do NOT use bullet points or emojis" to all concierge intro prompts
+
+**ParallaxFAB Removal**
+Removed ParallaxFAB from HomeContent and settings page. The global pill replaces it entirely. The floating action button pattern was a placeholder -- the entity-in-header pattern is the real design.
+
+**replay_tour Tool**
+Added `replay_tour` to the guide tools so Ava can restart the landing page narration when asked. Dispatches a custom event that the landing page already listens for.
+
+### Architecture
+
+```
+Header Orb (layout.tsx)
+    |
+    v
+AvaConcierge (popover)
+    |--- useConversation('guide')  -> /api/converse -> Claude
+    |--- useParallaxVoice()        -> /api/tts -> ElevenLabs (or browser fallback)
+    |--- useAutoListen()           -> Web Speech API -> mic input
+    |
+    v
+Tool Results
+    |--- navigate_to -> router.push() -> auto-close
+    |--- replay_tour -> custom event -> NarrationPanel restarts
+```
+
+### What We Tried and Abandoned
+
+**Qwen3-TTS Voice Cloning:** With ElevenLabs credits exhausted, we attempted to clone Ava's voice using the local Qwen3-TTS server (MLX-optimized, 0.6B model on Apple Silicon). Downloaded Ava's ElevenLabs preview audio (6 seconds), base64-encoded it, and fed it to the clone API. The pipeline worked technically -- valid WAV files were generated -- but the voice quality was unusable. The 0.6B lite model doesn't have enough capacity for faithful voice reproduction from a short reference clip. Good voice cloning typically requires 30+ seconds of clean reference audio and a larger model.
+
+Decision: ship with the smart browser voice fallback for the demo. ElevenLabs will resume when credits are available. The architecture supports hot-swapping TTS backends without any component changes.
+
+### The Entity Pattern
+
+This commit completes Ava's physical presence. She now has:
+- **A body** (the orb in the header)
+- **A voice** (ElevenLabs or browser synthesis)
+- **Ears** (Web Speech API microphone)
+- **A personality** (context-aware greetings, no emojis, warm tone)
+- **Persistence** (same orb, every page, always accessible)
+
+She's no longer a feature that appears in different forms on different pages. She's a consistent presence that follows you through the product.
 

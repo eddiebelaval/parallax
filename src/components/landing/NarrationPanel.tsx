@@ -70,6 +70,7 @@ export function NarrationPanel({
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
   const [isHovering, setIsHovering] = useState(false)
   const [contentVisible, setContentVisible] = useState(true)
+  const [justSettled, setJustSettled] = useState(false)
 
   const currentLayout = getLayoutState(phase, slidUp)
 
@@ -91,6 +92,12 @@ export function NarrationPanel({
         (prevLayoutRef.current === 'pill' && currentLayout === 'voice-center')
       if (isMorphing) {
         setContentVisible(false)
+      }
+
+      // Track settle animation when transitioning to pill
+      if (currentLayout === 'pill' && prevLayoutRef.current !== 'pill' && prevLayoutRef.current !== 'idle') {
+        setJustSettled(true)
+        setTimeout(() => setJustSettled(false), 1200)
       }
     }
   }, [currentLayout])
@@ -137,7 +144,7 @@ export function NarrationPanel({
     setMousePos({ x, y })
   }, [])
 
-  const isClickable = phase === 'idle' || phase === 'complete'
+  const isClickable = phase === 'idle'
   const showNarrationContent = phase === 'narrating' && contentVisible
   const showChatContent = phase === 'chat'
   const showIdleContent = phase === 'idle' && contentVisible
@@ -148,31 +155,30 @@ export function NarrationPanel({
   return (
     <div
       ref={panelRef}
-      className={getLayoutClass(currentLayout, isSpeaking && isNarrating)}
+      className={`${getLayoutClass(currentLayout, isSpeaking && isNarrating)}${justSettled ? ' ava-settled' : ''}${phase === 'complete' ? ' glass-panel--hidden' : ''}`}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
       aria-label={
         phase === 'idle'
           ? 'Begin guided introduction'
-          : phase === 'complete'
-            ? isLandingPage ? 'Replay introduction' : 'Open Ava assistant'
-            : undefined
+          : undefined
       }
       onClick={() => {
         if (phase === 'idle') onStart()
-        else if (phase === 'complete' && isLandingPage) onReplay()
       }}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && isClickable) {
+        if ((e.key === 'Enter' || e.key === ' ') && phase === 'idle') {
           e.preventDefault()
-          if (phase === 'idle') onStart()
-          else if (phase === 'complete' && isLandingPage) onReplay()
+          onStart()
         }
       }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => { setIsHovering(false); setMousePos({ x: 50, y: 50 }) }}
-      style={{ cursor: isClickable ? 'pointer' : undefined }}
+      style={{
+        cursor: isClickable ? 'pointer' : undefined,
+        pointerEvents: phase === 'complete' ? 'none' : undefined,
+      }}
     >
       {/* Glass material layers */}
       <span className="glass-panel__surface" aria-hidden="true" />
@@ -244,10 +250,10 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Pill: small "Listen" or "Ava" text */}
+      {/* Pill: "Ava" text — header pill takes over interaction in complete state */}
       {showPillContent && (
         <span className="relative z-10 font-serif text-sm text-foreground/80">
-          {isLandingPage ? 'Listen' : 'Ava'}
+          Ava
         </span>
       )}
 
