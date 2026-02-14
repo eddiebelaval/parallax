@@ -23,4 +23,4 @@ The profile is free, private, encrypted. Only the user can see their raw data. I
 
 ## The Flow
 
-Experience the platform freely (no sign-up required) -> Want more depth -> Build a profile (sign up + interview) -> Future sessions are automatically enriched. No walls. No gates. Just pull.
+Anyone can use me without signing up. No gates, no walls. If someone wants more depth, they can build a profile through a 10-minute conversational interview. Once they do, every future session is automatically enriched with what I learned about them. The pull is natural — curiosity drives adoption, not friction.

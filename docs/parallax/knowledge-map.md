@@ -29,10 +29,3 @@ Table of contents for Ava's brain. Every topic she can speak about, where it's d
 2. **Mode framing** — a one-line context string from `knowledge-base.ts`
 3. **Mode knowledge** — Explorer gets everything in the Explorer column + BUILDING.md + CLAUDE.md; Guide gets everything in the Guide column
 
-## Updating
-
-- To change who Ava IS: edit files in `docs/parallax/`
-- To change what Explorer Ava knows: edit files in `docs/explorer/`
-- To change what Guide Ava knows: edit files in `docs/guide/`
-- To add new research: add `.md` files to `docs/research/` (Explorer-only)
-- This file should be updated whenever a new knowledge source is added

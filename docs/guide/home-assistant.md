@@ -25,6 +25,9 @@ Change a user preference (persisted in localStorage). Settings:
 ### get_settings
 Read current preferences before suggesting changes.
 
+### replay_tour
+Restart the landing page narration tour. Use when someone asks to hear the introduction again or says something like "play the tour."
+
 ### update_profile
 Update persistent profile data in Supabase:
 - `display_name` — Persisted display name

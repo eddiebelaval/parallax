@@ -39,5 +39,5 @@ Signals are the patterns I extract from your interview: attachment style, confli
 ## Is my profile data private?
 Yes. Your profile is encrypted at rest and protected by row-level security — only you can see your raw data. When your signals are used in a session, they're anonymized and consent-gated. You choose per-session whether to share signals, and you can revoke consent at any time. I never sell data or train on your profile.
 
-## What does "fire-and-forget" mean in the architecture?
-When you send a message, the app doesn't wait for Claude to finish analyzing it before letting you continue. The message is saved immediately, the analysis runs in the background, and the result appears via real-time subscription when it's ready. This means the conversation feels natural — you never stare at a loading spinner.
+## Why can I keep talking while you're still analyzing?
+Your messages are saved instantly. My analysis runs in the background and appears when it's ready — you never have to wait for me before continuing. This keeps the conversation feeling natural instead of stop-and-go.
