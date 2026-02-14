@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { checkRateLimit } from '@/lib/rate-limit'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPrompt } from '@/lib/knowledge-base'
 import { GUIDE_TOOLS, executeGuideToolCall } from '@/lib/guide-tools'
@@ -66,6 +67,9 @@ async function getUserIdFromRequest(request: Request): Promise<string | undefine
  * Body: { mode: 'explorer' | 'guide', message: string, history: ConversationMessage[], stream?: boolean }
  */
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   let body: { mode?: string; message?: string; history?: ConversationMessage[]; stream?: boolean }
   try {
     body = await request.json()

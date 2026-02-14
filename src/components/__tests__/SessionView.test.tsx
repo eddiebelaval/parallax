@@ -1,7 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { SessionView } from '../SessionView'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { Session } from '@/types/database'
+
+// Mock next/dynamic — resolve lazy imports via React.Suspense so waitFor works
+vi.mock('next/dynamic', async () => {
+  const React = await vi.importActual<typeof import('react')>('react')
+  return {
+    default: (loader: () => Promise<unknown>) => {
+      const Lazy = React.lazy(async () => {
+        const mod = await loader()
+        const component =
+          typeof mod === 'function'
+            ? mod
+            : (mod as Record<string, unknown>).default ?? mod
+        return { default: component as React.ComponentType<unknown> }
+      })
+      return function DynamicWrapper(props: Record<string, unknown>) {
+        return React.createElement(
+          React.Suspense,
+          { fallback: null },
+          React.createElement(Lazy, props),
+        )
+      }
+    },
+  }
+})
+
+import { SessionView } from '../SessionView'
 
 // Mock hooks with persistent implementations
 let mockSessionReturn: { session: Session | null; loading: boolean } = {
@@ -15,7 +40,6 @@ vi.mock('@/hooks/useSession', () => ({
     error: null,
     createSession: vi.fn(),
     joinSession: vi.fn(),
-    advanceOnboarding: vi.fn(),
     refreshSession: vi.fn(),
   }),
 }))
@@ -59,7 +83,6 @@ const mockActiveSession: Session = {
 describe('SessionView', () => {
   beforeEach(() => {
     mockSessionReturn = { session: null, loading: true }
-    // Clear localStorage
     localStorage.clear()
   })
 
@@ -72,15 +95,14 @@ describe('SessionView', () => {
   it('renders SideChooser for remote mode without localStorage side', () => {
     mockSessionReturn = { session: mockActiveSession, loading: false }
     render(<SessionView roomCode="ABC123" />)
-    // SideChooser shows "How are you joining this conversation?"
     expect(screen.getByText('How are you joining this conversation?')).toBeInTheDocument()
   })
 
-  it('renders RemoteView for remote mode when localSide is set', () => {
+  it('renders RemoteView for remote mode when localSide is set', async () => {
     localStorage.setItem('parallax-side-ABC123', 'a')
     mockSessionReturn = { session: mockActiveSession, loading: false }
     render(<SessionView roomCode="ABC123" />)
-    expect(screen.getByTestId('remote-view')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('remote-view')).toBeInTheDocument())
   })
 
   it('renders SessionSummary when session is completed (remote)', () => {
@@ -89,10 +111,10 @@ describe('SessionView', () => {
     expect(screen.getByTestId('session-summary')).toBeInTheDocument()
   })
 
-  it('renders XRayGlanceView for in_person mode', () => {
+  it('renders XRayGlanceView for in_person mode', async () => {
     mockSessionReturn = { session: { ...mockActiveSession, mode: 'in_person' }, loading: false }
     render(<SessionView roomCode="ABC123" />)
-    expect(screen.getByTestId('xray-view')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('xray-view')).toBeInTheDocument())
   })
 
   it('renders SessionSummary for completed in_person session', () => {
@@ -101,12 +123,11 @@ describe('SessionView', () => {
     expect(screen.getByTestId('session-summary')).toBeInTheDocument()
   })
 
-  it('allows side selection via SideChooser buttons', () => {
+  it('allows side selection via SideChooser buttons', async () => {
     mockSessionReturn = { session: mockActiveSession, loading: false }
     render(<SessionView roomCode="ABC123" />)
-    // Click "I started this" to choose side A
     fireEvent.click(screen.getByText('I started this'))
-    expect(screen.getByTestId('remote-view')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('remote-view')).toBeInTheDocument())
   })
 
   it('shows session room code in SideChooser', () => {

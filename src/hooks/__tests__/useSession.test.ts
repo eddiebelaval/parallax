@@ -128,23 +128,6 @@ describe('useSession', () => {
     expect(result.current.error).toBe('Side taken')
   })
 
-  // --- advanceOnboarding ---
-
-  it('advanceOnboarding PATCHes the onboarding endpoint', async () => {
-    const advancedSession = makeSession({ onboarding_step: 'set_stage' })
-    vi.mocked(globalThis.fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(makeSession()), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(advancedSession), { status: 200 }))
-
-    const { result } = renderHook(() => useSession('ABC234'))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => {
-      await result.current.advanceOnboarding({ step: 'set_stage' })
-    })
-    expect(result.current.session).toMatchObject({ onboarding_step: 'set_stage' })
-  })
-
   // --- refreshSession ---
 
   it('refreshSession re-fetches session from server', async () => {

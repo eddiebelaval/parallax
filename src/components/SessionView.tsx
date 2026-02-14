@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { SessionSummary } from "./SessionSummary";
-import { XRayGlanceView } from "./inperson/XRayGlanceView";
-import { RemoteView } from "./RemoteView";
-import { SoloView } from "./SoloView";
 import { useSession } from "@/hooks/useSession";
+
+const XRayGlanceView = dynamic(
+  () => import("./inperson/XRayGlanceView").then((m) => m.XRayGlanceView),
+  { ssr: false }
+);
+const RemoteView = dynamic(
+  () => import("./RemoteView").then((m) => m.RemoteView),
+  { ssr: false }
+);
+const SoloView = dynamic(
+  () => import("./SoloView").then((m) => m.SoloView),
+  { ssr: false }
+);
 
 interface SessionViewProps {
   roomCode: string;
