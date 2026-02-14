@@ -47,6 +47,7 @@
 - [ParallaxOrb](#parallaxorb--canvas-waveform) — Canvas-based orb with inner waveform + orbiting particles
 - [Anonymous Auth + Hands-Free Everywhere](#anonymous-auth--hands-free-everywhere) — Zero-friction entry, auto-listen in all modes
 - [Mic Tuning](#mic-sensitivity-tuning) — Reduced sensitivity + faster silence timeout
+- [Continuous Conductor Flow](#continuous-conductor-flow--analyzing-glow) — Parallax speaks immediately, parallel pipeline, analyzing glow
 
 **Philosophy**
 - [Opus at the Edge](#opus-at-the-edge-why-this-matters) — Token dashboard, self-assessment, building for Opus 5
@@ -2104,4 +2105,75 @@ When hackathon ends, revert auth bypass:
 4. Feature flag: `HACKATHON_DEMO_MODE=false`
 
 Estimated cleanup: 15 minutes, 5 files touched.
+
+---
+
+## Continuous Conductor Flow + Analyzing Glow
+
+**Problem:** Dead air. When someone speaks during an active in-person session, Parallax goes silent for 10-12 seconds while NVC analysis processes, then only speaks if an intervention triggers (escalation, dominance, breakthrough). Most messages get no verbal response at all.
+
+**Solution:** Parallax speaks after every message. The entire post-send pipeline runs in parallel instead of sequentially.
+
+### Before vs After
+
+| Metric | Before (Sequential) | After (Parallel) |
+|--------|---------------------|-------------------|
+| Time to Parallax speech | 10-12s (if at all) | 1-2s (always) |
+| Pipeline | await mediate -> setTimeout -> maybe speak | conductor \| mediate \| issues all fire simultaneously |
+| Visual feedback | None during analysis | Warm amber pulse on message card |
+| Analysis in conductor | None | Prior messages' NVC insights woven into response |
+
+### Architecture: Parallel Fire-and-Forget with Convergence
+
+```
+T+0:     sendMessage -> optimistic insert + analyzing glow starts
+T+0:     PARALLEL: conductor(active_response) | mediate(msg.id) | issues/analyze(msg.id)
+T+1-2s:  conductor returns -> Parallax speaks -> TTS plays
+T+3-5s:  mediate returns -> glow stops -> Melt fires -> temperature glow takes over
+T+5s:    check_intervention (additive, for escalation/breakthrough detection)
+```
+
+### Key Design Decisions
+
+**Why `analyzingMessageId` instead of `isAnalyzing` boolean?**
+
+Rapid-fire messages create a race condition. If Person A sends two messages quickly, the first mediation's `.finally()` would clear the boolean while the second message is still processing. By tracking the specific message ID, the `.finally()` callback uses a functional update: `(prev) => prev === sent.id ? null : prev`. If a newer message has already taken over, the stale callback is a no-op.
+
+**Why analysis-enriched history in the conductor prompt?**
+
+The `active_response` handler builds conversation history with inline annotations from prior NVC analysis:
+
+```
+[Alex]: Last Tuesday I spent two hours making dinner...
+  -> Insight: Alex's dinner was a love letter he feels went unread
+  -> Blind spot: He's scoring effort while wanting genuine connection
+  -> Needs: appreciation, to be seen, to matter
+```
+
+The conductor prompt explicitly states: "Analysis annotations (marked with ->) are YOUR private insights. Use them to inform your response, but NEVER reference them explicitly." This lets Parallax say "It sounds like what you're really looking for here is to feel seen" without ever saying "your blind spot analysis shows..."
+
+**Why 256 max tokens for active responses?**
+
+Active responses are bridges, not interventions. 1-3 sentences acknowledging the speaker and inviting the next person. Keeping `max_tokens: 256` ensures fast responses (~1-2s) and prevents Parallax from dominating the conversation. Interventions (escalation, breakthrough, resolution) still use the full 512 tokens when they trigger at +5s.
+
+### Files Changed
+
+| File | Lines | Change |
+|------|-------|--------|
+| `globals.css` | +26 | `@keyframes analyzing-breathe` + `.backlit-analyzing` + reduced-motion |
+| `MessageCard.tsx` | +12/-6 | `isAnalyzing` prop, conditional glow class |
+| `XRayGlanceView.tsx` | +55/-55 | `analyzingMessageId` state, parallel `handleSend` |
+| `conductor/route.ts` | +79 | `active_response` trigger with analysis-enriched history |
+| `prompts/conductor.ts` | +43 | `buildActiveResponsePrompt()` |
+| `EssenceBullets.tsx` | +70 | New component for crystallized analysis display |
+
+### Self-Assessment
+
+| Dimension | Grade | Why |
+|-----------|-------|-----|
+| **Response Latency** | **A** | Parallax speaks in 1-2s vs 10-12s before. Conversation feels alive. |
+| **Visual Feedback** | **A** | Amber analyzing pulse gives immediate feedback that something is happening |
+| **Analysis Quality** | **A-** | Prior analysis enriches conductor responses. Current message not yet analyzed when conductor fires (by design -- it'll be available on the next turn) |
+| **Race Condition Safety** | **A** | `analyzingMessageId` + functional state update handles rapid messages correctly |
+| **Edge Cases** | **B+** | Conductor fail is silent (Melt still works). Both active_response and intervention can speak 8+ seconds apart. TTS queues sequentially. |
 
