@@ -55,11 +55,34 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   const targetPoint = useRef({ x: 0, y: 0 });
   const directionChangeTimer = useRef<number>(0);
   const nextDirectionChange = useRef<number>(3000);
+  const mousePos = useRef({ x: 0, y: 0 });
+
+  // Track mouse position for evasion
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      mousePos.current = { x: e.clientX, y: e.clientY };
+    }
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Check release status and visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
     const currentPath = window.location.pathname;
+
+    // BLACKLIST: Never show on session pages
+    if (currentPath.startsWith("/session")) {
+      setIsVisible(false);
+      return;
+    }
+
+    // WHITELIST: Only on landing, profile, settings
+    const isAllowedPage = allowedPaths.includes(currentPath);
+    if (!isAllowedPage) {
+      setIsVisible(false);
+      return;
+    }
 
     // Check if ant has been released
     const releasedFlag = localStorage.getItem("parallax-ant-released");
@@ -77,11 +100,10 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     } else {
       // Ant released - check which page it's on
       const antLocation = localStorage.getItem("parallax-ant-location") || "/profile";
-      const isOnAntPage = allowedPaths.some(path => currentPath === path && currentPath === antLocation);
-      setIsVisible(isOnAntPage);
+      setIsVisible(currentPath === antLocation);
 
-      if (isOnAntPage && currentPath !== "/") {
-        setAntState("entering"); // Enter from edge on non-landing pages
+      if (currentPath === antLocation && currentPath !== "/") {
+        setAntState("entering");
       }
     }
   }, [allowedPaths]);
@@ -120,24 +142,24 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
         switch (edge) {
           case 0:
             startX = Math.random() * w;
-            startY = -50;
+            startY = -200; // Start WAY off screen
             targetX = w * (0.2 + Math.random() * 0.6);
             targetY = h * (0.3 + Math.random() * 0.4);
             break;
           case 1:
-            startX = w + 50;
+            startX = w + 200; // Start WAY off screen
             startY = Math.random() * h;
             targetX = w * (0.4 + Math.random() * 0.4);
             targetY = h * (0.2 + Math.random() * 0.6);
             break;
           case 2:
             startX = Math.random() * w;
-            startY = h + 50;
+            startY = h + 200; // Start WAY off screen
             targetX = w * (0.2 + Math.random() * 0.6);
             targetY = h * (0.4 + Math.random() * 0.4);
             break;
           case 3:
-            startX = -50;
+            startX = -200; // Start WAY off screen
             startY = Math.random() * h;
             targetX = w * (0.2 + Math.random() * 0.4);
             targetY = h * (0.2 + Math.random() * 0.6);
@@ -218,6 +240,24 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
           }));
         }
       } else if (antState === "wandering") {
+        // ELUSIVENESS: Run away from mouse (slow enough to catch!)
+        const dx = mousePos.current.x - position.x;
+        const dy = mousePos.current.y - position.y;
+        const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+        const scaredDistance = 80; // Smaller detection radius (you can sneak up!)
+
+        if (distanceToMouse < scaredDistance) {
+          // Run away, but ant-speed (catchable!)
+          const angle = Math.atan2(dy, dx);
+          const targetVelX = -Math.cos(angle) * 1.2; // Slow enough to catch
+          const targetVelY = -Math.sin(angle) * 1.2;
+
+          setVelocity((v) => ({
+            x: v.x + (targetVelX - v.x) * 0.15,
+            y: v.y + (targetVelY - v.y) * 0.15,
+          }));
+        }
+
         // FORCE EXIT after max time (guaranteed to leave!)
         if (stateTimer.current > WANDER_MAX_TIME) {
           // Pick random exit edge
@@ -226,10 +266,10 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
           const edge = Math.floor(Math.random() * 4);
 
           switch (edge) {
-            case 0: targetPoint.current = { x: Math.random() * w, y: -50 }; break;
-            case 1: targetPoint.current = { x: w + 50, y: Math.random() * h }; break;
-            case 2: targetPoint.current = { x: Math.random() * w, y: h + 50 }; break;
-            case 3: targetPoint.current = { x: -50, y: Math.random() * h }; break;
+            case 0: targetPoint.current = { x: Math.random() * w, y: -200 }; break; // WAY off top
+            case 1: targetPoint.current = { x: w + 200, y: Math.random() * h }; break; // WAY off right
+            case 2: targetPoint.current = { x: Math.random() * w, y: h + 200 }; break; // WAY off bottom
+            case 3: targetPoint.current = { x: -200, y: Math.random() * h }; break; // WAY off left
           }
 
           setAntState("exiting");
@@ -341,7 +381,12 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
         selectedMessage = THANK_YOU_MESSAGES[Math.floor(Math.random() * THANK_YOU_MESSAGES.length)];
       }
 
-      console.log("🐜 Message:", selectedMessage);
+      console.log("🐜 SHOWING MESSAGE:", selectedMessage);
+
+      // FALLBACK: Use alert if modal fails
+      alert(selectedMessage);
+
+      // Also try modal
       setMessage(selectedMessage);
       setShowMessage(true);
       setIsPaused(true);
