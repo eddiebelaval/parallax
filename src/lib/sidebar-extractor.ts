@@ -9,7 +9,7 @@ function getClient(): Anthropic {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 }
 
-const EXTRACTION_PROMPT = `You are an insight extraction system. Given a conversation between a person and Parallax (an AI companion), extract structured insights.
+const EXTRACTION_PROMPT = `You are an insight extraction system. Given a conversation between a person and Ava (an AI companion), extract structured insights.
 
 Return a JSON object with this exact shape:
 {
@@ -56,7 +56,7 @@ export async function extractSidebarInsights(
   if (messages.length < 2) return null
 
   const conversationBlock = messages
-    .map((m) => `[${m.sender === 'person_a' ? 'User' : 'Parallax'}]: ${m.content}`)
+    .map((m) => `[${m.sender === 'person_a' ? 'User' : 'Ava'}]: ${m.content}`)
     .join('\n')
 
   const existingBlock = existingMemory && 'identity' in existingMemory

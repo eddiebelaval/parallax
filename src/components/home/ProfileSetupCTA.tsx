@@ -18,15 +18,15 @@ export function ProfileSetupCTA({ signalCount }: { signalCount: number }) {
         <div className="flex items-center gap-2 mb-3">
           <div className="w-2 h-2 rounded-full bg-success" />
           <span className="font-mono text-[10px] text-success uppercase tracking-widest">
-            Get More from Parallax
+            Get More from Ava
           </span>
         </div>
         <h3 className="font-serif text-lg text-foreground mb-2">
-          Teach Parallax how you communicate
+          Teach Ava how you communicate
         </h3>
         <p className="text-sm text-muted leading-relaxed mb-4">
           A 10-minute conversational interview extracts your communication patterns —
-          attachment style, conflict mode, emotional regulation — so Parallax can deliver
+          attachment style, conflict mode, emotional regulation — so Ava can deliver
           sharper, more personalized analysis.
         </p>
         <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export function ProfileSetupCTA({ signalCount }: { signalCount: number }) {
           >
             Start Interview
           </Link>
-          <span className="text-muted text-xs font-mono">or ask Parallax below</span>
+          <span className="text-muted text-xs font-mono">or ask Ava below</span>
         </div>
       </div>
     </div>

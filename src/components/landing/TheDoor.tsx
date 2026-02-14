@@ -395,7 +395,7 @@ export function TheDoor() {
                     </h3>
                   </div>
                   <p className="text-ember-400 text-sm mb-3">
-                    Just you and Parallax
+                    Just you and Ava
                   </p>
                   <p className="text-ember-500 text-xs leading-relaxed mb-4">
                     1:1 conversation that learns your style and becomes your advocate in future sessions.

@@ -63,7 +63,7 @@ export function CoachingPanel({
       >
         {messages.length === 0 && (
           <p className="text-ember-600 font-mono text-xs text-center py-4">
-            Ask Parallax anything privately. The other person cannot see this conversation.
+            Ask Ava anything privately. The other person cannot see this conversation.
           </p>
         )}
         {messages.map((msg) => (
@@ -78,7 +78,7 @@ export function CoachingPanel({
             ) : (
               <div className="border-l-2 border-success pl-3">
                 <span className="font-mono text-[9px] uppercase tracking-widest text-success block mb-0.5">
-                  Parallax
+                  Ava
                 </span>
                 <p className="text-sm text-success/80 italic leading-relaxed">
                   {msg.content}
@@ -107,7 +107,7 @@ export function CoachingPanel({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Ask Parallax anything..."
+              placeholder="Ask Ava anything..."
               disabled={loading}
               className="flex-1 bg-transparent text-foreground text-sm placeholder:text-ember-600 focus:outline-none disabled:opacity-40"
             />

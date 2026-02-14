@@ -207,7 +207,7 @@ export default function InterviewPage() {
             </div>
 
             <p className="text-[var(--ember-text)] text-base leading-relaxed px-4">
-              Parallax now understands your communication patterns, conflict style, and values.
+              Ava now understands your communication patterns, conflict style, and values.
               This intelligence will enhance every conversation and mediation session you join.
             </p>
 
@@ -353,7 +353,7 @@ export default function InterviewPage() {
                   msg.role === 'assistant' ? 'bg-temp-cool' : 'bg-accent'
                 }`} />
                 <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
-                  {msg.role === 'assistant' ? 'Parallax' : (displayName || 'You')}
+                  {msg.role === 'assistant' ? 'Ava' : (displayName || 'You')}
                 </span>
               </div>
               <div className="text-base font-sans leading-relaxed whitespace-pre-wrap text-[var(--ember-text)] max-w-2xl">
@@ -374,7 +374,7 @@ export default function InterviewPage() {
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-temp-cool animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-widest text-temp-cool/80">
-                Parallax is thinking...
+                Ava is thinking...
               </span>
             </div>
           </div>

@@ -160,7 +160,7 @@ export function useSoloChat(sessionId: string | undefined, userId: string | unde
       })
 
       if (!res.ok) {
-        setError('Parallax is unavailable -- try again')
+        setError('Ava is unavailable -- try again')
         setLoading(false)
         return
       }

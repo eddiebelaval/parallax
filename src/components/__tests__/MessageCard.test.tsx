@@ -80,7 +80,7 @@ describe('MessageCard', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument()
   })
 
-  it('renders "Parallax" for mediator sender', () => {
+  it('renders "Ava" for mediator sender', () => {
     render(
       <MessageCard
         sender="mediator"
@@ -89,7 +89,7 @@ describe('MessageCard', () => {
         timestamp="2:30 PM"
       />
     )
-    expect(screen.getByText('Parallax')).toBeInTheDocument()
+    expect(screen.getByText('Ava')).toBeInTheDocument()
   })
 
   it('renders timestamp', () => {

@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   try {
     // Use conductorMessage for single-turn with full coaching context
     const coachingContext = claudeMessages
-      .map((m) => `[${m.role === 'user' ? personName : 'Parallax'}]: ${m.content}`)
+      .map((m) => `[${m.role === 'user' ? personName : 'Ava'}]: ${m.content}`)
       .join('\n')
 
     response = await conductorMessage(

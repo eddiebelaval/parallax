@@ -8,7 +8,7 @@ describe('buildNameMap', () => {
     expect(map).toEqual({
       person_a: 'Alice',
       person_b: 'Bob',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     })
   })
 
@@ -17,7 +17,7 @@ describe('buildNameMap', () => {
     expect(map).toEqual({
       person_a: 'Person A',
       person_b: 'Person B',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     })
   })
 
@@ -33,7 +33,7 @@ describe('toConversationHistory', () => {
     const nameMap: Record<MessageSender, string> = {
       person_a: 'Alice',
       person_b: 'Bob',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     }
     const messages = [
       { sender: 'person_a' as MessageSender, content: 'Hello' },
@@ -45,7 +45,7 @@ describe('toConversationHistory', () => {
     expect(history).toEqual([
       { sender: 'Alice', content: 'Hello' },
       { sender: 'Bob', content: 'Hi there' },
-      { sender: 'Parallax', content: 'Welcome' },
+      { sender: 'Ava', content: 'Welcome' },
     ])
   })
 
@@ -53,7 +53,7 @@ describe('toConversationHistory', () => {
     const nameMap: Record<MessageSender, string> = {
       person_a: 'A',
       person_b: 'B',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     }
     expect(toConversationHistory([], nameMap)).toEqual([])
   })

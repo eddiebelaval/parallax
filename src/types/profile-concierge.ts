@@ -2,7 +2,7 @@
  * Profile Concierge Types
  *
  * Defines the voice-driven profile management system where
- * Parallax can manage the entire user account on their behalf.
+ * Ava can manage the entire user account on their behalf.
  */
 
 export interface ProfileSettings {
@@ -122,7 +122,7 @@ export const CONFIRMATION_PROMPTS = {
   RESET_INTERVIEW:
     'Resetting your interview will clear all your existing behavioral signals and start fresh. Are you sure?',
   STOP_SHARING:
-    'Stopping data sharing will prevent future analysis and may limit the quality of insights Parallax can provide. Continue?',
+    'Stopping data sharing will prevent future analysis and may limit the quality of insights Ava can provide. Continue?',
 } as const
 
 // Natural language responses for successful actions

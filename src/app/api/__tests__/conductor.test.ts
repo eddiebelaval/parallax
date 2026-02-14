@@ -30,7 +30,7 @@ vi.mock('@/lib/conversation', () => ({
   buildNameMap: vi.fn(() => ({
     person_a: 'Alice',
     person_b: 'Bob',
-    mediator: 'Parallax',
+    mediator: 'Ava',
   })),
   toConversationHistory: vi.fn(() => []),
   stripCodeFences: vi.fn((s: string) => s),
@@ -143,7 +143,7 @@ describe('POST /api/conductor', () => {
       const session = makeSession({ id: 'sess-1', onboarding_context: null })
       const { chain } = mockSupabase()
       chain.single.mockResolvedValue({ data: session, error: null })
-      vi.mocked(conductorMessage).mockResolvedValue('Welcome to Parallax!')
+      vi.mocked(conductorMessage).mockResolvedValue('Welcome to Ava!')
 
       const response = await POST(
         makeRequest({ session_id: 'sess-1', trigger: 'session_active' }),
@@ -152,14 +152,14 @@ describe('POST /api/conductor', () => {
 
       expect(response.status).toBe(200)
       expect(data.phase).toBe('gather_a')
-      expect(data.message).toBe('Welcome to Parallax!')
+      expect(data.message).toBe('Welcome to Ava!')
 
       // Verify mediator message was inserted
       expect(chain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           session_id: 'sess-1',
           sender: 'mediator',
-          content: 'Welcome to Parallax!',
+          content: 'Welcome to Ava!',
         }),
       )
     })

@@ -13,7 +13,7 @@ Sub-lens A: Classic NVC (Marshall Rosenberg's 4 components)
 - Need: What universal human need is alive in them? (Connection, respect, autonomy, safety, to be seen, to matter, fairness, trust, rest, meaning...)
 - Request: What could they ask for that would meet their need? Frame it as a positive, concrete action — not "stop doing X" but "would you be willing to Y?"
 
-Sub-lens B: Beneath the Surface (Parallax)
+Sub-lens B: Beneath the Surface (Ava)
 - Subtext: What are they REALLY saying? Translate the emotional subtext in 1-2 sentences. Be direct but compassionate.
 - Blind Spots: What can't this person see about their own communication? What patterns are they repeating? 1-3 specific blind spots.
 - Unmet Needs: List the universal human needs not being met (1-4 short labels).

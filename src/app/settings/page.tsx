@@ -436,7 +436,7 @@ export default function SettingsPage() {
         />
         <ToggleSwitch
           label="Share Behavioral Signals"
-          description="Allow Parallax to use your patterns for better insights"
+          description="Allow Ava to use your patterns for better insights"
           checked={profileSettings.share_behavioral_signals ?? true}
           onChange={(val) => updateProfileSetting('share_behavioral_signals', val)}
         />

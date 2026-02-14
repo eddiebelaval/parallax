@@ -155,7 +155,7 @@ export function NarrationPanel({
         phase === 'idle'
           ? 'Begin guided introduction'
           : phase === 'complete'
-            ? isLandingPage ? 'Replay introduction' : 'Open Parallax assistant'
+            ? isLandingPage ? 'Replay introduction' : 'Open Ava assistant'
             : undefined
       }
       onClick={() => {
@@ -244,10 +244,10 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Pill: small "Listen" or "Parallax" text */}
+      {/* Pill: small "Listen" or "Ava" text */}
       {showPillContent && (
         <span className="relative z-10 font-serif text-sm text-foreground/80">
-          {isLandingPage ? 'Listen' : 'Parallax'}
+          {isLandingPage ? 'Listen' : 'Ava'}
         </span>
       )}
 

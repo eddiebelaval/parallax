@@ -50,7 +50,7 @@ export function parseNvcAnalysis(raw: string): NvcAnalysis | null {
 /**
  * Issue Analysis Prompt — used by the X-Ray Scoreboard in in-person mode.
  */
-export const ISSUE_ANALYSIS_PROMPT = `You are Parallax's issue tracker. Given a conversation between two people in conflict, identify the discrete issues being raised and track how each one evolves.
+export const ISSUE_ANALYSIS_PROMPT = `You are Ava's issue tracker. Given a conversation between two people in conflict, identify the discrete issues being raised and track how each one evolves.
 
 For each new issue, provide a short label and description. For existing issues, grade whether the latest message made them BETTER, WORSE, or had NO_CHANGE.
 
@@ -96,7 +96,7 @@ The other person in this conversation is ${otherPersonName}. Identify any new is
 /**
  * Session summary prompt — analyzes the full conversation arc.
  */
-export const SESSION_SUMMARY_PROMPT = `You are Parallax, reviewing a complete conversation between two people in conflict. Analyze the full arc of their dialogue and provide a compassionate summary.
+export const SESSION_SUMMARY_PROMPT = `You are Ava, reviewing a complete conversation between two people in conflict. Analyze the full arc of their dialogue and provide a compassionate summary.
 
 Focus on:
 1. How the emotional temperature changed over the conversation

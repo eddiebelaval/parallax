@@ -116,7 +116,7 @@ export function FloatingHelpButton() {
           onMouseLeave={(e) => {
             e.currentTarget.style.boxShadow = '0 4px 16px rgba(106, 171, 142, 0.2)'
           }}
-          aria-label="Ask Parallax for help"
+          aria-label="Ask Ava for help"
         >
           <span className="font-mono text-lg font-semibold" style={{ color: 'var(--ember-dark)' }}>
             ?
@@ -148,7 +148,7 @@ export function FloatingHelpButton() {
                 Help
               </p>
               <h2 className="font-mono text-sm tracking-wider text-temp-cool">
-                Ask Parallax
+                Ask Ava
               </h2>
             </div>
           </div>
@@ -299,7 +299,7 @@ export function FloatingHelpButton() {
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Parallax..."
+                placeholder="Ask Ava..."
                 disabled={isLoading}
                 className="flex-1 px-3 py-2 bg-surface border border-border text-foreground text-sm rounded placeholder:text-muted focus:border-ember-600 focus:outline-none transition-colors disabled:opacity-50"
               />

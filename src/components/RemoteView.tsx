@@ -47,11 +47,11 @@ function getEffectiveTurn(
 const PHASE_LABELS: Partial<
   Record<ConductorPhase, (a: string, b: string) => string>
 > = {
-  greeting: () => "Parallax is joining...",
+  greeting: () => "Ava is joining...",
   gather_a: (a) => `${a}, share what brought you here`,
   waiting_for_b: () => "Waiting for the other person to join",
   gather_b: (_a, b) => `${b}, share your perspective`,
-  synthesize: () => "Parallax is listening...",
+  synthesize: () => "Ava is listening...",
 };
 
 interface RemoteViewProps {
@@ -127,14 +127,14 @@ export function RemoteView({
   const activeSpeaker = isMyTurn
     ? localName
     : effectiveTurn === "mediator"
-      ? "Parallax"
+      ? "Ava"
       : effectiveTurn === "person_a"
         ? personAName
         : personBName;
 
   // Helper for sender display
   function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
+    if (sender === "mediator") return "Ava";
     if (sender === "person_a") return personAName;
     return personBName;
   }

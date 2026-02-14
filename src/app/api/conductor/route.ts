@@ -316,7 +316,7 @@ export async function POST(request: Request) {
 
       const nameMap: Record<string, string> = {
         person_a: personAName,
-        mediator: 'Parallax',
+        mediator: 'Ava',
       }
       const history = (allMessages || [])
         .map((m: Message) => `${nameMap[m.sender] || m.sender}: ${m.content}`)
@@ -537,7 +537,7 @@ export async function POST(request: Request) {
     const nameMap: Record<string, string> = {
       person_a: personAName,
       person_b: personBName,
-      mediator: 'Parallax',
+      mediator: 'Ava',
     }
 
     // Build analysis-enriched conversation history
@@ -605,7 +605,7 @@ export async function POST(request: Request) {
     const nameMap: Record<string, string> = {
       person_a: session.person_a_name || 'Person A',
       person_b: session.person_b_name || 'Person B',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     }
 
     const conversationHistory = (allMessages || []).map((m: Message) => ({

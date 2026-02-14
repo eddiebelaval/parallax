@@ -54,7 +54,7 @@ export function ParallaxFAB() {
         className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full border border-success/40 bg-surface/90 backdrop-blur-sm flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-105 hover:border-success/60 hover:shadow-[0_0_20px_rgba(106,171,142,0.2)] ${
           isOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100'
         }`}
-        aria-label="Open Parallax Guide"
+        aria-label="Open Ava Guide"
       >
         <span className="font-mono text-lg font-semibold text-success">?</span>
       </button>

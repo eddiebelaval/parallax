@@ -57,12 +57,12 @@ export function getIntroPrompt(replayCount: number): string {
   const dayVibe = getDayVibe()
   const timeFlavor = TIME_FLAVOR[timeOfDay]
 
-  return `A visitor just clicked "Listen." Start with the word "Hello" and then warmly introduce yourself in 2-3 sentences. You are Parallax \u2014 you help people in conflict see what they are actually saying to each other. Be warm, human, and brief. ${timeFlavor}${dayVibe ? ' ' + dayVibe : ''} Do NOT use bullet points.`
+  return `A visitor just clicked "Listen." Start with the word "Hello" and then warmly introduce yourself in 2-3 sentences. You are Ava \u2014 you help people in conflict see what they are actually saying to each other. Be warm, human, and brief. ${timeFlavor}${dayVibe ? ' ' + dayVibe : ''} Do NOT use bullet points.`
 }
 
 /** Fallback intro if the API call fails or times out */
 export const FALLBACK_INTRO =
-  "Hello. I'm Parallax. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean \u2014 and I exist because I believe most people can solve their own problems once they can finally see clearly."
+  "Hello. I'm Ava. I sit between two people in conflict and show them what's actually happening beneath the words. The things we say when we're hurt rarely match what we mean \u2014 and I exist because I believe most people can solve their own problems once they can finally see clearly."
 
 /* --- 3-Beat Narration Script --- */
 

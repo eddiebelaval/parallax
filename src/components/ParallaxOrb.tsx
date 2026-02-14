@@ -248,10 +248,10 @@ export function ParallaxOrb({
       style={{ width: size, height: size }}
       aria-label={
         isSpeaking
-          ? "Parallax is speaking"
+          ? "Ava is speaking"
           : isAnalyzing
-          ? "Parallax is analyzing"
-          : "Parallax"
+          ? "Ava is analyzing"
+          : "Ava"
       }
     />
   );

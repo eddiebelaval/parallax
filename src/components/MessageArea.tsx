@@ -50,7 +50,7 @@ export function MessageArea({
                     ? personAName
                     : msg.sender === "person_b"
                       ? personBName
-                      : "Parallax"
+                      : "Ava"
                 }
                 content={msg.content}
                 timestamp={new Date(msg.created_at).toLocaleTimeString([], {

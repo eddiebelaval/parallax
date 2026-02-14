@@ -141,7 +141,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   }
 
   function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
+    if (sender === "mediator") return "Ava";
     if (sender === "person_a") return personAName;
     return personBName;
   }

@@ -541,7 +541,7 @@ export function buildExportHtml(
     body += messages
       .map((msg) => {
         const isParallax = msg.sender === 'mediator'
-        const label = isParallax ? 'Parallax' : 'You'
+        const label = isParallax ? 'Ava' : 'You'
         const cls = isParallax ? 'message-parallax' : 'message-user'
         return `
       <div class="message ${cls}">

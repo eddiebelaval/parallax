@@ -15,7 +15,7 @@ vi.mock('@/lib/conversation', () => ({
   buildNameMap: vi.fn(() => ({
     person_a: 'Alice',
     person_b: 'Bob',
-    mediator: 'Parallax',
+    mediator: 'Ava',
   })),
   toConversationHistory: vi.fn(() => [
     { sender: 'Alice', content: 'Hello' },

@@ -239,7 +239,7 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <AudioWaveformOrb
-            name="Parallax"
+            name="Ava"
             role="claude"
             waveform={null}
             energy={isLoading || streamingText ? 0.3 : 0}

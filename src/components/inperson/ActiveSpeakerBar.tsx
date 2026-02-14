@@ -450,7 +450,7 @@ export function ActiveSpeakerBar({
                   {isMuted
                     ? "Muted — tap mic to unmute"
                     : isTTSSpeaking
-                    ? "Parallax is responding..."
+                    ? "Ava is responding..."
                     : isProcessing
                     ? "Analyzing..."
                     : isAutoListening && isSpeechActive

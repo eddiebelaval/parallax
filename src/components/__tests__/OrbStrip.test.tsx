@@ -30,7 +30,7 @@ vi.mock('../AudioWaveformOrb', () => ({
 }))
 
 describe('OrbStrip', () => {
-  it('renders three orbs: person A, Parallax, person B', () => {
+  it('renders three orbs: person A, Ava, person B', () => {
     render(
       <OrbStrip
         personAName="Alice"
@@ -40,7 +40,7 @@ describe('OrbStrip', () => {
       />
     )
     expect(screen.getByTestId('orb-a')).toHaveTextContent('Alice')
-    expect(screen.getByTestId('orb-claude')).toHaveTextContent('Parallax')
+    expect(screen.getByTestId('orb-claude')).toHaveTextContent('Ava')
     expect(screen.getByTestId('orb-b')).toHaveTextContent('Bob')
   })
 
