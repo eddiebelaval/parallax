@@ -112,6 +112,12 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   useEffect(() => {
     if (!isVisible) return;
 
+    // Only initialize position for trapped and entering states
+    // Don't re-run for escaping/wandering/exiting
+    if (antState === "escaping" || antState === "wandering" || antState === "exiting") {
+      return;
+    }
+
     const spawnAnt = () => {
       if (antState === "trapped") {
         // Find the badge and position ant inside it - ONCE
@@ -224,8 +230,11 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
         const dy = targetPoint.current.y - position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        console.log('🐜 ESCAPING:', { position, target: targetPoint.current, distance, velocity });
+
         if (distance < 10) {
           // Escaped! Move to another page
+          console.log('🐜 ESCAPE COMPLETE - moving to another page');
           const nextPage = allowedPaths.filter(p => p !== "/")[Math.floor(Math.random() * 2)];
           localStorage.setItem("parallax-ant-location", nextPage);
           setIsVisible(false);
@@ -233,13 +242,13 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
           return;
         } else {
           // Sprint toward freedom!
-          const speed = 3;
+          const speed = 5; // Faster!
           const targetVelX = (dx / distance) * speed;
           const targetVelY = (dy / distance) * speed;
 
           setVelocity((v) => ({
-            x: v.x + (targetVelX - v.x) * 0.3,
-            y: v.y + (targetVelY - v.y) * 0.3,
+            x: v.x + (targetVelX - v.x) * 0.5, // More aggressive lerp
+            y: v.y + (targetVelY - v.y) * 0.5,
           }));
         }
       } else if (antState === "entering") {
