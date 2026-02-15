@@ -15,6 +15,7 @@ import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import { useArchitectMode } from "@/hooks/useArchitectMode";
 import ConfirmationModal from "./ConfirmationModal";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type {
@@ -78,6 +79,7 @@ export function RemoteView({
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
   const profileConcierge = useProfileConcierge();
+  const { isActive: architectModeActive } = useArchitectMode();
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
@@ -332,6 +334,30 @@ export function RemoteView({
     async (content: string) => {
       setMediationError(null);
 
+      // Architect mode: meta-conversation with Ava about her architecture
+      if (architectModeActive) {
+        setMediationError('🏗️ Consulting architecture...');
+        try {
+          const res = await fetch('/api/architect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: content }),
+          });
+
+          if (!res.ok) {
+            setMediationError('✗ Architect mode unavailable');
+            return;
+          }
+
+          const data = await res.json();
+          setMediationError(`🏗️ Ava: ${data.message}`);
+          setTimeout(() => setMediationError(null), 30000);
+        } catch {
+          setMediationError('✗ Architect mode connection failed');
+        }
+        return;
+      }
+
       // Intercept profile concierge voice commands before sending to Claude
       if (profileConcierge.isCommand(content)) {
         try {
@@ -400,6 +426,7 @@ export function RemoteView({
       triggerInterventionCheck,
       refreshIssues,
       profileConcierge,
+      architectModeActive,
     ],
   );
 
@@ -538,6 +565,15 @@ export function RemoteView({
                     })}
                     nvcAnalysis={msg.nvc_analysis}
                     isLatest={i === messages.length - 1}
+                    onReplay={msg.sender === "mediator" ? () => speak(msg.content) : undefined}
+                    onCopy={() => navigator.clipboard.writeText(msg.content)}
+                    onShare={msg.sender === "mediator" ? () => {
+                      if (navigator.share) {
+                        navigator.share({ text: msg.content }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(msg.content);
+                      }
+                    } : undefined}
                   />
                   {analyzingMessageId === msg.id && !msg.nvc_analysis && (
                     <div className="pl-4 mt-1 flex items-center gap-2">
@@ -642,6 +678,7 @@ export function RemoteView({
               isTTSSpeaking={isSpeaking}
               isProcessing={!!analyzingMessageId || conductorLoading}
               isMuted={muted}
+              architectMode={architectModeActive}
               onToggleMute={() => setMuted((v) => !v)}
               onModeChange={(mode) => {
                 if (mode === "auto") {

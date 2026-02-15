@@ -11,6 +11,7 @@ import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AvaConcierge } from "@/components/AvaConcierge";
 import { ParallaxOrb } from "@/components/ParallaxOrb";
+import { ArchitectModeListener } from "@/components/ArchitectModeListener";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
@@ -257,6 +258,7 @@ export default function RootLayout({
       >
         <SettingsProvider>
           <CursorSpotlight />
+          <ArchitectModeListener />
           <LayoutShell>{children}</LayoutShell>
         </SettingsProvider>
       </body>

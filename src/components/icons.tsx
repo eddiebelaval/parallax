@@ -36,3 +36,30 @@ export function KeyboardIcon({ size = 16, className }: IconProps) {
     </svg>
   );
 }
+
+export function PlayIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <path d="M5 3L13 8L5 13V3Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function CopyIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M11 5V3.5C11 2.67 10.33 2 9.5 2H3.5C2.67 2 2 2.67 2 3.5V9.5C2 10.33 2.67 11 3.5 11H5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+export function ShareIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <path d="M8 2V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M5 5L8 2L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 10V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}

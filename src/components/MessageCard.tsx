@@ -10,6 +10,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useMelt, MeltText } from "./TheMelt";
 import { EssenceBullets } from "./EssenceBullets";
 import { LensBar } from "./lenses/LensBar";
+import { PlayIcon, CopyIcon, ShareIcon } from "@/components/icons";
 import type {
   NvcAnalysis,
   ConflictAnalysis,
@@ -24,6 +25,9 @@ interface MessageCardProps {
   nvcAnalysis?: NvcAnalysis | ConflictAnalysis | null;
   isLatest?: boolean;
   isAnalyzing?: boolean;
+  onReplay?: () => void;
+  onCopy?: () => void;
+  onShare?: () => void;
 }
 
 const SENDER_STYLES: Record<
@@ -62,10 +66,14 @@ export function MessageCard({
   nvcAnalysis,
   isLatest = false,
   isAnalyzing = false,
+  onReplay,
+  onCopy,
+  onShare,
 }: MessageCardProps) {
   const { settings } = useSettings();
   const [expanded, setExpanded] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [copied, setCopied] = useState(false);
   const style = SENDER_STYLES[sender];
   const hasAnalysis = nvcAnalysis != null;
   const analysisVisible = hasAnalysis && settings.show_analysis;
@@ -161,6 +169,52 @@ export function MessageCard({
                 : "text-foreground"
             }`}
           />
+        )}
+
+        {/* Message action buttons — replay, copy, share */}
+        {(onReplay || onCopy || onShare) && (
+          <div className="flex items-center gap-3 mt-2">
+            {sender === "mediator" && onReplay && (
+              <button
+                onClick={onReplay}
+                className="text-ember-600 hover:text-foreground transition-colors"
+                aria-label="Replay speech"
+                title="Replay speech"
+              >
+                <PlayIcon size={14} />
+              </button>
+            )}
+            {onCopy && (
+              <button
+                onClick={() => {
+                  onCopy();
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+                className="text-ember-600 hover:text-foreground transition-colors"
+                aria-label="Copy message"
+                title="Copy message"
+              >
+                {copied ? (
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-temp-cool">
+                    Copied
+                  </span>
+                ) : (
+                  <CopyIcon size={14} />
+                )}
+              </button>
+            )}
+            {sender === "mediator" && onShare && (
+              <button
+                onClick={onShare}
+                className="text-ember-600 hover:text-foreground transition-colors"
+                aria-label="Share message"
+                title="Share message"
+              >
+                <ShareIcon size={14} />
+              </button>
+            )}
+          </div>
         )}
 
         {/* Essence / transcript toggle — settled phase only */}

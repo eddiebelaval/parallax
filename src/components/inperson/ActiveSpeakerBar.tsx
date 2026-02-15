@@ -61,6 +61,8 @@ interface ActiveSpeakerBarProps {
   onToggleMute?: () => void;
   /** Switch between auto/voice/text from the bar */
   onModeChange?: (mode: "auto" | "voice" | "text") => void;
+  /** Architect mode active — applies teal glow styling */
+  architectMode?: boolean;
 }
 
 function isSpeechSupported(): boolean {
@@ -82,6 +84,7 @@ export function ActiveSpeakerBar({
   isMuted = false,
   onToggleMute,
   onModeChange,
+  architectMode = false,
 }: ActiveSpeakerBarProps) {
   const { settings } = useSettings();
   const [mode, setMode] = useState<BarMode>("voice");
@@ -315,7 +318,9 @@ export function ActiveSpeakerBar({
   return (
     <div
       className={`border-t transition-all duration-300 flex-shrink-0 ${
-        effectiveMode === "auto"
+        architectMode
+          ? "architect-mode-input"
+          : effectiveMode === "auto"
           ? autoBorderClass
           : isRecording
           ? "border-temp-cool mic-hot-glow"
@@ -391,8 +396,8 @@ export function ActiveSpeakerBar({
                   : "bg-accent/50"
               }`}
             />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-              {activeSpeakerName}
+            <span className={`font-mono text-[10px] uppercase tracking-widest ${architectMode ? 'text-temp-cool' : 'text-ember-600'}`}>
+              {architectMode ? '🏗️ Architect Mode' : activeSpeakerName}
             </span>
           </div>
         </div>

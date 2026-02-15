@@ -17,6 +17,7 @@ import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 import { useAutoListen } from "@/hooks/useAutoListen";
 import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import { useArchitectMode } from "@/hooks/useArchitectMode";
 import ConfirmationModal from "../ConfirmationModal";
 import type {
   Session,
@@ -35,6 +36,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
   const profileConcierge = useProfileConcierge();
+  const { isActive: architectModeActive } = useArchitectMode();
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(null);
@@ -226,6 +228,31 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
     async (content: string) => {
+      // Architect mode: meta-conversation with Ava about her architecture
+      if (architectModeActive) {
+        setMediationError('🏗️ Consulting architecture...');
+        try {
+          const res = await fetch('/api/architect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: content }),
+          });
+
+          if (!res.ok) {
+            setMediationError('✗ Architect mode unavailable');
+            return;
+          }
+
+          const data = await res.json();
+          setMediationError(`🏗️ Ava: ${data.message}`);
+          speak(data.message); // TTS the architect response
+          setTimeout(() => setMediationError(null), 30000);
+        } catch {
+          setMediationError('✗ Architect mode connection failed');
+        }
+        return;
+      }
+
       // Intercept profile voice commands before sending to session
       if (profileConcierge.isCommand(content)) {
         try {
@@ -354,7 +381,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }, 5000);
       }
     },
-    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak],
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak, architectModeActive],
   );
 
   // Cleanup intervention timer on unmount
@@ -560,6 +587,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
                   nvcAnalysis={msg.nvc_analysis}
                   isLatest={i === messages.length - 1}
                   isAnalyzing={analyzingMessageId === msg.id}
+                  onReplay={msg.sender === "mediator" ? () => speak(msg.content) : undefined}
+                  onCopy={() => navigator.clipboard.writeText(msg.content)}
+                  onShare={msg.sender === "mediator" ? () => {
+                    if (navigator.share) {
+                      navigator.share({ text: msg.content }).catch(() => {});
+                    } else {
+                      navigator.clipboard.writeText(msg.content);
+                    }
+                  } : undefined}
                 />
               </div>
             ))}
@@ -655,6 +691,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           isTTSSpeaking={isSpeaking}
           isProcessing={isAnalyzing || conductorLoading}
           isMuted={muted}
+          architectMode={architectModeActive}
           onToggleMute={() => setMuted((v) => !v)}
           onModeChange={(mode) => {
             if (mode === "auto") {

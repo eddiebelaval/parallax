@@ -43,9 +43,9 @@ function stadiumPath(w: number, h: number): string {
 }
 
 const ANT_COUNT = 14
-const MARCH_DURATION_S = 20
-const SPAWN_INTERVAL_MS = (MARCH_DURATION_S / ANT_COUNT) * 1000
-const INITIAL_DELAY_MS = 7000
+const MARCH_DURATION_S = 12
+const SPAWN_INTERVAL_MS = 100 // Spawn all ants quickly (14 ants in 1.4s)
+const INITIAL_DELAY_MS = 2000 // Shorter initial delay
 
 export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
   const pillRef = useRef<HTMLDivElement>(null)

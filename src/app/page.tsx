@@ -2,11 +2,18 @@
 
 import { useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useNarrationController } from "@/hooks/useNarrationController";
+import { useAuth } from "@/hooks/useAuth";
 import { NarrationPanel } from "@/components/landing/NarrationPanel";
 import { NarrationStage } from "@/components/landing/NarrationStage";
+import { GlowChatInterface } from "@/components/landing/GlowChatInterface";
 import { TheDoor } from "@/components/landing/TheDoor";
+import { AntMarchBadge } from "@/components/landing/AntMarchBadge";
 import { HeroPreview } from "@/components/landing/HeroPreview";
+import { LensGrid } from "@/components/landing/LensGrid";
+import { ContextModeCards } from "@/components/landing/ContextModeCards";
+import { ModePreview } from "@/components/landing/ModePreview";
 
 // Lazy-load Remotion Player — heavy dep, only needed in "What Parallax Sees"
 const MeltDemoPlayer = dynamic(() => import("@/components/landing/MeltDemoPlayer"), {
@@ -16,7 +23,7 @@ const MeltDemoPlayer = dynamic(() => import("@/components/landing/MeltDemoPlayer
   ),
 });
 
-/* --- Section Wrapper --- */
+/* ─── Section Wrapper ─── */
 
 function NarrationSection({
   id,
@@ -45,13 +52,15 @@ function NarrationSection({
   );
 }
 
-/* --- Page --- */
+/* ─── Page ─── */
 
 export default function Home() {
   const narration = useNarrationController();
+  const { user } = useAuth();
   const isComplete = narration.phase === "complete";
   const isNarrating = narration.phase === "narrating";
-  const shouldDim = isNarrating;
+  const isChat = narration.phase === "chat";
+  const shouldDim = isNarrating || isChat;
 
   // Dispatch narration phase to layout via custom event
   useEffect(() => {
@@ -91,7 +100,7 @@ export default function Home() {
             onToggleMute={narration.toggleMute}
           />
         }
-        chatContent={null}
+        chatContent={<GlowChatInterface onClose={narration.exitChat} />}
       />
 
       {/* Skip intro — visible during idle phase */}
@@ -107,7 +116,7 @@ export default function Home() {
       {/* Page content — dimmed during narration/chat, blur at top for focus */}
       <div className={`${shouldDim ? "content-dimmed" : ""} ${isNarrating ? "content-blur-top" : ""}`}>
 
-        {/* --- 1. Hero: Centered Text That Scrolls Up --- */}
+        {/* ─── Hero: Centered Text That Scrolls Up ─── */}
         <NarrationSection
           id="hero"
           isComplete={isComplete}
@@ -146,7 +155,7 @@ export default function Home() {
           </div>
         </NarrationSection>
 
-        {/* --- 2. The Shift: Temperature Showcase --- */}
+        {/* ─── Temperature Showcase ─── */}
         <NarrationSection
           id="temperature-showcase"
           isComplete={isComplete}
@@ -228,10 +237,199 @@ export default function Home() {
           </div>
         </NarrationSection>
 
-        {/* --- Divider --- */}
+        {/* ─── Divider ─── */}
         <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
 
-        {/* --- 3. The Melt: What Parallax Sees --- */}
+        {/* ─── The Problem ─── */}
+        <NarrationSection
+          id="the-problem"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="relative px-6 py-16 sm:py-24">
+            {/* Subtle warning glow */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `radial-gradient(ellipse 60% 40% at 50% 50%, rgba(196, 92, 60, 0.03) 0%, transparent 70%)`,
+                }}
+              />
+            </div>
+
+            <div className="relative z-10 max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <p className="section-indicator mb-6 justify-center">The Problem</p>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl leading-[1.15] mb-6">
+                  Most conflicts never get help
+                </h2>
+                <p className="text-lg text-ember-400 max-w-2xl mx-auto leading-relaxed">
+                  The systems that work are too expensive. The ones that are accessible have impossible wait times.
+                  And meanwhile, the conversation you&apos;re not having is happening anyway.
+                </p>
+              </div>
+
+              {/* Evidence cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-temp-hot/10 to-transparent rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border bg-surface/80 backdrop-blur-sm p-8 text-center rounded-lg">
+                    <div className="mb-3">
+                      <p className="font-mono text-4xl sm:text-5xl text-accent leading-none mb-1">$300</p>
+                      <div className="w-12 h-px bg-accent/40 mx-auto" />
+                    </div>
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                      per hour for mediation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-temp-warm/10 to-transparent rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border bg-surface/80 backdrop-blur-sm p-8 text-center rounded-lg">
+                    <div className="mb-3">
+                      <p className="font-mono text-4xl sm:text-5xl text-accent leading-none mb-1">6-18</p>
+                      <div className="w-12 h-px bg-accent/40 mx-auto" />
+                    </div>
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                      months on therapy waitlists
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-temp-hot/10 to-transparent rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border bg-surface/80 backdrop-blur-sm p-8 text-center rounded-lg">
+                    <div className="mb-3">
+                      <p className="font-mono text-4xl sm:text-5xl text-accent leading-none mb-1">100%</p>
+                      <div className="w-12 h-px bg-accent/40 mx-auto" />
+                    </div>
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                      of conflicts have two conversations
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quote */}
+              <div className="max-w-2xl mx-auto text-center">
+                <div className="relative p-8 border border-accent/20 bg-surface/60 backdrop-blur-sm rounded-lg">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-accent/40 border-4 border-background" />
+                  <p className="text-xl sm:text-2xl text-ember-300 leading-relaxed font-serif italic">
+                    You can&apos;t read the label from inside the bottle.
+                  </p>
+                  <p className="text-sm text-ember-600 font-mono uppercase tracking-wider mt-4">
+                    That&apos;s what Parallax is for.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── How It Works ─── */}
+        <NarrationSection
+          id="how-it-works"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="relative px-6 py-16 sm:py-24">
+            {/* Cool analytical glow */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `radial-gradient(ellipse 70% 50% at 50% 50%, rgba(106, 171, 142, 0.05) 0%, transparent 70%)`,
+                }}
+              />
+            </div>
+
+            <div className="relative z-10 max-w-5xl mx-auto">
+              <div className="text-center mb-16">
+                <p className="section-indicator mb-6 justify-center">How It Works</p>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl leading-[1.15] mb-6">
+                  Three layers of understanding
+                </h2>
+                <p className="text-lg text-ember-400 max-w-2xl mx-auto leading-relaxed">
+                  Your words flow through a sophisticated analytical system.
+                  What emerges is clarity — the conversation underneath the conversation.
+                </p>
+              </div>
+
+              {/* Visual flow nodes */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-16">
+                {/* Node 1: Speak */}
+                <div className="relative group text-center">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-accent/10 to-transparent rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative w-24 h-24 mx-auto mb-5 rounded-full border-2 border-accent/40 bg-surface/80 backdrop-blur-sm flex items-center justify-center group-hover:border-accent/60 transition-colors">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-accent">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <p className="font-mono text-sm uppercase tracking-wider text-foreground">Speak</p>
+                  </div>
+                  <p className="text-ember-500 text-sm leading-relaxed max-w-xs mx-auto">
+                    Voice or text — no filters, just honesty
+                  </p>
+                </div>
+
+                {/* Node 2: Analyze */}
+                <div className="relative group text-center">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-success/10 to-transparent rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative w-24 h-24 mx-auto mb-5 rounded-full border-2 border-success/40 bg-surface/80 backdrop-blur-sm flex items-center justify-center group-hover:border-success/60 transition-colors">
+                    <span className="font-mono text-2xl text-success">14</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                    <p className="font-mono text-sm uppercase tracking-wider text-foreground">Analyze</p>
+                  </div>
+                  <p className="text-ember-500 text-sm leading-relaxed max-w-xs mx-auto">
+                    14 lenses see what&apos;s beneath
+                  </p>
+                </div>
+
+                {/* Node 3: Transform */}
+                <div className="relative group text-center">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-success/10 to-transparent rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative w-24 h-24 mx-auto mb-5 rounded-full border-2 border-success/40 bg-surface/80 backdrop-blur-sm flex items-center justify-center group-hover:border-success/60 transition-colors">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-success">
+                      <path d="M7 8l5-5 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M12 3v13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M17 16l-5 5-5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                    <p className="font-mono text-sm uppercase tracking-wider text-foreground">Transform</p>
+                  </div>
+                  <p className="text-ember-500 text-sm leading-relaxed max-w-xs mx-auto">
+                    Raw words dissolve into understanding
+                  </p>
+                </div>
+              </div>
+
+              {/* Connection lines */}
+              <div className="relative -mt-8 mb-16">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+              </div>
+
+              {/* LensGrid */}
+              <LensGrid />
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── What Parallax Sees ─── */}
         <NarrationSection
           id="what-you-see"
           isComplete={isComplete}
@@ -299,10 +497,198 @@ export default function Home() {
           </div>
         </NarrationSection>
 
-        {/* --- Divider --- */}
+        {/* ─── Divider ─── */}
         <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
 
-        {/* --- 4. The Door: Choose Your Path --- */}
+        {/* ─── Context Modes ─── */}
+        <NarrationSection
+          id="context-modes"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="px-6 py-16 sm:py-24">
+            <div className="max-w-2xl mx-auto">
+              <p className="section-indicator mb-6">Context Modes</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl leading-[1.15] mb-4">
+                Every relationship is different
+              </h2>
+              <p className="text-muted text-sm leading-relaxed max-w-xl mb-10">
+                Different relationships need different analytical frameworks.
+                Parallax selects from 14 lenses based on the context you choose.
+              </p>
+              <ContextModeCards />
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── Three Modes ─── */}
+        <NarrationSection
+          id="two-modes"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="px-6 py-16 sm:py-24">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <p className="section-indicator mb-6 justify-center">Mode Details</p>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl leading-[1.15] mb-4">
+                  Three ways to have the conversation
+                </h2>
+                <p className="text-ember-400 text-base leading-relaxed max-w-2xl mx-auto">
+                  Whether you&apos;re sitting next to each other, across the internet,
+                  or just need someone to talk to — Parallax adapts.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {/* In-Person */}
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border border-t-4 border-t-accent bg-surface/80 backdrop-blur-sm p-4 sm:p-6 rounded-lg h-full flex flex-col">
+                    <div className="mb-4 max-h-[140px] sm:max-h-none">
+                      <ModePreview mode="in_person" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                      <p className="font-mono text-base uppercase tracking-wider text-accent">In-Person</p>
+                    </div>
+                    <p className="text-ember-400 text-sm leading-relaxed mb-4">
+                      AI Conductor guides the conversation with adaptive 4-phase flow
+                    </p>
+                    <ul className="space-y-2 flex-1">
+                      {[
+                        "Voice-first input with real-time waveform",
+                        "AI mediator conducts the conversation",
+                        "X-Ray Scoreboard tracks discrete issues",
+                        "Turn-based — knows when to intervene",
+                      ].map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <span className="w-1 h-1 rounded-full bg-accent mt-1.5 flex-shrink-0" />
+                          <span className="text-ember-500 text-xs leading-relaxed">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Remote */}
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-success/20 to-success/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border border-t-4 border-t-success bg-surface/80 backdrop-blur-sm p-4 sm:p-6 rounded-lg h-full flex flex-col">
+                    <div className="mb-4 max-h-[140px] sm:max-h-none">
+                      <ModePreview mode="remote" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 rounded-full bg-success" />
+                      <p className="font-mono text-base uppercase tracking-wider text-success">Remote</p>
+                    </div>
+                    <p className="text-ember-400 text-sm leading-relaxed mb-4">
+                      Therapist Review — NVC analysis on every message, visible to both
+                    </p>
+                    <ul className="space-y-2 flex-1">
+                      {[
+                        "Each person on their own device",
+                        "NVC analysis on every message",
+                        "Full Melt animation and structured insight",
+                        "Session summary when you're done",
+                      ].map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <span className="w-1 h-1 rounded-full bg-success mt-1.5 flex-shrink-0" />
+                          <span className="text-ember-500 text-xs leading-relaxed">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Solo */}
+                <div className="relative group md:col-span-2 lg:col-span-1">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-success/20 to-success/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative border border-border border-t-4 border-t-success bg-surface/80 backdrop-blur-sm p-4 sm:p-6 rounded-lg h-full flex flex-col">
+                    <div className="mb-4 max-h-[140px] sm:max-h-none">
+                      <ModePreview mode="solo" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 rounded-full bg-success" />
+                      <p className="font-mono text-base uppercase tracking-wider text-success">Solo</p>
+                    </div>
+                    <p className="text-ember-400 text-sm leading-relaxed mb-4">
+                      1:1 with Parallax — a friend who listens, remembers, and shows up informed
+                    </p>
+                    <ul className="space-y-2 flex-1">
+                      {[
+                        "No second person needed",
+                        "Parallax learns your communication style",
+                        "Builds your profile over time",
+                        "Your advocate in future two-person sessions",
+                      ].map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <span className="w-1 h-1 rounded-full bg-success mt-1.5 flex-shrink-0" />
+                          <span className="text-ember-500 text-xs leading-relaxed">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── Intelligence Network ─── */}
+        <NarrationSection
+          id="intelligence-network"
+          isComplete={isComplete}
+          registerSection={narration.registerSection}
+        >
+          <div className="px-6 py-16 sm:py-24">
+            <div className="max-w-2xl mx-auto">
+              <p className="section-indicator mb-6">Intelligence Network</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl leading-[1.15] mb-4">
+                Teach Parallax how you communicate
+              </h2>
+              <p className="text-muted text-sm leading-relaxed max-w-xl mb-8">
+                Complete a 10-minute conversational interview. Parallax extracts your
+                communication patterns — attachment style, conflict mode, emotional
+                regulation — and uses them to deliver sharper, more personalized
+                analysis in every session.
+              </p>
+
+              <Link
+                href={user ? "/interview" : "/auth"}
+                className="inline-block px-6 py-3 border border-accent text-accent font-mono text-sm uppercase tracking-wider hover:bg-accent/10 transition-colors mb-8"
+              >
+                Build Your Profile
+              </Link>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {["9 Signal Types", "4-Phase Interview", "Session Enrichment"].map((pill) => (
+                  <span
+                    key={pill}
+                    className="px-3 py-1 border border-border text-ember-500 font-mono text-[10px] uppercase tracking-wider"
+                  >
+                    {pill}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-ember-600 font-mono text-[10px] uppercase tracking-widest">
+                Free. Private. Encrypted.
+              </p>
+            </div>
+          </div>
+        </NarrationSection>
+
+        {/* ─── Divider ─── */}
+        <div className="mx-6"><div className="max-w-2xl mx-auto h-px bg-border" /></div>
+
+        {/* ─── The Door ─── */}
         <NarrationSection
           id="the-door"
           isComplete={isComplete}
@@ -311,21 +697,12 @@ export default function Home() {
           <TheDoor />
         </NarrationSection>
 
-        {/* --- 5. Footer: Built with Claude Code --- */}
+        {/* ─── Footer ─── */}
         <section className="px-6 py-12 border-t border-border">
-          <div className="max-w-2xl mx-auto text-center space-y-4">
-            {/* Built with Claude Code badge — ant walks on this! */}
-            <div
-              id="claude-code-badge"
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm relative"
-            >
-              <span className="font-mono text-xs uppercase tracking-wider text-muted">
-                Built with Claude Code
-              </span>
-            </div>
-
+          <div className="max-w-2xl mx-auto text-center space-y-2">
+            <AntMarchBadge onClick={narration.enterChat} />
             <p className="text-ember-600 text-xs font-mono uppercase tracking-wider">
-              Claude Code Hackathon, February 2026
+              Built for the Claude Code Hackathon, February 2026
             </p>
             <p className="text-ember-700 text-xs">
               14 analytical lenses | 6 context modes | Zero conversations stored beyond the session
