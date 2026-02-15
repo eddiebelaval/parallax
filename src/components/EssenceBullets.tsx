@@ -10,15 +10,13 @@ interface EssenceBulletsProps {
   temperatureColor?: string;
 }
 
-/**
- * Distilled essence of a message's analysis — replaces raw text
- * after The Melt dissolve, showing the structured meaning.
- *
- * Extracts from existing analysis fields:
- *  - Headline: meta.primaryInsight (V3) or subtext (V1)
- *  - Blind spot: first entry from blindSpots[]
- *  - Core needs: unmetNeeds[] as inline tags (max 3)
- */
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  // Cut at last space before max, add ellipsis
+  const cut = text.lastIndexOf(" ", max);
+  return text.slice(0, cut > 0 ? cut : max) + "...";
+}
+
 export function EssenceBullets({
   analysis,
   phase,
@@ -30,7 +28,7 @@ export function EssenceBullets({
     ? analysis.meta.primaryInsight
     : analysis.subtext;
 
-  const blindSpot = analysis.blindSpots?.[0] ?? null;
+  const blindSpots = analysis.blindSpots?.slice(0, 2) ?? [];
   const needs = analysis.unmetNeeds?.slice(0, 3) ?? [];
 
   const animClass = phase === "crystallizing" ? "melt-crystallize-active" : "";
@@ -38,27 +36,33 @@ export function EssenceBullets({
   return (
     <div className={animClass}>
       {headline && (
-        <div className="text-ember-300 text-sm leading-relaxed italic">
-          {headline}
-        </div>
+        <p className="text-foreground text-sm leading-snug font-semibold line-clamp-2">
+          {truncate(headline, 120)}
+        </p>
       )}
 
-      {blindSpot && (
-        <div className="flex items-start gap-2 text-ember-400 text-sm mt-1">
-          <span
-            className="mt-1.5 block w-1 h-1 rounded-full flex-shrink-0"
-            style={{ backgroundColor: temperatureColor }}
-          />
-          <span>{blindSpot}</span>
-        </div>
+      {blindSpots.length > 0 && (
+        <ul className="mt-1.5 space-y-1">
+          {blindSpots.map((spot, i) => (
+            <li key={`bs-${i}`} className="flex items-start gap-2 text-[13px] leading-snug">
+              <span
+                className="mt-[5px] block w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: temperatureColor }}
+              />
+              <span className="text-ember-200 font-medium line-clamp-1">
+                {truncate(spot, 90)}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {needs.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2">
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
           {needs.map((need, i) => (
             <span
-              key={i}
-              className="px-2 py-0.5 border border-border text-ember-400 font-mono text-[10px] uppercase tracking-wider rounded"
+              key={`need-${i}`}
+              className="px-2 py-0.5 border border-border text-ember-300 font-mono text-[10px] uppercase tracking-wider rounded font-medium"
             >
               {need}
             </span>

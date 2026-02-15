@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   getTemperatureColor,
   getTemperatureLabel,
@@ -82,10 +82,7 @@ export function MessageCard({
   const isV3Analysis = hasAnalysis && isConflictAnalysis(nvcAnalysis);
   const v3Analysis = isV3Analysis ? (nvcAnalysis as ConflictAnalysis) : null;
 
-  // Auto-expand analysis when crystallize phase begins (if setting enabled)
-  useEffect(() => {
-    if (isCrystallizing && settings.auto_expand) setExpanded(true);
-  }, [isCrystallizing, settings.auto_expand]);
+  // Deep dive stays collapsed by default — user expands via chevron
 
   const tempColor = hasAnalysis
     ? getTemperatureColor(nvcAnalysis.emotionalTemperature)
@@ -94,13 +91,19 @@ export function MessageCard({
     ? getTemperatureLabel(nvcAnalysis.emotionalTemperature)
     : undefined;
 
-  // Backlit glow class — analyzing pulse, then temperature-based when analysis arrives
+  // Backlit glow class — subtle border pulse during analysis, then temperature glow after
   const backlitClass =
     isAnalyzing && !hasAnalysis
-      ? "backlit backlit-analyzing"
+      ? "" // no giant glow during analysis — border pulse handles it
       : hasAnalysis
         ? getBacklitClass(nvcAnalysis.emotionalTemperature, isLatest)
         : "";
+
+  // Organic rolling pulse on the 2px border while analyzing
+  const analyzingBorderClass =
+    isAnalyzing && !hasAnalysis && sender !== "mediator"
+      ? "border-pulse-analyzing"
+      : "";
 
   return (
     <div
@@ -109,7 +112,7 @@ export function MessageCard({
       }`}
     >
       <div
-        className={`relative pl-4 ml-12 ${backlitClass} ${style.borderClass}`}
+        className={`relative pl-4 ml-12 ${backlitClass} ${analyzingBorderClass} ${style.borderClass}`}
         style={
           hasAnalysis && sender !== "mediator"
             ? { borderLeft: `2px solid ${tempColor}` }
@@ -190,58 +193,59 @@ export function MessageCard({
           </button>
         )}
 
-        {/* NVC Analysis — expand/collapse (controlled by show_analysis setting) */}
+        {/* Deep dive — collapsible accordion with fade preview */}
         {analysisVisible && (
           <div className="mt-3">
-            {/* Toggle hidden during crystallize — analysis appears directly */}
-            {!isCrystallizing && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-ember-500 hover:text-ember-300 transition-colors"
-              >
-                <span
-                  className="inline-block w-1 h-1 rounded-full"
-                  style={{ background: tempColor }}
-                />
-                {expanded ? "Hide analysis" : "What's beneath"}
-                <svg
-                  width="8"
-                  height="8"
-                  viewBox="0 0 8 8"
-                  className={`transition-transform duration-200 ${
-                    expanded ? "rotate-180" : ""
-                  }`}
-                >
-                  <path
-                    d="M1 3L4 6L7 3"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            )}
-
-            <div
-              className="analysis-reveal"
-              data-expanded={expanded || isCrystallizing}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="group flex items-center gap-2 w-full text-left"
             >
-              <div>
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                className={`flex-shrink-0 text-ember-500 transition-transform duration-200 ${
+                  expanded ? "rotate-90" : ""
+                }`}
+              >
+                <path
+                  d="M3 1.5L7.5 5L3 8.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-ember-500 group-hover:text-ember-300 transition-colors">
+                Deep dive
+              </span>
+            </button>
+
+            {/* Preview: 2-line fade when collapsed, full content when expanded */}
+            <div className="mt-2">
+              {!expanded ? (
                 <div
-                  className={`pt-3 pb-1 space-y-4 ${
+                  className="deep-dive-preview cursor-pointer"
+                  onClick={() => setExpanded(true)}
+                >
+                  <p className="text-ember-400 text-xs leading-relaxed line-clamp-2">
+                    {nvcAnalysis.subtext}
+                  </p>
+                  <div className="deep-dive-fade" />
+                </div>
+              ) : (
+                <div
+                  className={`pb-1 space-y-4 ${
                     isCrystallizing ? "melt-crystallize-active" : ""
                   }`}
                 >
-                  {/* Subtext */}
                   <AnalysisBlock label="Subtext">
                     <p className="text-ember-300 text-sm leading-relaxed">
                       {nvcAnalysis.subtext}
                     </p>
                   </AnalysisBlock>
 
-                  {/* Blind spots */}
                   {nvcAnalysis.blindSpots.length > 0 && (
                     <AnalysisBlock label="Blind Spots">
                       <ul className="space-y-1">
@@ -258,7 +262,6 @@ export function MessageCard({
                     </AnalysisBlock>
                   )}
 
-                  {/* Unmet needs */}
                   {nvcAnalysis.unmetNeeds.length > 0 && (
                     <AnalysisBlock label="Unmet Needs">
                       <div className="flex flex-wrap gap-2">
@@ -274,14 +277,12 @@ export function MessageCard({
                     </AnalysisBlock>
                   )}
 
-                  {/* NVC Translation */}
                   <AnalysisBlock label="NVC Translation">
                     <p className="text-success text-sm leading-relaxed border-l border-success pl-3">
                       {nvcAnalysis.nvcTranslation}
                     </p>
                   </AnalysisBlock>
 
-                  {/* V3 Tier 2+3: Multi-lens analysis bar */}
                   {v3Analysis && (
                     <AnalysisBlock label="Lens Analysis">
                       <LensBar
@@ -291,7 +292,7 @@ export function MessageCard({
                     </AnalysisBlock>
                   )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}

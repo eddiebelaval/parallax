@@ -263,8 +263,43 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       const sent = await sendMessage(activeSender, content);
       if (!sent) return;
 
+      // Always fire mediation + issues on every human message (melt on everything)
+      setAnalyzingMessageId(sent.id);
+
+      // NVC mediation analysis — fires regardless of phase
+      fetch("/api/mediate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: activeSession.id,
+          message_id: sent.id,
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) setMediationError("Analysis unavailable -- message saved");
+          return refreshMessages();
+        })
+        .catch(() => {
+          setMediationError("Connection lost -- analysis skipped");
+        })
+        .finally(() => {
+          setAnalyzingMessageId((prev) => (prev === sent.id ? null : prev));
+        });
+
+      // Issue analysis — fires regardless of phase
+      fetch("/api/issues/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: activeSession.id,
+          message_id: sent.id,
+        }),
+      })
+        .then(() => refreshIssues())
+        .catch(() => {});
+
       if (isOnboarding) {
-        // During onboarding: fire adaptive conductor
+        // During onboarding: also fire adaptive conductor
         setConductorLoading(true);
         try {
           const res = await fetch("/api/conductor", {
@@ -285,10 +320,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           setConductorLoading(false);
         }
       } else {
-        // During active phase: fire conductor + mediation + issues in PARALLEL
-        setAnalyzingMessageId(sent.id);
-
-        // 1. Conductor — Parallax speaks immediately (fire-and-forget)
+        // During active phase: conductor + intervention check
         fetch("/api/conductor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -298,42 +330,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           }),
         })
           .then(() => refreshMessages())
-          .catch(() => {}); // Silent fail — Melt still fires, no bridge response
-
-        // 2. NVC mediation analysis (fire-and-forget, clears analyzing glow)
-        fetch("/api/mediate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: activeSession.id,
-            message_id: sent.id,
-          }),
-        })
-          .then((res) => {
-            if (!res.ok) setMediationError("Analysis unavailable -- message saved");
-            return refreshMessages();
-          })
-          .catch(() => {
-            setMediationError("Connection lost -- analysis skipped");
-          })
-          .finally(() => {
-            // Only clear if this is still the message being analyzed (rapid-fire safety)
-            setAnalyzingMessageId((prev) => (prev === sent.id ? null : prev));
-          });
-
-        // 3. Issue analysis — refresh issues when done (unchanged)
-        fetch("/api/issues/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: activeSession.id,
-            message_id: sent.id,
-          }),
-        })
-          .then(() => refreshIssues())
           .catch(() => {});
 
-        // 4. Intervention check after delay — additive, for escalation/breakthrough
+        // Intervention check after delay
         if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
         interventionTimerRef.current = setTimeout(async () => {
           try {

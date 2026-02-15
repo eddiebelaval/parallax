@@ -928,6 +928,62 @@ li {
   }
 }
 
+/* ─── Analyzing Border Pulse (organic rolling glow on 2px border) ─── */
+
+.border-pulse-analyzing {
+  position: relative;
+}
+
+.border-pulse-analyzing::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    0deg,
+    transparent 0%,
+    rgba(106, 171, 142, 0.3) 15%,
+    var(--temp-cool, #6aab8e) 40%,
+    rgba(106, 171, 142, 0.5) 60%,
+    transparent 85%,
+    rgba(106, 171, 142, 0.2) 100%
+  );
+  background-size: 100% 280%;
+  animation: border-roll 3s ease-in-out infinite alternate;
+  border-radius: 1px;
+  z-index: 1;
+}
+
+@keyframes border-roll {
+  0% {
+    background-position: 0% 120%;
+    opacity: 0.4;
+  }
+  25% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    background-position: 0% -20%;
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-pulse-analyzing::after {
+    animation: none;
+    background: var(--temp-cool, #6aab8e);
+    opacity: 0.4;
+  }
+}
+
 /* ─── Light Mode Backlit Adaptation ─── */
 /* On light backgrounds, glow shifts from "luminous bloom" to "watercolor stain". */
 /* A solid left border anchors the color; wider blur spreads the wash. */
@@ -988,6 +1044,23 @@ li {
 
 .analysis-reveal > div {
   overflow: hidden;
+}
+
+/* ─── Deep Dive Preview (collapsed fade) ─── */
+
+.deep-dive-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.deep-dive-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--ember-dark, #0f0b08));
+  pointer-events: none;
 }
 
 /* ─── Signal Rail Animations ─── */
