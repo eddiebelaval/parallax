@@ -13,6 +13,7 @@ import { useArchitectMode } from "@/hooks/useArchitectMode";
 import ConfirmationModal from "./ConfirmationModal";
 import { buildExportHtml } from "@/lib/export-html";
 import { isCreator } from "@/lib/creator";
+import { handleArchitectMessage, handleProfileCommand } from "@/lib/send-interceptors";
 import { PlayIcon, CopyIcon, ShareIcon } from "@/components/icons";
 import type { Session } from "@/types/database";
 
@@ -152,63 +153,16 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
   }, [messages, speak]);
 
   const handleSend = useCallback(async (content: string) => {
-    // Architect mode: meta-conversation with Ava about her architecture
     if (architectModeActive) {
-      setCommandFeedback('🏗️ Consulting architecture...');
-      try {
-        const res = await fetch('/api/architect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: content }),
-        });
-
-        if (!res.ok) {
-          setCommandFeedback('✗ Architect mode unavailable');
-          setTimeout(() => setCommandFeedback(null), 5000);
-          return;
-        }
-
-        const data = await res.json();
-
-        // Show Ava's architectural response in feedback area
-        setCommandFeedback(`🏗️ Ava: ${data.message}`);
-        // Auto-clear after 30 seconds (long enough to read)
-        setTimeout(() => setCommandFeedback(null), 30000);
-      } catch {
-        setCommandFeedback('✗ Architect mode connection failed');
-        setTimeout(() => setCommandFeedback(null), 5000);
-      }
+      await handleArchitectMessage(content, setCommandFeedback);
       return;
     }
 
-    // Voice command interception: check for profile commands before sending
-    if (profileConcierge.isCommand(content)) {
-      try {
-        const response = await profileConcierge.processCommand(content);
-        if (response.requires_confirmation) {
-          // Show confirmation modal
-          setConfirmationModal({
-            isOpen: true,
-            title: 'Confirm Action',
-            message: response.confirmation_prompt || 'Are you sure?',
-            isDangerous: content.toLowerCase().includes('delete'),
-            onConfirm: async () => {
-              const result = await profileConcierge.confirm();
-              setConfirmationModal(null);
-              setCommandFeedback(result.success ? `✓ ${result.message}` : `✗ ${result.message}`);
-              setTimeout(() => setCommandFeedback(null), 5000);
-            },
-          });
-        } else {
-          setCommandFeedback(response.success ? `✓ ${response.message}` : `✗ ${response.message}`);
-          setTimeout(() => setCommandFeedback(null), 5000);
-        }
-      } catch {
-        setCommandFeedback('✗ Failed to process profile command');
-        setTimeout(() => setCommandFeedback(null), 5000);
-      }
-      return;
-    }
+    const handled = await handleProfileCommand(
+      content, profileConcierge, setCommandFeedback, setConfirmationModal,
+    );
+    if (handled) return;
+
     sendMessage(content);
   }, [sendMessage, profileConcierge, architectModeActive]);
 
@@ -323,8 +277,8 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
                 {sidebarOpen ? "Chat" : "Insights"}
               </button>
             )}
-            <span className={`font-mono text-[10px] uppercase tracking-widest ${creatorMode ? 'text-temp-cool' : 'text-temp-cool'}`}>
-              {creatorMode ? 'Creator Interview' : 'Solo'}
+            <span className="font-mono text-[10px] uppercase tracking-widest text-temp-cool">
+              {creatorMode ? "Creator Interview" : "Solo"}
             </span>
           </div>
         </div>
@@ -410,13 +364,8 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
           architectMode={architectModeActive}
           onToggleMute={() => setMuted((v) => !v)}
           onModeChange={(mode) => {
-            if (mode === "auto") {
-              setHandsFree(true);
-              setMuted(false);
-            } else {
-              setHandsFree(false);
-              setMuted(false);
-            }
+            setHandsFree(mode === "auto");
+            setMuted(false);
           }}
         />
       </div>

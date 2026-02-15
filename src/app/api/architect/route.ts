@@ -95,15 +95,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Optional: Include session/user context if provided
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: "API configuration missing" },
+        { status: 500 }
+      );
+    }
+
     const contextPrompt = context
       ? `\n\n## Current Context\n${JSON.stringify(context, null, 2)}`
       : "";
 
-    // Get Claude response
-    const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY!,
-    });
+    const client = new Anthropic();
 
     const response = await client.messages.create({
       model: "claude-opus-4-20250514",
@@ -117,7 +120,6 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-    // Extract text from response
     const text = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === "text")
       .map((block) => block.text)

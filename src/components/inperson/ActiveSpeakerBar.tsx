@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MicIcon, MicOffIcon, KeyboardIcon } from "@/components/icons";
+import { MicIcon, MicOffIcon } from "@/components/icons";
 import { useSettings } from "@/hooks/useSettings";
 
 // Web Speech API types (Chrome webkit prefix)
@@ -297,37 +297,33 @@ export function ActiveSpeakerBar({
     }
   }, [voiceAvailable, mode]);
 
-  // Auto-listen visual state determination
-  const autoState = autoListenState;
-  const isAutoListening = autoState?.isListening ?? false;
-  const autoInterim = autoState?.interimText ?? "";
-  const isSpeechActive = autoState?.isSpeechActive ?? false;
-  const silenceCountdown = autoState?.silenceCountdown ?? 0;
+  // Auto-listen visual state
+  const isAutoListening = autoListenState?.isListening ?? false;
+  const autoInterim = autoListenState?.interimText ?? "";
+  const isSpeechActive = autoListenState?.isSpeechActive ?? false;
+  const silenceCountdown = autoListenState?.silenceCountdown ?? 0;
 
-  // Border color for auto mode
-  const autoBorderClass = isAutoListening
-    ? isSpeechActive
-      ? "border-temp-cool mic-hot-glow"
-      : silenceCountdown > 0
-      ? "border-temp-warm"
-      : "border-temp-cool/30"
-    : isTTSSpeaking
-    ? "border-accent/20"
-    : "border-border";
+  // Border color for auto mode — explicit conditions for clarity
+  function getAutoBorderClass(): string {
+    if (isAutoListening && isSpeechActive) return "border-temp-cool mic-hot-glow";
+    if (isAutoListening && silenceCountdown > 0) return "border-temp-warm";
+    if (isAutoListening) return "border-temp-cool/30";
+    if (isTTSSpeaking) return "border-accent/20";
+    return "border-border";
+  }
+  const autoBorderClass = getAutoBorderClass();
+
+  function getRootBorderClass(): string {
+    if (architectMode) return "architect-mode-input";
+    if (effectiveMode === "auto") return autoBorderClass;
+    if (isRecording) return "border-temp-cool mic-hot-glow";
+    if (showUrgentWarning) return "border-temp-hot";
+    return "border-border";
+  }
 
   return (
     <div
-      className={`border-t transition-all duration-300 flex-shrink-0 ${
-        architectMode
-          ? "architect-mode-input"
-          : effectiveMode === "auto"
-          ? autoBorderClass
-          : isRecording
-          ? "border-temp-cool mic-hot-glow"
-          : showUrgentWarning
-          ? "border-temp-hot"
-          : "border-border"
-      }`}
+      className={`border-t transition-all duration-300 flex-shrink-0 ${getRootBorderClass()}`}
     >
       {/* Urgent time warning */}
       {showUrgentWarning && (
@@ -397,7 +393,7 @@ export function ActiveSpeakerBar({
               }`}
             />
             <span className={`font-mono text-[10px] uppercase tracking-widest ${architectMode ? 'text-temp-cool' : 'text-ember-600'}`}>
-              {architectMode ? '🏗️ Architect Mode' : activeSpeakerName}
+              {architectMode ? 'Architect Mode' : activeSpeakerName}
             </span>
           </div>
         </div>

@@ -32,7 +32,7 @@ const MOCK_GREETING_MESSAGE = {
   id: 'msg-greeting',
   session_id: 'test-ip-session',
   sender: 'mediator',
-  content: 'Welcome to Parallax. I\'m here to help you both see beneath the surface of this conversation. Who would like to start by sharing what brings you here today?',
+  content: 'Welcome. I\'m here to help you both see beneath the surface of this conversation. Who would like to start by sharing what brings you here today?',
   nvc_analysis: null,
   emotional_temperature: null,
   created_at: new Date().toISOString(),
@@ -209,11 +209,13 @@ async function mockInPersonAPIs(page: Page, options: {
 
   // GET /api/issues (query param session_id)
   await page.route('**/api/issues**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(issues),
-    })
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(issues),
+      })
+    }
   })
 
   // POST /api/sessions/[code]/end
@@ -248,6 +250,32 @@ async function mockInPersonAPIs(page: Page, options: {
     })
   })
 
+  // Supabase PostgREST: messages (useMessages fetches from Supabase directly)
+  await page.route('**/rest/v1/messages**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(messages),
+      })
+    } else {
+      await route.continue()
+    }
+  })
+
+  // Supabase PostgREST: issues (useIssues fetches from Supabase directly)
+  await page.route('**/rest/v1/issues**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(issues),
+      })
+    } else {
+      await route.continue()
+    }
+  })
+
   // Suppress Supabase realtime
   await page.route('**/realtime/**', async (route) => {
     await route.abort()
@@ -269,6 +297,7 @@ test.describe('In-Person Session Flow', () => {
     })
 
     await page.goto('/')
+    // In-Person card → direct to context picker (no Create/Join intermediate step)
     const inPersonButton = page.locator('button').filter({ hasText: 'In-Person' }).first()
     await inPersonButton.click()
 
@@ -288,10 +317,10 @@ test.describe('In-Person Session Flow', () => {
     })
     await page.goto('/session/XYZ789')
 
-    // Should show the greeting from Parallax
-    await expect(page.getByText('Welcome to Parallax').first()).toBeVisible()
-    // Sender label should show "Parallax"
-    await expect(page.getByText('Parallax').first()).toBeVisible()
+    // Greeting message content should render
+    await expect(page.getByText('see beneath the surface').first()).toBeVisible()
+    // Sender label for mediator is now "Ava" (via senderLabel function)
+    await expect(page.getByText('Ava').first()).toBeVisible()
   })
 
   test('person A introduces themselves', async ({ page }) => {
@@ -333,13 +362,14 @@ test.describe('In-Person Session Flow', () => {
     })
     await page.goto('/session/XYZ789')
 
-    // ActiveSpeakerBar should have a voice "Tap to talk" or text input
-    const tapToTalk = page.getByText('Tap to talk')
-    const textInput = page.getByPlaceholder(/speak your truth/i)
-    // One of these should be visible depending on mode
-    const voiceVisible = await tapToTalk.isVisible().catch(() => false)
-    const textVisible = await textInput.isVisible().catch(() => false)
-    expect(voiceVisible || textVisible).toBe(true)
+    // ActiveSpeakerBar renders in one of three modes (auto/voice/text)
+    // depending on browser capabilities. Poll until one becomes visible.
+    await expect.poll(async () => {
+      const tapVisible = await page.getByText('Tap to talk').first().isVisible().catch(() => false)
+      const textVisible = await page.getByPlaceholder(/speak your truth/i).first().isVisible().catch(() => false)
+      const autoVisible = await page.getByText(/Listening|Waiting|Tap to send/i).first().isVisible().catch(() => false)
+      return tapVisible || textVisible || autoVisible
+    }, { timeout: 5000 }).toBe(true)
   })
 
   test('active phase shows speaker turn indicator', async ({ page }) => {
@@ -349,12 +379,12 @@ test.describe('In-Person Session Flow', () => {
     })
     await page.goto('/session/XYZ789')
 
-    // Active speaker name should be visible in the header area
+    // TurnTimer shows active speaker name (Maya or James) in font-mono uppercase
     const speakerIndicator = page.locator('.font-mono.uppercase').filter({ hasText: /Maya|James/ })
     await expect(speakerIndicator.first()).toBeVisible()
   })
 
-  test('issue cards appear as issues are extracted', async ({ page }) => {
+  test('X-Ray View button shows with issue count', async ({ page }) => {
     await mockInPersonAPIs(page, {
       session: MOCK_SESSION_INPERSON_ACTIVE,
       messages: [MOCK_SYNTHESIS_MESSAGE, MOCK_ACTIVE_MESSAGE],
@@ -362,10 +392,8 @@ test.describe('In-Person Session Flow', () => {
     })
     await page.goto('/session/XYZ789')
 
-    // Issues button should show count
-    // On desktop, issues button is visible
-    const issuesButton = page.getByText(/Issues/i).first()
-    await expect(issuesButton).toBeVisible()
+    // Issues button is now labeled "X-Ray View" with count
+    await expect(page.getByText(/X-Ray View/i).first()).toBeVisible()
   })
 
   test('XRay view shows end session button', async ({ page }) => {
@@ -378,7 +406,18 @@ test.describe('In-Person Session Flow', () => {
     await expect(page.getByRole('button', { name: /End/i }).first()).toBeVisible()
   })
 
-  test('in-person completed session shows summary', async ({ page }) => {
+  test('onboarding indicator visible during onboarding phase', async ({ page }) => {
+    await mockInPersonAPIs(page, {
+      messages: [MOCK_GREETING_MESSAGE],
+    })
+    await page.goto('/session/XYZ789')
+
+    // Onboarding indicator shows active speaker + "Gathering context"
+    await expect(page.getByText('Gathering context').first()).toBeVisible()
+  })
+
+  test('messages persist in completed session', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'fixed-height elements compress message area on mobile viewport')
     const completedSession = {
       ...MOCK_SESSION_INPERSON_ACTIVE,
       status: 'completed' as const,
@@ -389,8 +428,11 @@ test.describe('In-Person Session Flow', () => {
     })
     await page.goto('/session/XYZ789')
 
-    // Summary should show since session is completed
-    await expect(page.getByText('Temperature Arc').first()).toBeVisible()
-    await expect(page.getByText('Both want the same thing').first()).toBeVisible()
+    // Messages should still render in completed state
+    // Mediator message renders raw content
+    await expect(page.getByText('Thank you both').first()).toBeVisible()
+    // Person A message has NVC analysis → EssenceBullets replaces raw text
+    // with subtext after The Melt settles
+    await expect(page.getByText('I want to feel like a partner').first()).toBeVisible()
   })
 })

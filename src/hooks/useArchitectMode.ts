@@ -18,25 +18,18 @@ export function useArchitectMode() {
   const { user } = useAuth()
   const hasAccess = isCreator(user?.email)
 
-  const [isActive, setIsActive] = useState(false)
+  const [isActive, setIsActive] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem(STORAGE_KEY) === 'true'
+  })
 
-  // Load from localStorage on mount
+  // Sync with localStorage and reset when access is revoked
   useEffect(() => {
     if (!hasAccess) {
       setIsActive(false)
       return
     }
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'true') {
-      setIsActive(true)
-    }
-  }, [hasAccess])
-
-  // Persist to localStorage when changed
-  useEffect(() => {
-    if (hasAccess) {
-      localStorage.setItem(STORAGE_KEY, String(isActive))
-    }
+    localStorage.setItem(STORAGE_KEY, String(isActive))
   }, [isActive, hasAccess])
 
   const toggle = useCallback(() => {

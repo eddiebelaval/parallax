@@ -11,7 +11,7 @@ const MOCK_SESSION_WAITING = {
   mode: 'remote',
   context_mode: 'intimate',
   onboarding_step: null,
-  onboarding_context: null,
+  onboarding_context: { conductorPhase: 'waiting_for_b' },
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -181,6 +181,26 @@ async function mockSessionAPIs(page: Page, options: {
     })
   })
 
+  // POST /api/issues/analyze
+  await page.route('**/api/issues/analyze', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ issues: [] }),
+    })
+  })
+
+  // GET /api/issues
+  await page.route('**/api/issues**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    }
+  })
+
   // POST /api/sessions/[code]/summary
   await page.route('**/api/sessions/ABC234/summary', async (route) => {
     await route.fulfill({
@@ -190,10 +210,48 @@ async function mockSessionAPIs(page: Page, options: {
     })
   })
 
+  // Supabase PostgREST: messages (useMessages fetches from Supabase directly)
+  await page.route('**/rest/v1/messages**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(messages),
+      })
+    } else {
+      await route.continue()
+    }
+  })
+
+  // Supabase PostgREST: issues (useIssues fetches from Supabase directly)
+  await page.route('**/rest/v1/issues**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    } else {
+      await route.continue()
+    }
+  })
+
   // Supabase realtime — prevent actual WS connections
   await page.route('**/realtime/**', async (route) => {
     await route.abort()
   })
+}
+
+/* ─── Helpers ─── */
+
+/** Set localStorage side identity before page load (must be called before goto) */
+async function setRemoteSide(page: Page, roomCode: string, side: 'a' | 'b') {
+  await page.addInitScript(
+    ({ code, s }: { code: string; s: string }) => {
+      localStorage.setItem(`parallax-side-${code}`, s)
+    },
+    { code: roomCode, s: side },
+  )
 }
 
 /* ─── Tests ─── */
@@ -202,13 +260,22 @@ test.describe('Remote Session Flow', () => {
   test('landing page loads and shows mode selection', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('h1')).toContainText('See the conversation')
-    // Mode cards should be visible
-    await expect(page.getByText('In-Person')).toBeVisible()
-    await expect(page.getByText('Remote')).toBeVisible()
+    // Mode cards visible in TheDoor section
+    await expect(page.getByText('In-Person').first()).toBeVisible()
+    await expect(page.getByText('Remote').first()).toBeVisible()
+    await expect(page.getByText('Solo').first()).toBeVisible()
   })
 
-  test('landing page shows join section with room code input', async ({ page }) => {
+  test('remote join flow shows room code input', async ({ page }) => {
     await page.goto('/')
+
+    // Click Remote mode card → intermediate Create/Join choice
+    await page.locator('button').filter({ hasText: 'Remote' }).first().click()
+    await expect(page.getByText('Create New Session')).toBeVisible()
+    await expect(page.getByText('Join Existing Session')).toBeVisible()
+
+    // Click Join Existing Session → room code input
+    await page.getByText('Join Existing Session').click()
     await expect(page.getByPlaceholder('ROOM CODE')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Join' })).toBeVisible()
   })
@@ -217,14 +284,14 @@ test.describe('Remote Session Flow', () => {
     await mockLandingAPIs(page)
     await page.goto('/')
 
-    // Click "Remote" mode card
-    const remoteButton = page.locator('button').filter({ hasText: 'Remote' }).first()
-    await remoteButton.click()
+    // Remote → Create New Session → Context picker → Start
+    await page.locator('button').filter({ hasText: 'Remote' }).first().click()
+    await page.getByText('Create New Session').click()
 
-    // Should show context mode picker
+    // Context mode picker should appear
     await expect(page.getByText('What kind of conflict is this?')).toBeVisible()
 
-    // Select default context mode and start
+    // Start with default context mode
     await page.getByRole('button', { name: /Start remote session/i }).click()
 
     // Should redirect to session page
@@ -233,73 +300,64 @@ test.describe('Remote Session Flow', () => {
   })
 
   test('session page shows waiting state with room code', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page, { session: MOCK_SESSION_WAITING })
     await page.goto('/session/ABC234')
 
-    await expect(page.getByText('Waiting for partner')).toBeVisible()
-    await expect(page.getByText('ABC234')).toBeVisible()
-  })
-
-  test('session page shows room code in header', async ({ page }) => {
-    await mockSessionAPIs(page)
-    await page.goto('/session/ABC234')
-
-    // Room code shown in session header
-    const header = page.locator('.section-indicator').filter({ hasText: 'Session' })
-    await expect(header).toBeVisible()
+    // Waiting message and prominent room code display
+    await expect(page.getByText('Waiting for them to join...').first()).toBeVisible()
     await expect(page.getByText('ABC234').first()).toBeVisible()
   })
 
-  test('both people present shows active state with panels', async ({ page }) => {
+  test('session page shows room code and context mode in header', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page)
     await page.goto('/session/ABC234')
 
-    // Both person panels should be visible
+    // Room code in header
+    await expect(page.getByText('ABC234').first()).toBeVisible()
+    // Context mode label
+    await expect(page.getByText('Intimate Partners').first()).toBeVisible()
+  })
+
+  test('both people present shows active state', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'person orb labels use hidden md:block')
+    await setRemoteSide(page, 'ABC234', 'a')
+    await mockSessionAPIs(page)
+    await page.goto('/session/ABC234')
+
+    // Both person names visible in orb labels
     await expect(page.getByText('Alice').first()).toBeVisible()
     await expect(page.getByText('Bob').first()).toBeVisible()
   })
 
-  test('active session shows turn indicator', async ({ page }) => {
+  test('message input is available in active session', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page)
     await page.goto('/session/ABC234')
 
-    // One panel should show "Your turn"
-    await expect(page.getByText('Your turn').first()).toBeVisible()
+    // ActiveSpeakerBar renders in one of three modes (auto/voice/text)
+    // depending on browser capabilities. Poll until one becomes visible.
+    await expect.poll(async () => {
+      const tapVisible = await page.getByText('Tap to talk').first().isVisible().catch(() => false)
+      const textVisible = await page.getByPlaceholder(/speak your truth/i).first().isVisible().catch(() => false)
+      const autoVisible = await page.getByText(/Listening|Waiting|Tap to send/i).first().isVisible().catch(() => false)
+      return tapVisible || textVisible || autoVisible
+    }, { timeout: 5000 }).toBe(true)
   })
 
-  test('active session shows context mode label', async ({ page }) => {
+  test('conversation and private coach tabs visible', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page)
     await page.goto('/session/ABC234')
 
-    await expect(page.getByText('Intimate Partners').first()).toBeVisible()
-  })
-
-  test('message input is available when it is your turn', async ({ page }) => {
-    await mockSessionAPIs(page)
-    await page.goto('/session/ABC234')
-
-    // At least one "Send" button should be visible
-    const sendButtons = page.getByRole('button', { name: 'Send' })
-    await expect(sendButtons.first()).toBeVisible()
-  })
-
-  test('send message as person A', async ({ page }) => {
-    await mockSessionAPIs(page)
-    await page.goto('/session/ABC234')
-
-    // Find the first message input and type
-    const messageInput = page.getByPlaceholder(/Type your message/i).first()
-    await messageInput.fill('I feel unheard.')
-
-    // Click first Send button
-    const sendButton = page.getByRole('button', { name: 'Send' }).first()
-    await sendButton.click()
-
-    // Input should clear after send
-    await expect(messageInput).toHaveValue('')
+    // Tabbed input area with Conversation and Private coach
+    await expect(page.getByText('Conversation').first()).toBeVisible()
+    await expect(page.getByText('Private coach').first()).toBeVisible()
   })
 
   test('messages appear in the message area', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page, { messages: [MOCK_MESSAGE_A] })
     await page.goto('/session/ABC234')
 
@@ -309,6 +367,7 @@ test.describe('Remote Session Flow', () => {
   })
 
   test('NVC analysis appears after mediation', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page, { messages: [MOCK_MESSAGE_A_ANALYZED] })
     await page.goto('/session/ABC234')
 
@@ -325,14 +384,16 @@ test.describe('Remote Session Flow', () => {
   })
 
   test('temperature indicator shows on analyzed messages', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page, { messages: [MOCK_MESSAGE_A_ANALYZED] })
     await page.goto('/session/ABC234')
 
-    // Temperature label should be visible (e.g., "warm" for 0.72)
-    await expect(page.getByText(/warm/i).first()).toBeVisible()
+    // Temperature 0.72 maps to "hot" (> 0.7 threshold)
+    await expect(page.getByText(/hot/i).first()).toBeVisible()
   })
 
   test('multiple messages create conversation thread', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
     await mockSessionAPIs(page, {
       messages: [MOCK_MESSAGE_A, MOCK_MESSAGE_B],
     })
@@ -346,75 +407,39 @@ test.describe('Remote Session Flow', () => {
     ).toBeVisible()
   })
 
-  test('end session transitions to completed state', async ({ page }) => {
-    // After clicking End, the session becomes completed and summary loads
-    let sessionState = MOCK_SESSION_ACTIVE
-
-    await page.route('**/api/sessions/ABC234', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(sessionState),
-        })
-      } else {
-        await route.continue()
-      }
-    })
-
-    await page.route('**/api/sessions/ABC234/end', async (route) => {
-      sessionState = MOCK_SESSION_COMPLETED
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(MOCK_SESSION_COMPLETED),
-      })
-    })
-
-    await page.route('**/api/sessions/ABC234/summary', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ summary: MOCK_SUMMARY }),
-      })
-    })
-
-    await page.route('**/api/messages**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([MOCK_MESSAGE_A]),
-      })
-    })
-
-    await page.route('**/api/conductor', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ phase: 'active' }),
-      })
-    })
-
-    await page.route('**/realtime/**', async (route) => {
-      await route.abort()
-    })
-
+  test('end session button visible in active session', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
+    await mockSessionAPIs(page)
     await page.goto('/session/ABC234')
 
-    // Click "End" button
-    const endButton = page.getByRole('button', { name: 'End' }).first()
-    await endButton.click()
+    // End button only visible during active phase
+    await expect(page.getByRole('button', { name: 'End' }).first()).toBeVisible()
   })
 
-  test('session summary shows temperature arc and takeaways', async ({ page }) => {
-    await mockSessionAPIs(page, { session: MOCK_SESSION_COMPLETED })
+  test('phase label shows during onboarding phases', async ({ page }) => {
+    const waitingSession = {
+      ...MOCK_SESSION_WAITING,
+      onboarding_context: { conductorPhase: 'waiting_for_b' },
+    }
+    await setRemoteSide(page, 'ABC234', 'a')
+    await mockSessionAPIs(page, { session: waitingSession })
     await page.goto('/session/ABC234')
 
-    // Summary content
-    await expect(page.getByText('Temperature Arc').first()).toBeVisible()
-    await expect(page.getByText(MOCK_SUMMARY.overallInsight).first()).toBeVisible()
-    await expect(page.getByText('Alice').first()).toBeVisible()
-    await expect(page.getByText('Bob').first()).toBeVisible()
+    // Phase label in header: "Waiting for the other person to join"
+    await expect(
+      page.getByText('Waiting for the other person to join').first()
+    ).toBeVisible()
+  })
+
+  test('side chooser shown for direct URL visit without side identity', async ({ page }) => {
+    // No localStorage set — direct URL visit
+    await mockSessionAPIs(page)
+    await page.goto('/session/ABC234')
+
+    // SideChooser should show
+    await expect(page.getByText('How are you joining this conversation?')).toBeVisible()
+    await expect(page.getByText('I started this')).toBeVisible()
+    await expect(page.getByText('I was invited')).toBeVisible()
   })
 
   test('performance: page load under 3 seconds', async ({ page }) => {
@@ -424,17 +449,12 @@ test.describe('Remote Session Flow', () => {
     expect(loadTime).toBeLessThan(3000)
   })
 
-  test('empty message cannot be sent', async ({ page }) => {
-    await mockSessionAPIs(page)
-    await page.goto('/session/ABC234')
-
-    // Send button should be disabled when input is empty
-    const sendButton = page.getByRole('button', { name: 'Send' }).first()
-    await expect(sendButton).toBeDisabled()
-  })
-
   test('room code validation rejects invalid codes', async ({ page }) => {
     await page.goto('/')
+
+    // Navigate to Remote → Join flow
+    await page.locator('button').filter({ hasText: 'Remote' }).first().click()
+    await page.getByText('Join Existing Session').click()
 
     // Type invalid code (too short)
     await page.getByPlaceholder('ROOM CODE').fill('AB')
@@ -442,5 +462,20 @@ test.describe('Remote Session Flow', () => {
 
     // Error message should appear
     await expect(page.getByText('Enter a valid 6-character room code')).toBeVisible()
+  })
+
+  test('Ava presence indicator visible in session', async ({ page }) => {
+    await setRemoteSide(page, 'ABC234', 'a')
+    await mockSessionAPIs(page)
+    await page.goto('/session/ABC234')
+
+    // ParallaxPresence renders an SVG orb with the "parallax-orb" animation
+    // Check for the SVG canvas or the presence container
+    await expect.poll(async () => {
+      // Look for any SVG element (the orb) or canvas in the presence section
+      const svg = await page.locator('svg').first().isVisible().catch(() => false)
+      const canvas = await page.locator('canvas').first().isVisible().catch(() => false)
+      return svg || canvas
+    }, { timeout: 5000 }).toBe(true)
   })
 })

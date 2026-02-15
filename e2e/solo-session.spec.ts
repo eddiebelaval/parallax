@@ -261,15 +261,14 @@ test.describe('Solo Session Flow', () => {
     await mockSoloAPIs(page)
     await page.goto('/session/SOL001')
 
-    // Wait for greeting to complete
-    await page.waitForTimeout(1000)
-
-    // ActiveSpeakerBar should have input — look for text input or tap-to-talk
-    const textInput = page.getByPlaceholder(/speak your truth/i)
-    const tapToTalk = page.getByText('Tap to talk')
-    const voiceVisible = await tapToTalk.isVisible().catch(() => false)
-    const textVisible = await textInput.isVisible().catch(() => false)
-    expect(voiceVisible || textVisible).toBe(true)
+    // ActiveSpeakerBar renders in one of three modes (auto/voice/text)
+    // depending on browser capabilities. Poll until one becomes visible.
+    await expect.poll(async () => {
+      const tapVisible = await page.getByText('Tap to talk').first().isVisible().catch(() => false)
+      const textVisible = await page.getByPlaceholder(/speak your truth/i).first().isVisible().catch(() => false)
+      const autoVisible = await page.getByText(/Listening|Waiting|Tap to send/i).first().isVisible().catch(() => false)
+      return tapVisible || textVisible || autoVisible
+    }, { timeout: 5000 }).toBe(true)
   })
 
   test('send message and receive Ava response', async ({ page }) => {
@@ -319,17 +318,23 @@ test.describe('Solo Session Flow', () => {
   })
 
   test('insights sidebar shows on desktop', async ({ page }) => {
+    // Ensure desktop viewport (sidebar is hidden below md breakpoint)
+    await page.setViewportSize({ width: 1280, height: 720 })
+
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
     })
     await page.goto('/session/SOL001')
 
-    // Desktop sidebar: "Insights" header should be visible
-    await expect(page.getByText('Insights').first()).toBeVisible()
+    // Desktop sidebar: look for the sidebar container's "Insights" header (not the mobile toggle)
+    // The sidebar lives inside a div with w-72 and border-l
+    const sidebarInsightsHeader = page.locator('.w-72 >> text=Insights').first()
+    await expect(sidebarInsightsHeader).toBeVisible()
   })
 
-  test('insights sidebar shows themes and patterns', async ({ page }) => {
+  test('insights sidebar shows themes and patterns', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
@@ -344,7 +349,8 @@ test.describe('Solo Session Flow', () => {
     await expect(page.getByText('Tends to internalize').first()).toBeVisible()
   })
 
-  test('insights sidebar shows emotional state badge', async ({ page }) => {
+  test('insights sidebar shows emotional state badge', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
@@ -354,7 +360,8 @@ test.describe('Solo Session Flow', () => {
     await expect(page.getByText('Frustrated').first()).toBeVisible()
   })
 
-  test('insights sidebar shows action items', async ({ page }) => {
+  test('insights sidebar shows action items', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
@@ -367,7 +374,8 @@ test.describe('Solo Session Flow', () => {
     await expect(page.getByText('Name one boundary').first()).toBeVisible()
   })
 
-  test('insights sidebar shows values and strengths', async ({ page }) => {
+  test('insights sidebar shows values and strengths', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
@@ -382,7 +390,8 @@ test.describe('Solo Session Flow', () => {
     await expect(page.getByText('Self-awareness').first()).toBeVisible()
   })
 
-  test('insights sidebar shows important people', async ({ page }) => {
+  test('insights sidebar shows important people', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: MOCK_EXISTING_MESSAGES,
       existingInsights: MOCK_CHAT_RESPONSE.insights,
@@ -477,7 +486,8 @@ test.describe('Solo Session Flow', () => {
     }
   })
 
-  test('empty insights shows placeholder message', async ({ page }) => {
+  test('empty insights shows placeholder message', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.startsWith('mobile'), 'sidebar hidden on mobile — covered by mobile toggle test')
     await mockSoloAPIs(page, {
       existingMessages: [],
       existingInsights: null,

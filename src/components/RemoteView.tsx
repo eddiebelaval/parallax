@@ -17,6 +17,8 @@ import { useAutoListen } from "@/hooks/useAutoListen";
 import { useProfileConcierge } from "@/hooks/useProfileConcierge";
 import { useArchitectMode } from "@/hooks/useArchitectMode";
 import ConfirmationModal from "./ConfirmationModal";
+import { handleArchitectMessage, handleProfileCommand } from "@/lib/send-interceptors";
+import { senderLabel as getSenderLabel } from "@/lib/conversation";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
 import type {
   Session,
@@ -77,7 +79,7 @@ export function RemoteView({
   } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
-  const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const { speak, isSpeaking, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
   const profileConcierge = useProfileConcierge();
   const { isActive: architectModeActive } = useArchitectMode();
 
@@ -134,13 +136,6 @@ export function RemoteView({
       : effectiveTurn === "person_a"
         ? personAName
         : personBName;
-
-  // Helper for sender display
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Ava";
-    if (sender === "person_a") return personAName;
-    return personBName;
-  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -334,59 +329,15 @@ export function RemoteView({
     async (content: string) => {
       setMediationError(null);
 
-      // Architect mode: meta-conversation with Ava about her architecture
       if (architectModeActive) {
-        setMediationError('🏗️ Consulting architecture...');
-        try {
-          const res = await fetch('/api/architect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: content }),
-          });
-
-          if (!res.ok) {
-            setMediationError('✗ Architect mode unavailable');
-            return;
-          }
-
-          const data = await res.json();
-          setMediationError(`🏗️ Ava: ${data.message}`);
-          setTimeout(() => setMediationError(null), 30000);
-        } catch {
-          setMediationError('✗ Architect mode connection failed');
-        }
+        await handleArchitectMessage(content, setMediationError);
         return;
       }
 
-      // Intercept profile concierge voice commands before sending to Claude
-      if (profileConcierge.isCommand(content)) {
-        try {
-          const response = await profileConcierge.processCommand(content);
-          if (response.requires_confirmation) {
-            // Show confirmation modal
-            setConfirmationModal({
-              isOpen: true,
-              title: 'Confirm Action',
-              message: response.confirmation_prompt || 'Are you sure?',
-              isDangerous: content.toLowerCase().includes('delete'),
-              onConfirm: async () => {
-                const result = await profileConcierge.confirm();
-                setConfirmationModal(null);
-                setMediationError(
-                  result.success ? `✓ ${result.message}` : `✗ ${result.message}`,
-                );
-              },
-            });
-          } else if (response.success) {
-            setMediationError(`✓ ${response.message}`);
-          } else {
-            setMediationError(`✗ ${response.message}`);
-          }
-        } catch {
-          setMediationError('✗ Failed to process profile command');
-        }
-        return; // Don't send to Claude
-      }
+      const intercepted = await handleProfileCommand(
+        content, profileConcierge, setMediationError, setConfirmationModal,
+      );
+      if (intercepted) return;
 
       const sent = await sendMessage(localPerson, content);
       if (!sent) return;
@@ -557,7 +508,7 @@ export function RemoteView({
                 <div key={msg.id}>
                   <MessageCard
                     sender={msg.sender}
-                    senderName={senderLabel(msg.sender)}
+                    senderName={getSenderLabel(msg.sender, personAName, personBName)}
                     content={msg.content}
                     timestamp={new Date(msg.created_at).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -681,13 +632,8 @@ export function RemoteView({
               architectMode={architectModeActive}
               onToggleMute={() => setMuted((v) => !v)}
               onModeChange={(mode) => {
-                if (mode === "auto") {
-                  setHandsFree(true);
-                  setMuted(false);
-                } else {
-                  setHandsFree(false);
-                  setMuted(false);
-                }
+                setHandsFree(mode === "auto");
+                setMuted(false);
               }}
             />
           </div>

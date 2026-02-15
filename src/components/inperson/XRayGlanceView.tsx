@@ -19,10 +19,54 @@ import { useAutoListen } from "@/hooks/useAutoListen";
 import { useProfileConcierge } from "@/hooks/useProfileConcierge";
 import { useArchitectMode } from "@/hooks/useArchitectMode";
 import ConfirmationModal from "../ConfirmationModal";
+import { handleArchitectMessage, handleProfileCommand } from "@/lib/send-interceptors";
+import { senderLabel as getSenderLabel } from "@/lib/conversation";
 import type {
   Session,
   OnboardingContext,
 } from "@/types/database";
+
+function issueTempColor(status: string): string {
+  if (status === "well_addressed") return "var(--temp-cool)";
+  if (status === "poorly_addressed") return "var(--temp-hot)";
+  return "var(--temp-warm)";
+}
+
+function IssueScoreboardColumn({ name, issues }: { name: string; issues: Array<{ id: string; status: string; label: string }> }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-mono text-[8px] uppercase tracking-widest text-ember-500">
+        {name}
+      </span>
+      <div className="flex gap-0.5">
+        {issues.map((issue) => {
+          const color = issueTempColor(issue.status);
+          return (
+            <div
+              key={issue.id}
+              className="w-2 h-2 rounded-sm transition-all duration-300"
+              style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
+              title={issue.label}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000;
+
+const TURN_OVER_MESSAGES = [
+  (current: string, next: string) =>
+    `${current}, I need to pause you there. Let's give ${next} a chance to respond now.`,
+  (current: string, next: string) =>
+    `Thank you ${current}. Let's hear from ${next} now — ${next}, what's on your mind?`,
+  (current: string, next: string) =>
+    `I appreciate you sharing, ${current}. ${next}, it's your turn — take your time.`,
+  (current: string, next: string) =>
+    `Let's pause here, ${current}. ${next}, I'd love to hear your perspective on this.`,
+];
 
 interface XRayGlanceViewProps {
   session: Session;
@@ -40,7 +84,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(null);
-  const isAnalyzing = analyzingMessageId !== null; // derived for existing consumers
+  const isAnalyzing = analyzingMessageId !== null;
   const [conductorLoading, setConductorLoading] = useState(false);
   const [directedTo, setDirectedTo] = useState<"person_a" | "person_b">("person_a");
   const [mediationError, setMediationError] = useState<string | null>(null);
@@ -79,10 +123,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
 
-  // Turn-based timer: configurable duration (defaults to 3 minutes)
-  const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000; // 3 minutes
   const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
 
+<<<<<<< Updated upstream
   // Interruption messages — Ava takes command of the room
   const TURN_OVER_MESSAGES = [
     (current: string, next: string) =>
@@ -110,6 +153,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     (name: string) => `Thank you, ${name}. Let me sit with that before I respond.`,
   ];
 
+=======
+>>>>>>> Stashed changes
   const handleTurnExpire = useCallback(() => {
     const currentName = activeSender === "person_a" ? personAName : personBName;
     const nextSender = activeSender === "person_a" ? "person_b" : "person_a";
@@ -158,12 +203,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
     return () => clearTimeout(timeout);
   }, [avaHoldingFloor, isAnalyzing, conductorLoading, isSpeaking]);
-
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Ava";
-    if (sender === "person_a") return personAName;
-    return personBName;
-  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -250,63 +289,15 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
     async (content: string) => {
-      // Architect mode: meta-conversation with Ava about her architecture
       if (architectModeActive) {
-        setMediationError('🏗️ Consulting architecture...');
-        try {
-          const res = await fetch('/api/architect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: content }),
-          });
-
-          if (!res.ok) {
-            setMediationError('✗ Architect mode unavailable');
-            return;
-          }
-
-          const data = await res.json();
-          setMediationError(`🏗️ Ava: ${data.message}`);
-          speak(data.message); // TTS the architect response
-          setTimeout(() => setMediationError(null), 30000);
-        } catch {
-          setMediationError('✗ Architect mode connection failed');
-        }
+        await handleArchitectMessage(content, setMediationError, speak);
         return;
       }
 
-      // Intercept profile voice commands before sending to session
-      if (profileConcierge.isCommand(content)) {
-        try {
-          const response = await profileConcierge.processCommand(content);
-          if (response.requires_confirmation) {
-            // Show confirmation modal
-            setConfirmationModal({
-              isOpen: true,
-              title: 'Confirm Action',
-              message: response.confirmation_prompt || 'Are you sure?',
-              isDangerous: content.toLowerCase().includes('delete'),
-              onConfirm: async () => {
-                const result = await profileConcierge.confirm();
-                setConfirmationModal(null);
-                setMediationError(result.success ? `✓ ${result.message}` : `✗ ${result.message}`);
-                speak(result.message);
-              },
-            });
-          } else if (response.success) {
-            setMediationError(`✓ ${response.message}`);
-            speak(response.message);
-          } else {
-            setMediationError(`✗ ${response.message}`);
-            speak(response.message);
-          }
-        } catch {
-          const errorMsg = '✗ Failed to process profile command';
-          setMediationError(errorMsg);
-          speak(errorMsg);
-        }
-        return;
-      }
+      const intercepted = await handleProfileCommand(
+        content, profileConcierge, setMediationError, setConfirmationModal, speak,
+      );
+      if (intercepted) return;
 
       setMediationError(null);
       setAvaHoldingFloor(true); // Ava owns the room — timer paused until she finishes
@@ -449,57 +440,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           {isActive && hasIssues && (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-mono text-[8px] uppercase tracking-widest text-ember-500">
-                    {personAName}
-                  </span>
-                  <div className="flex gap-0.5">
-                    {personAIssues.map((issue) => {
-                      const tempColor = issue.status === "well_addressed"
-                        ? "var(--temp-cool)"
-                        : issue.status === "poorly_addressed"
-                        ? "var(--temp-hot)"
-                        : "var(--temp-warm)";
-                      return (
-                        <div
-                          key={issue.id}
-                          className="w-2 h-2 rounded-sm transition-all duration-300"
-                          style={{
-                            backgroundColor: tempColor,
-                            boxShadow: `0 0 6px ${tempColor}`
-                          }}
-                          title={issue.label}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                <IssueScoreboardColumn name={personAName} issues={personAIssues} />
                 <div className="w-px h-6 bg-border" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-mono text-[8px] uppercase tracking-widest text-ember-500">
-                    {personBName}
-                  </span>
-                  <div className="flex gap-0.5">
-                    {personBIssues.map((issue) => {
-                      const tempColor = issue.status === "well_addressed"
-                        ? "var(--temp-cool)"
-                        : issue.status === "poorly_addressed"
-                        ? "var(--temp-hot)"
-                        : "var(--temp-warm)";
-                      return (
-                        <div
-                          key={issue.id}
-                          className="w-2 h-2 rounded-sm transition-all duration-300"
-                          style={{
-                            backgroundColor: tempColor,
-                            boxShadow: `0 0 6px ${tempColor}`
-                          }}
-                          title={issue.label}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                <IssueScoreboardColumn name={personBName} issues={personBIssues} />
               </div>
             </div>
           )}
@@ -607,7 +550,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
               <div key={msg.id}>
                 <MessageCard
                   sender={msg.sender}
-                  senderName={senderLabel(msg.sender)}
+                  senderName={getSenderLabel(msg.sender, personAName, personBName)}
                   content={msg.content}
                   timestamp={new Date(msg.created_at).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -729,13 +672,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           architectMode={architectModeActive}
           onToggleMute={() => setMuted((v) => !v)}
           onModeChange={(mode) => {
-            if (mode === "auto") {
-              setHandsFree(true);
-              setMuted(false);
-            } else {
-              setHandsFree(false);
-              setMuted(false);
-            }
+            setHandsFree(mode === "auto");
+            setMuted(false);
           }}
         />
       </div>
