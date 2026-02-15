@@ -9,7 +9,6 @@ import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { WalkingAnt } from "@/components/WalkingAnt";
 import { AvaConcierge } from "@/components/AvaConcierge";
 import { AvaOrb } from "@/components/AvaOrb";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
@@ -256,7 +255,6 @@ export default function RootLayout({
         className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
         <CursorSpotlight />
-        <WalkingAnt targetId="claude-code-badge" color="#000000" />
         <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
