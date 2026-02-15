@@ -57,7 +57,7 @@ function AuthSlot() {
     );
   }
 
-  const initial = (user.user_metadata?.display_name?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
+  const initial = (user.user_metadata?.display_name?.[0] ?? user.email?.[0] ?? "U").toUpperCase();
 
   return (
     <div className="flex items-center gap-2">

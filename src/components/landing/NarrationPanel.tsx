@@ -244,10 +244,10 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Pill: small "Listen" or "Parallax" text */}
+      {/* Pill: "Parallax" text */}
       {showPillContent && (
         <span className="relative z-10 font-serif text-sm text-foreground/80">
-          {isLandingPage ? 'Listen' : 'Parallax'}
+          Parallax
         </span>
       )}
 
