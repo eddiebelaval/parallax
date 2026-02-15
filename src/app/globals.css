@@ -1832,7 +1832,6 @@ a[data-spotlight-active]::after {
     animation: none;
   }
 }
-}
 
 /* ─── Ava Orb Pill (Global Header) ─── */
 /* The header pill contains a live ParallaxOrb canvas — not a flat icon.
