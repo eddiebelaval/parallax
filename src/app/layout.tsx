@@ -138,8 +138,8 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           <a href="/" className="text-lg tracking-widest uppercase text-accent hover:text-foreground transition-colors" style={{ fontFamily: 'var(--font-bitcount)' }}>
             Parallax
           </a>
-          {isAuthenticated && !isSessionPage && (
-            <nav className="hidden sm:flex items-center gap-4">
+          {isAuthenticated && (
+            <nav className="flex items-center gap-4">
               <Link
                 href="/home"
                 className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
@@ -150,7 +150,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
               </Link>
               <Link
                 href="/profile"
-                className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                className={`font-mono text-[10px] uppercase tracking-widest transition-colors hidden sm:inline ${
                   pathname === "/profile" ? "text-foreground" : "text-muted hover:text-foreground"
                 }`}
               >
@@ -158,7 +158,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
               </Link>
               <Link
                 href="/settings"
-                className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                className={`font-mono text-[10px] uppercase tracking-widest transition-colors hidden sm:inline ${
                   pathname === "/settings" ? "text-foreground" : "text-muted hover:text-foreground"
                 }`}
               >

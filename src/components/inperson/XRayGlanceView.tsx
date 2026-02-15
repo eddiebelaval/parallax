@@ -125,19 +125,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
   const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
 
-<<<<<<< Updated upstream
-  // Interruption messages — Ava takes command of the room
-  const TURN_OVER_MESSAGES = [
-    (current: string, next: string) =>
-      `${current}, I need to pause you there. Let's give ${next} a chance to respond now.`,
-    (current: string, next: string) =>
-      `Thank you ${current}. Let's hear from ${next} now — ${next}, what's on your mind?`,
-    (current: string, next: string) =>
-      `I appreciate you sharing, ${current}. ${next}, it's your turn — take your time.`,
-    (current: string, next: string) =>
-      `Let's pause here, ${current}. ${next}, I'd love to hear your perspective on this.`,
-  ];
-
   // Bridge phrases — Ava immediately claims the space after each message
   // while NVC analysis and conductor response process in the background
   const AVA_BRIDGE_MESSAGES = [
@@ -152,9 +139,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     (name: string) => `That's a lot to hold, ${name}. Let me take a breath and think about this.`,
     (name: string) => `Thank you, ${name}. Let me sit with that before I respond.`,
   ];
-
-=======
->>>>>>> Stashed changes
   const handleTurnExpire = useCallback(() => {
     const currentName = activeSender === "person_a" ? personAName : personBName;
     const nextSender = activeSender === "person_a" ? "person_b" : "person_a";
