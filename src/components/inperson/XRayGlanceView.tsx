@@ -34,7 +34,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const activeSession = session || initialSession;
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
-  const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const { speak, speakAfterCurrent, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
   const profileConcierge = useProfileConcierge();
   const { isActive: architectModeActive } = useArchitectMode();
 
@@ -50,6 +50,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
   const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
   const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
+  const [avaHoldingFloor, setAvaHoldingFloor] = useState(false); // Timer paused while Ava processes + speaks
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -82,7 +83,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000; // 3 minutes
   const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
 
-  // Interruption messages — Parallax takes command of the room
+  // Interruption messages — Ava takes command of the room
   const TURN_OVER_MESSAGES = [
     (current: string, next: string) =>
       `${current}, I need to pause you there. Let's give ${next} a chance to respond now.`,
@@ -92,6 +93,21 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       `I appreciate you sharing, ${current}. ${next}, it's your turn — take your time.`,
     (current: string, next: string) =>
       `Let's pause here, ${current}. ${next}, I'd love to hear your perspective on this.`,
+  ];
+
+  // Bridge phrases — Ava immediately claims the space after each message
+  // while NVC analysis and conductor response process in the background
+  const AVA_BRIDGE_MESSAGES = [
+    (name: string) => `Thank you for sharing that, ${name}. Let's let that land for a moment.`,
+    (name: string) => `${name}, I hear you. Let me sit with that for a second.`,
+    (name: string) => `Thank you, ${name}. Let's let that soak in before we continue.`,
+    (name: string) => `I appreciate that, ${name}. Give me just a moment to take that in.`,
+    (name: string) => `${name}, that's important. Let me reflect on what you just said.`,
+    (name: string) => `Let me consider what I just heard, ${name}. That deserves a thoughtful response.`,
+    (name: string) => `${name}, thank you. Let me think about what you just shared.`,
+    (name: string) => `I want to be careful with what you just said, ${name}. Give me a moment.`,
+    (name: string) => `That's a lot to hold, ${name}. Let me take a breath and think about this.`,
+    (name: string) => `Thank you, ${name}. Let me sit with that before I respond.`,
   ];
 
   const handleTurnExpire = useCallback(() => {
@@ -127,15 +143,21 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { timeRemaining, progress, reset: resetTimer } = useTurnTimer({
     durationMs: timerDuration,
     onExpire: handleTurnExpire,
-    enabled: turnBasedMode && isActive,
+    enabled: turnBasedMode && isActive && !avaHoldingFloor,
   });
 
-  // Reset timer when turn changes
+  // Release Ava's floor when all processing and speaking is done (debounced to avoid flicker)
   useEffect(() => {
-    if (turnBasedMode && isActive) {
-      resetTimer();
-    }
-  }, [activeSender, turnBasedMode, isActive, resetTimer]);
+    if (!avaHoldingFloor) return;
+    if (isAnalyzing || conductorLoading || isSpeaking) return;
+
+    // 300ms debounce: avoids false release during bridge → conductor queue drain
+    const timeout = setTimeout(() => {
+      setAvaHoldingFloor(false);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [avaHoldingFloor, isAnalyzing, conductorLoading, isSpeaking]);
 
   function senderLabel(sender: string): string {
     if (sender === "mediator") return "Ava";
@@ -214,7 +236,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     return () => clearInterval(interval);
   }, [isActive, refreshIssues]);
 
-  // Speak new mediator messages via TTS
+  // Speak new mediator messages via TTS — queued behind bridge phrase if one is playing
   useEffect(() => {
     if (messages.length === 0) return;
     const latest = messages[messages.length - 1];
@@ -222,8 +244,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     if (lastSpokenRef.current === latest.id) return;
 
     lastSpokenRef.current = latest.id;
-    speak(latest.content);
-  }, [messages, speak]);
+    speakAfterCurrent(latest.content);
+  }, [messages, speakAfterCurrent]);
 
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
@@ -287,11 +309,52 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       }
 
       setMediationError(null);
+      setAvaHoldingFloor(true); // Ava owns the room — timer paused until she finishes
       const sent = await sendMessage(activeSender, content);
-      if (!sent) return;
+      if (!sent) { setAvaHoldingFloor(false); return; }
+
+      // Ava immediately commands the space — bridge phrase while analysis processes
+      const senderName = activeSender === "person_a" ? personAName : personBName;
+      const bridge = AVA_BRIDGE_MESSAGES[Math.floor(Math.random() * AVA_BRIDGE_MESSAGES.length)];
+      speak(bridge(senderName));
+
+      // Always fire mediation + issues on every human message (melt on everything)
+      setAnalyzingMessageId(sent.id);
+
+      // NVC mediation analysis — fires regardless of phase
+      fetch("/api/mediate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: activeSession.id,
+          message_id: sent.id,
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) setMediationError("Analysis unavailable -- message saved");
+          return refreshMessages();
+        })
+        .catch(() => {
+          setMediationError("Connection lost -- analysis skipped");
+        })
+        .finally(() => {
+          setAnalyzingMessageId((prev) => (prev === sent.id ? null : prev));
+        });
+
+      // Issue analysis — fires regardless of phase
+      fetch("/api/issues/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: activeSession.id,
+          message_id: sent.id,
+        }),
+      })
+        .then(() => refreshIssues())
+        .catch(() => {});
 
       if (isOnboarding) {
-        // During onboarding: fire adaptive conductor
+        // During onboarding: also fire adaptive conductor
         setConductorLoading(true);
         try {
           const res = await fetch("/api/conductor", {
@@ -312,10 +375,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           setConductorLoading(false);
         }
       } else {
-        // During active phase: fire conductor + mediation + issues in PARALLEL
-        setAnalyzingMessageId(sent.id);
-
-        // 1. Conductor — Parallax speaks immediately (fire-and-forget)
+        // During active phase: conductor + intervention check
+        setConductorLoading(true);
         fetch("/api/conductor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -325,42 +386,10 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           }),
         })
           .then(() => refreshMessages())
-          .catch(() => {}); // Silent fail — Melt still fires, no bridge response
+          .catch(() => {})
+          .finally(() => setConductorLoading(false));
 
-        // 2. NVC mediation analysis (fire-and-forget, clears analyzing glow)
-        fetch("/api/mediate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: activeSession.id,
-            message_id: sent.id,
-          }),
-        })
-          .then((res) => {
-            if (!res.ok) setMediationError("Analysis unavailable -- message saved");
-            return refreshMessages();
-          })
-          .catch(() => {
-            setMediationError("Connection lost -- analysis skipped");
-          })
-          .finally(() => {
-            // Only clear if this is still the message being analyzed (rapid-fire safety)
-            setAnalyzingMessageId((prev) => (prev === sent.id ? null : prev));
-          });
-
-        // 3. Issue analysis — refresh issues when done (unchanged)
-        fetch("/api/issues/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: activeSession.id,
-            message_id: sent.id,
-          }),
-        })
-          .then(() => refreshIssues())
-          .catch(() => {});
-
-        // 4. Intervention check after delay — additive, for escalation/breakthrough
+        // Intervention check after delay
         if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
         interventionTimerRef.current = setTimeout(async () => {
           try {
@@ -381,7 +410,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }, 5000);
       }
     },
-    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak, architectModeActive],
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak, architectModeActive, personAName, personBName],
   );
 
   // Cleanup intervention timer on unmount
@@ -672,8 +701,14 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         />
       )}
 
-      {/* Input bar */}
-      <div className="flex-shrink-0">
+      {/* Input bar — teal thinking glow while Ava processes, red urgency in last 5s */}
+      <div className={`flex-shrink-0 relative ${
+        isAnalyzing || conductorLoading
+          ? "thinking-glow"
+          : turnBasedMode && isActive && timeRemaining > 0 && timeRemaining <= 5000
+            ? "urgency-glow"
+            : ""
+      }`}>
         <ActiveSpeakerBar
           activeSpeakerName={activeSpeaker}
           onSend={handleSend}

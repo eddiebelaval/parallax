@@ -928,6 +928,62 @@ li {
   }
 }
 
+/* ─── Analyzing Border Pulse (organic rolling glow on 2px border) ─── */
+
+.border-pulse-analyzing {
+  position: relative;
+}
+
+.border-pulse-analyzing::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    0deg,
+    transparent 0%,
+    rgba(106, 171, 142, 0.3) 15%,
+    var(--temp-cool, #6aab8e) 40%,
+    rgba(106, 171, 142, 0.5) 60%,
+    transparent 85%,
+    rgba(106, 171, 142, 0.2) 100%
+  );
+  background-size: 100% 280%;
+  animation: border-roll 3s ease-in-out infinite alternate;
+  border-radius: 1px;
+  z-index: 1;
+}
+
+@keyframes border-roll {
+  0% {
+    background-position: 0% 120%;
+    opacity: 0.4;
+  }
+  25% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    background-position: 0% -20%;
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-pulse-analyzing::after {
+    animation: none;
+    background: var(--temp-cool, #6aab8e);
+    opacity: 0.4;
+  }
+}
+
 /* ─── Light Mode Backlit Adaptation ─── */
 /* On light backgrounds, glow shifts from "luminous bloom" to "watercolor stain". */
 /* A solid left border anchors the color; wider blur spreads the wash. */
@@ -1014,6 +1070,23 @@ li {
 
 .analysis-reveal > div {
   overflow: hidden;
+}
+
+/* ─── Deep Dive Preview (collapsed fade) ─── */
+
+.deep-dive-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.deep-dive-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--ember-dark, #0f0b08));
+  pointer-events: none;
 }
 
 /* ─── Signal Rail Animations ─── */
@@ -1473,6 +1546,110 @@ li {
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ─── Thinking Glow: teal pulsating aura while Ava processes ─── */
+
+.thinking-glow {
+  overflow: visible;
+}
+
+.thinking-glow::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: 0;
+  height: 80%;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(106, 171, 142, 0.25) 0%,
+    rgba(106, 171, 142, 0.10) 50%,
+    transparent 100%
+  );
+  filter: blur(14px);
+  pointer-events: none;
+  z-index: 10;
+  animation: thinking-pulse 2.4s ease-in-out infinite;
+  border-radius: 12px 12px 0 0;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    height: 60%;
+    filter: blur(14px);
+  }
+  50% {
+    opacity: 0.7;
+    height: 100%;
+    filter: blur(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-glow::before {
+    animation: none;
+    opacity: 0.3;
+    height: 70%;
+  }
+}
+
+/* ─── Urgency Glow: red aura rising from input in last 5 seconds ─── */
+
+.urgency-glow {
+  overflow: visible;
+}
+
+.urgency-glow::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: 0;
+  height: 0%;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(196, 92, 60, 0.30) 0%,
+    rgba(196, 92, 60, 0.12) 50%,
+    transparent 100%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+  z-index: 10;
+  animation: urgency-rise 5s ease-in forwards;
+  border-radius: 8px 8px 0 0;
+}
+
+@keyframes urgency-rise {
+  0% {
+    height: 0%;
+    opacity: 0;
+  }
+  20% {
+    height: 30%;
+    opacity: 0.4;
+  }
+  50% {
+    height: 60%;
+    opacity: 0.6;
+  }
+  80% {
+    height: 90%;
+    opacity: 0.85;
+  }
+  100% {
+    height: 120%;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urgency-glow::before {
+    animation: none;
+    height: 100%;
+    opacity: 0.3;
   }
 }
 
