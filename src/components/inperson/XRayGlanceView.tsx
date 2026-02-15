@@ -80,7 +80,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const DEFAULT_TURN_DURATION_MS = 3 * 60 * 1000; // 3 minutes
   const timerDuration = activeSession.timer_duration_ms ?? DEFAULT_TURN_DURATION_MS;
 
-  // Interruption messages — Parallax takes command of the room
+  // Interruption messages — Ava takes command of the room
   const TURN_OVER_MESSAGES = [
     (current: string, next: string) =>
       `${current}, I need to pause you there. Let's give ${next} a chance to respond now.`,
@@ -90,6 +90,16 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       `I appreciate you sharing, ${current}. ${next}, it's your turn — take your time.`,
     (current: string, next: string) =>
       `Let's pause here, ${current}. ${next}, I'd love to hear your perspective on this.`,
+  ];
+
+  // Bridge phrases — Ava immediately claims the space after each message
+  // while NVC analysis and conductor response process in the background
+  const AVA_BRIDGE_MESSAGES = [
+    (name: string) => `Thank you for sharing that, ${name}. Let's let that land for a moment.`,
+    (name: string) => `${name}, I hear you. Let me sit with that for a second.`,
+    (name: string) => `Thank you, ${name}. Let's let that soak in before we continue.`,
+    (name: string) => `I appreciate that, ${name}. Give me just a moment to take that in.`,
+    (name: string) => `${name}, that's important. Let me reflect on what you just said.`,
   ];
 
   const handleTurnExpire = useCallback(() => {
@@ -263,6 +273,11 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       const sent = await sendMessage(activeSender, content);
       if (!sent) return;
 
+      // Ava immediately commands the space — bridge phrase while analysis processes
+      const senderName = activeSender === "person_a" ? personAName : personBName;
+      const bridge = AVA_BRIDGE_MESSAGES[Math.floor(Math.random() * AVA_BRIDGE_MESSAGES.length)];
+      speak(bridge(senderName));
+
       // Always fire mediation + issues on every human message (melt on everything)
       setAnalyzingMessageId(sent.id);
 
@@ -353,7 +368,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }, 5000);
       }
     },
-    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak],
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak, personAName, personBName],
   );
 
   // Cleanup intervention timer on unmount
