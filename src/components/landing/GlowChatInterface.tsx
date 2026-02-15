@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ConversationMessage } from '@/types/conversation'
-import { AudioWaveformOrb } from '@/components/_deprecated/AudioWaveformOrb'
-import { useAudioAnalyser } from '@/hooks/useAudioAnalyser'
+import { ParallaxOrb } from '@/components/ParallaxOrb'
 
 // Web Speech API types (Chrome webkit prefix)
 interface SpeechRecognitionEvent {
@@ -53,7 +52,6 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const historyRef = useRef<ConversationMessage[]>([])
   const introSentRef = useRef(false)
-  const mic = useAudioAnalyser()
 
   // Voice input state
   const [micHot, setMicHot] = useState(false)
@@ -374,13 +372,12 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
 
         {/* Ava's orb */}
         <div className="relative z-10 flex flex-col items-center gap-2">
-          <AudioWaveformOrb
-            name="Ava"
-            role="claude"
-            waveform={null}
-            energy={isLoading || streamingText ? 0.4 : 0.1}
-            active={isLoading || !!streamingText}
-            size={48}
+          <ParallaxOrb
+            size={64}
+            energy={isLoading || streamingText ? 0.5 : 0.1}
+            isSpeaking={isLoading || !!streamingText}
+            isAnalyzing={false}
+            particles={true}
           />
           <span className="font-mono text-[10px] uppercase tracking-widest text-success/80">
             Under the Hood

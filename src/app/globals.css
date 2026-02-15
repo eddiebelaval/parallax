@@ -488,7 +488,11 @@
   height: 100%;
   padding: 1.5rem;
   border-radius: 0 !important;
-  box-shadow: inset 0 0 120px rgba(106, 171, 142, 0.05), 0 0 60px rgba(106, 171, 142, 0.08);
+  box-shadow:
+    inset 0 0 200px rgba(106, 171, 142, 0.15),
+    inset 0 -100px 150px rgba(106, 171, 142, 0.12),
+    0 0 100px rgba(106, 171, 142, 0.2);
+  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(106, 171, 142, 0.08) 0%, transparent 70%);
 }
 
 /* ── Glass material (shared across all states) ── */
