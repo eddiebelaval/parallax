@@ -320,7 +320,6 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
     recognition.onerror = () => {
       setMicHot(false)
       setVoiceInterim('')
-      mic.stop()
     }
 
     recognition.onend = () => {
@@ -330,14 +329,12 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
         handleSendRef.current(result)
       }
       setVoiceInterim('')
-      mic.stop()
     }
 
     recognitionRef.current = recognition
     recognition.start()
     setMicHot(true)
-    mic.start()
-  }, [mic])
+  }, [])
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) {
