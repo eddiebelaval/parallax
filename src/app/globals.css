@@ -437,16 +437,15 @@
 
 /* ── Orbiting hint text for idle pill ── */
 @keyframes orbit-text {
-  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius, 130px)) rotate(90deg); }
-  100% { transform: rotate(360deg) translateX(var(--orbit-radius, 130px)) rotate(450deg); }
+  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius, 130px)) rotate(-90deg); }
+  100% { transform: rotate(360deg) translateX(var(--orbit-radius, 130px)) rotate(270deg); }
 }
 
 .orbit-hint {
   position: absolute;
-  top: 50%;
+  bottom: -20px;
   left: 50%;
-  margin-top: -0.5em;
-  margin-left: -2em;
+  transform: translateX(-50%);
   pointer-events: none;
   font-family: var(--font-mono);
   font-size: 9px;
@@ -454,7 +453,6 @@
   letter-spacing: 0.15em;
   color: var(--muted);
   opacity: 0.5;
-  animation: orbit-text 16s linear infinite;
 }
 
 @media (min-width: 640px) {
