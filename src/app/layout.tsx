@@ -246,7 +246,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           // SAFE: static string literal, no user input — prevents theme flash
