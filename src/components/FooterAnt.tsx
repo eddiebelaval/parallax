@@ -98,13 +98,8 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
       setIsVisible(currentPath === "/");
       setAntState("trapped");
     } else {
-      // Ant released - check which page it's on
-      const antLocation = localStorage.getItem("parallax-ant-location") || "/profile";
-      setIsVisible(currentPath === antLocation);
-
-      if (currentPath === antLocation && currentPath !== "/") {
-        setAntState("entering");
-      }
+      // Ant released - hide it (no wandering, just gone!)
+      setIsVisible(false);
     }
   }, [allowedPaths]);
 
@@ -232,13 +227,10 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
 
         console.log('🐜 ESCAPING:', { position, target: targetPoint.current, distance, velocity });
 
-        if (distance < 10) {
-          // Escaped! Move to another page
-          console.log('🐜 ESCAPE COMPLETE - moving to another page');
-          const nextPage = allowedPaths.filter(p => p !== "/")[Math.floor(Math.random() * 2)];
-          localStorage.setItem("parallax-ant-location", nextPage);
+        if (distance < 50) {
+          // Escaped! Gone forever (no wandering)
+          console.log('🐜 ESCAPE COMPLETE - ant is free!');
           setIsVisible(false);
-          setPosition({ x: -200, y: -200 });
           return;
         } else {
           // Sprint toward freedom!
@@ -376,40 +368,10 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isVisible, isPaused, velocity, position, antState, allowedPaths]);
 
-  // Handle ant click (only for wandering state - trapped escapes on hover)
+  // Handle ant click (no-op - trapped escapes on hover, no wandering state)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // Only handle clicks for wandering ant (trapped escapes on mouse proximity)
-    if (antState === "trapped") {
-      return; // Handled by animation loop mouse detection
-    } else {
-      // Ant is free and wandering - show message
-      const currentEncounters = encounterCount + 1;
-      localStorage.setItem("parallax-ant-encounters", currentEncounters.toString());
-      setEncounterCount(currentEncounters);
-
-      let selectedMessage: string;
-
-      if (currentEncounters === 1) {
-        // First encounter after release: joke
-        selectedMessage = ANT_JOKES[Math.floor(Math.random() * ANT_JOKES.length)];
-      } else {
-        // Second+ encounter: thank you
-        selectedMessage = THANK_YOU_MESSAGES[Math.floor(Math.random() * THANK_YOU_MESSAGES.length)];
-      }
-
-      console.log("🐜 SHOWING MESSAGE:", selectedMessage);
-
-      // FALLBACK: Use alert if modal fails
-      alert(selectedMessage);
-
-      // Also try modal
-      setMessage(selectedMessage);
-      setShowMessage(true);
-      setIsPaused(true);
-      setVelocity({ x: 0, y: 0 });
-    }
+    // Ant escapes on hover, doesn't need click handler
   };
 
   if (!isVisible) {
