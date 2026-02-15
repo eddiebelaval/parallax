@@ -246,7 +246,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light">
+    <html lang="en">
       <head>
         <script
           // SAFE: static string literal, no user input — prevents theme flash
