@@ -1832,3 +1832,135 @@ a[data-spotlight-active]::after {
     animation: none;
   }
 }
+}
+
+/* ─── Ava Orb Pill (Global Header) ─── */
+/* The header pill contains a live ParallaxOrb canvas — not a flat icon.
+   Transparent background lets the orb glow bleed naturally. */
+.ava-pill-orb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50% !important;
+  /* Overflow visible so the orb's outer glow + particles escape the button bounds */
+  overflow: visible;
+  /* Absolutely centered in the header */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 36px;
+  height: 36px;
+  transition: scale 0.2s ease;
+  z-index: 1;
+}
+
+.ava-pill-orb:hover {
+  scale: 1.1;
+}
+
+.ava-pill-orb:active {
+  scale: 0.95;
+}
+
+/* NarrationPanel pill hidden after narration — header orb takes over */
+.glass-panel--hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s ease-out !important;
+}
+
+/* Ava settling into pill after narration */
+@keyframes ava-settle {
+  0%   { box-shadow: 0 0 0 0 rgba(106, 171, 142, 0.5); }
+  40%  { box-shadow: 0 0 16px 6px rgba(106, 171, 142, 0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(106, 171, 142, 0); }
+}
+
+.glass-panel--pill.ava-settled {
+  animation: ava-settle 1.2s ease-out;
+}
+
+/* ─── Ava Concierge: Mic-first floating UI ─── */
+.ava-concierge {
+  position: fixed;
+  top: 3.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  z-index: 50;
+}
+
+/* Close button */
+.ava-close-btn {
+  position: absolute;
+  top: -0.25rem;
+  right: -2.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--ember-border);
+  background: var(--ember-surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ember-muted);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.ava-close-btn:hover {
+  color: var(--ember-text);
+  border-color: var(--ember-muted);
+}
+
+/* Subtitle: Ava's spoken text as caption */
+.ava-concierge__subtitle {
+  max-width: 280px;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ember-muted);
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  background: var(--ember-surface);
+  border: 1px solid var(--ember-border);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ava-concierge__subtitle--thinking {
+  letter-spacing: 0.2em;
+  animation: thinking-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Interim transcript preview */
+.ava-concierge__interim {
+  max-width: 280px;
+  text-align: center;
+  font-size: 0.625rem;
+  font-family: var(--font-ibm-plex-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--glow-cool);
+  margin-top: 0.25rem;
+  opacity: 0.8;
+}
+
+/* ─── Mic button ─── */
+.ava-mic-btn {
+  width: 44px;
+  height: 44px;
