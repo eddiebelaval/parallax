@@ -5,6 +5,7 @@ import { ParallaxPresence } from "./inperson/ParallaxPresence";
 import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
+import { InlineSessionSummary } from "./InlineSessionSummary";
 import { CoachingPanel } from "./CoachingPanel";
 import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
@@ -13,9 +14,11 @@ import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
-import { useProfileConcierge } from "@/hooks/useProfileConcierge";
-import ConfirmationModal from "./ConfirmationModal";
+import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { useSessionSummary } from "@/hooks/useSessionSummary";
+import { SoloSidebar } from "./SoloSidebar";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
+import { senderLabel, senderColor } from "@/lib/conversation";
 import type {
   Session,
   ContextMode,
@@ -76,10 +79,10 @@ export function RemoteView({
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
-  const profileConcierge = useProfileConcierge();
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
+  const { insights: conversationInsights } = useConversationInsights(messages, localPerson);
   const coaching = useCoaching(activeSession.id, localPerson);
 
   const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(
@@ -87,13 +90,6 @@ export function RemoteView({
   );
   const [conductorLoading, setConductorLoading] = useState(false);
   const [mediationError, setMediationError] = useState<string | null>(null);
-  const [confirmationModal, setConfirmationModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    isDangerous?: boolean;
-  } | null>(null);
   const [endingSession, setEndingSession] = useState(false);
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
   const [handsFree, setHandsFree] = useState(true);
@@ -114,35 +110,31 @@ export function RemoteView({
   const personBName = activeSession.person_b_name ?? "Person B";
   const localName = localSide === "a" ? personAName : personBName;
 
+  const isMyTurn = effectiveTurn === localPerson;
+  const isCompleted = activeSession.status === "completed";
+  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
+
+  const { summaryData, summaryLoading, handleExportSummary } = useSessionSummary({
+    roomCode,
+    personAName,
+    personBName,
+    mode: "remote",
+    isCompleted,
+  });
+
   const contextMode =
     (activeSession.context_mode as ContextMode) || "intimate";
   const contextModeLabel =
     CONTEXT_MODE_INFO[contextMode]?.name || "Intimate Partners";
 
-  const isMyTurn = effectiveTurn === localPerson;
-  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
-
   // Active speaker name for ActiveSpeakerBar
-  const activeSpeaker = isMyTurn
-    ? localName
-    : effectiveTurn === "mediator"
-      ? "Parallax"
-      : effectiveTurn === "person_a"
-        ? personAName
-        : personBName;
-
-  // Helper for sender display
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
-    if (sender === "person_a") return personAName;
+  function getActiveSpeakerName(): string {
+    if (isMyTurn) return localName;
+    if (effectiveTurn === "mediator") return "Parallax";
+    if (effectiveTurn === "person_a") return personAName;
     return personBName;
   }
-
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
-  }
+  const activeSpeaker = getActiveSpeakerName();
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -335,37 +327,6 @@ export function RemoteView({
   const handleSend = useCallback(
     async (content: string) => {
       setMediationError(null);
-
-      // Intercept profile concierge voice commands before sending to Claude
-      if (profileConcierge.isCommand(content)) {
-        try {
-          const response = await profileConcierge.processCommand(content);
-          if (response.requires_confirmation) {
-            // Show confirmation modal
-            setConfirmationModal({
-              isOpen: true,
-              title: 'Confirm Action',
-              message: response.confirmation_prompt || 'Are you sure?',
-              isDangerous: content.toLowerCase().includes('delete'),
-              onConfirm: async () => {
-                const result = await profileConcierge.confirm();
-                setConfirmationModal(null);
-                setMediationError(
-                  result.success ? `✓ ${result.message}` : `✗ ${result.message}`,
-                );
-              },
-            });
-          } else if (response.success) {
-            setMediationError(`✓ ${response.message}`);
-          } else {
-            setMediationError(`✗ ${response.message}`);
-          }
-        } catch {
-          setMediationError('✗ Failed to process profile command');
-        }
-        return; // Don't send to Claude
-      }
-
       const sent = await sendMessage(localPerson, content);
       if (!sent) return;
 
@@ -402,7 +363,6 @@ export function RemoteView({
       triggerMediation,
       triggerInterventionCheck,
       refreshIssues,
-      profileConcierge,
     ],
   );
 
@@ -444,7 +404,12 @@ export function RemoteView({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {isActive && (
+          {isCompleted && (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ember-500">
+              Session ended
+            </span>
+          )}
+          {isActive && !isCompleted && (
             <button
               onClick={endSession}
               disabled={endingSession}
@@ -532,11 +497,9 @@ export function RemoteView({
                       }`}
                     >
                       <span
-                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(
-                          msg.sender,
-                        )}`}
+                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(msg.sender)}`}
                       >
-                        {senderLabel(msg.sender)}
+                        {senderLabel(msg.sender, personAName, personBName)}
                       </span>
                       <p
                         className={`text-sm mt-0.5 leading-relaxed ${
@@ -595,7 +558,19 @@ export function RemoteView({
             </div>
           )}
 
-          {/* Tabbed input area */}
+          {/* Session completed — inline summary + export */}
+          {isCompleted && (
+            <div className="flex-shrink-0 border-t border-border">
+              <InlineSessionSummary
+                summaryData={summaryData}
+                summaryLoading={summaryLoading}
+                onExport={handleExportSummary}
+              />
+            </div>
+          )}
+
+          {/* Tabbed input area — hidden when session is completed */}
+          {!isCompleted && (
           <div className="flex-shrink-0">
             {/* Folder tabs — visible when coaching is available */}
             {(isActive || conductorPhase === "waiting_for_b") && (
@@ -654,21 +629,19 @@ export function RemoteView({
               isMuted={muted}
               onToggleMute={() => setMuted((v) => !v)}
               onModeChange={(mode) => {
-                if (mode === "auto") {
-                  setHandsFree(true);
-                  setMuted(false);
-                } else {
-                  setHandsFree(false);
-                  setMuted(false);
-                }
+                setHandsFree(mode === "auto");
+                setMuted(false);
               }}
             />
           </div>
+          )}
         </div>
 
-        {/* Right sidebar — Signal cards + Action panels (desktop only, active phase) */}
-        {isActive && (
-          <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
+        {/* Right sidebar — Insights + Signal cards + Action panels (desktop only) */}
+        <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
+          <SoloSidebar insights={conversationInsights} />
+          {(isActive || isCompleted) && (
+          <>
             {/* Signal cards */}
             <div className="space-y-1 p-2">
               {messages
@@ -698,8 +671,9 @@ export function RemoteView({
               side="right"
               onUpdateStatus={updateIssueStatus}
             />
-          </div>
-        )}
+          </>
+          )}
+        </div>
       </div>
 
       {/* Mobile: issue panels below messages (active phase only) */}
@@ -724,17 +698,6 @@ export function RemoteView({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {confirmationModal && (
-        <ConfirmationModal
-          {...confirmationModal}
-          onCancel={() => {
-            profileConcierge.cancel();
-            setConfirmationModal(null);
-          }}
-        />
       )}
     </div>
   );

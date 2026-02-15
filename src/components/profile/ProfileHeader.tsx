@@ -10,9 +10,6 @@ interface ProfileHeaderProps {
   signalsCount: number
 }
 
-/**
- * Client component for profile header (needs router for button).
- */
 export function ProfileHeader({ profile, user, signalsCount }: ProfileHeaderProps) {
   const router = useRouter()
 

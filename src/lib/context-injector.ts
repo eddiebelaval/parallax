@@ -8,14 +8,14 @@ interface InjectionContext {
   otherPartyFacilitation: string
 }
 
-/**
- * Build intelligence context for Claude's mediation system prompt.
- *
- * Checks user profiles and consent levels, then formats behavioral
- * signals into a Claude-readable context block.
- *
- * Returns empty strings if no profiles or consent exist.
- */
+function hasContent(memory: unknown): memory is SoloMemory {
+  return (
+    typeof memory === 'object' &&
+    memory !== null &&
+    Object.keys(memory).length > 0
+  )
+}
+
 export async function buildIntelligenceContext(
   sessionId: string,
   speakerUserId: string | null,
@@ -50,11 +50,9 @@ export async function buildIntelligenceContext(
     .eq('user_id', speakerUserId)
     .single()
 
-  if (speakerProfile?.solo_memory &&
-    typeof speakerProfile.solo_memory === 'object' &&
-    Object.keys(speakerProfile.solo_memory).length > 0) {
+  if (hasContent(speakerProfile?.solo_memory)) {
     speakerFacilitation = formatFacilitationBlock(
-      speakerProfile.solo_memory as SoloMemory,
+      speakerProfile.solo_memory,
       'Current Speaker',
     )
   }
@@ -94,11 +92,9 @@ export async function buildIntelligenceContext(
         .eq('user_id', otherPartyUserId)
         .single()
 
-      if (otherProfile?.solo_memory &&
-        typeof otherProfile.solo_memory === 'object' &&
-        Object.keys(otherProfile.solo_memory).length > 0) {
+      if (hasContent(otherProfile?.solo_memory)) {
         otherPartyFacilitation = formatFacilitationBlock(
-          otherProfile.solo_memory as SoloMemory,
+          otherProfile.solo_memory,
           'Other Party (anonymized)',
         )
       }
@@ -108,9 +104,6 @@ export async function buildIntelligenceContext(
   return { speakerContext, otherPartyContext, speakerFacilitation, otherPartyFacilitation }
 }
 
-/**
- * Check if both parties have granted anonymous_signals consent for this session.
- */
 async function checkMutualConsent(
   supabase: ReturnType<typeof createServerClient>,
   sessionId: string,
@@ -134,14 +127,9 @@ async function checkMutualConsent(
   )
 }
 
-/**
- * Format solo_memory into an abstracted facilitation block for mediation.
- *
- * Privacy rules:
- * - NEVER include specific things said in solo sessions
- * - NEVER reveal personal details shared privately
- * - Only include abstracted patterns: communication style, values, strengths, triggers
- */
+// IMPORTANT: Privacy rules — only include abstracted patterns (style, values,
+// strengths, triggers). NEVER include specific things said in solo sessions
+// or personal details shared privately.
 function formatFacilitationBlock(memory: SoloMemory, label: string): string {
   const lines: string[] = [`--- ${label} Communication Profile ---`]
 
@@ -169,10 +157,6 @@ function formatFacilitationBlock(memory: SoloMemory, label: string): string {
   return lines.join('\n')
 }
 
-/**
- * Format behavioral signals into a human-readable context block for Claude.
- * This is injected into the system prompt during mediation.
- */
 function formatSignalsForClaude(signals: BehavioralSignal[], label: string): string {
   const lines: string[] = [`--- ${label} Profile Intelligence ---`]
 
@@ -233,9 +217,6 @@ function formatSignalsForClaude(signals: BehavioralSignal[], label: string): str
   return lines.join('\n')
 }
 
-/**
- * Build the full intelligence injection block for the mediation system prompt.
- */
 export function buildIntelligencePromptSection(context: InjectionContext): string {
   const hasSignals = context.speakerContext || context.otherPartyContext
   const hasFacilitation = context.speakerFacilitation || context.otherPartyFacilitation

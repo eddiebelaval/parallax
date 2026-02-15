@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import { getServerUser } from '@/lib/auth/server-auth'
 import { getUserData } from '@/lib/data/user-profile'
 import { SignalCard } from '@/components/profile/SignalCard'
@@ -6,19 +7,21 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileActions } from '@/components/profile/ProfileActions'
 import { EmptySignalsState } from '@/components/profile/EmptySignalsState'
 
+const EMPTY_USER_DATA = { profile: null, signals: [] } as const
+
 export default async function ProfilePage() {
-  // Try to get user but don't block — hackathon: no auth walls
   const user = await getServerUser().catch(() => null)
 
-  const userData = user ? await getUserData(user.id).catch(() => ({ profile: null, signals: [] })) : { profile: null, signals: [] }
-  const { profile, signals } = userData
+  if (!user) {
+    redirect('/auth')
+  }
+
+  const { profile, signals } = await getUserData(user.id).catch(() => EMPTY_USER_DATA)
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
-      {/* Header with client-side navigation */}
       <ProfileHeader profile={profile} user={user} signalsCount={signals.length} />
 
-      {/* Signals */}
       {signals.length > 0 ? (
         <div className="space-y-3">
           {signals.map((signal) => (
@@ -31,7 +34,6 @@ export default async function ProfilePage() {
         <EmptySignalsState />
       )}
 
-      {/* Actions */}
       <ProfileActions />
     </div>
   )

@@ -20,7 +20,6 @@ function SideChooser({
   onChoose,
 }: {
   roomCode: string;
-  session: ReturnType<typeof useSession>["session"];
   onChoose: (side: "a" | "b") => void;
 }) {
   function chooseSide(side: "a" | "b") {
@@ -96,15 +95,16 @@ export function SessionView({ roomCode }: SessionViewProps) {
     );
   }
 
-  // 2. Completed — show summary (both modes)
-  if (isCompleted) {
+  // 2. Completed — remote/in-person stay inline (summary shown within the session view)
+  //    Only solo uses the standalone SessionSummary page
+  if (isCompleted && session?.mode === 'solo') {
     return (
       <div className="flex-1 flex flex-col">
         <SessionSummary
           roomCode={roomCode}
           personAName={personAName}
           personBName={personBName}
-          mode={session?.mode === 'in_person' ? 'in_person' : 'remote'}
+          mode="remote"
         />
       </div>
     );
@@ -140,7 +140,6 @@ export function SessionView({ roomCode }: SessionViewProps) {
   return (
     <SideChooser
       roomCode={roomCode}
-      session={session}
       onChoose={setLocalSide}
     />
   );

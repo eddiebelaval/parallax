@@ -409,12 +409,6 @@ export function TheDoor() {
           </button>
         </div>
 
-        {/* Closing text — not narrated, just felt */}
-        <div className="text-center mt-8">
-          <p className="text-xl sm:text-2xl text-ember-300 leading-relaxed font-serif italic max-w-lg mx-auto">
-            I&apos;m already here. Whenever you&apos;re ready, just start talking.
-          </p>
-        </div>
       </div>
     </div>
   )

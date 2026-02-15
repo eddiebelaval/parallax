@@ -3,7 +3,7 @@
 import { useRef, useCallback, useState, useEffect, useLayoutEffect } from 'react'
 import gsap from 'gsap'
 import { Flip } from 'gsap/dist/Flip'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { AvaOrb } from '@/components/AvaOrb'
 import type { NarrationPhase } from '@/hooks/useNarrationController'
 
 if (typeof window !== 'undefined') {
@@ -231,10 +231,10 @@ export function NarrationPanel({
 
       {/* ─── Content by phase ─── */}
 
-      {/* Idle: ParallaxOrb caged inside frosted glass — breathing, waiting to be released */}
+      {/* Idle: AvaOrb caged inside frosted glass — breathing, waiting to be released */}
       {showIdleContent && (
         <div className="relative z-10 flex items-center justify-center">
-          <ParallaxOrb
+          <AvaOrb
             size={88}
             energy={0}
             isSpeaking={false}
@@ -244,10 +244,10 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Pill: small "Listen" or "Parallax" text */}
+      {/* Pill: "Parallax" text */}
       {showPillContent && (
         <span className="relative z-10 font-serif text-sm text-foreground/80">
-          {isLandingPage ? 'Listen' : 'Parallax'}
+          Parallax
         </span>
       )}
 
@@ -258,9 +258,9 @@ export function NarrationPanel({
         </div>
       )}
 
-      {/* Chat: chat interface */}
+      {/* Chat: chat interface — full height for flex layout */}
       {showChatContent && (
-        <div className="relative z-10">
+        <div className="relative z-10 h-full">
           {chatContent}
         </div>
       )}

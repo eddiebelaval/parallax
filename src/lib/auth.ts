@@ -80,7 +80,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     .eq('user_id', user.id)
     .single()
 
-  return (data as UserProfile) ?? null
+  return (data as UserProfile | null) ?? null
 }
 
 export function onAuthStateChange(callback: (user: User | null) => void) {

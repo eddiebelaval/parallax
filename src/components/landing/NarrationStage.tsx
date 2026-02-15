@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { AvaOrb } from '@/components/AvaOrb'
 
 interface NarrationStageProps {
   text: string
@@ -35,7 +35,7 @@ export function NarrationStage({
     <div className="flex flex-col items-center w-full">
       {/* Global Parallax orb — floats above the pill, half sticking out */}
       <div className="-mt-12 mb-1">
-        <ParallaxOrb
+        <AvaOrb
           size={72}
           energy={energy}
           isSpeaking={isSpeaking}

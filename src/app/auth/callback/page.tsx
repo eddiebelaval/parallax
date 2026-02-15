@@ -22,28 +22,24 @@ function CallbackHandler() {
         return
       }
 
-      // Check if user already has a profile
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('user_id', data.user.id)
-        .single()
+      // Ensure profile exists (upsert is idempotent for existing users)
+      const displayName = data.user.user_metadata?.full_name
+        ?? data.user.user_metadata?.name
+        ?? null
 
-      if (!profile) {
-        // New user — create profile with OAuth display name
-        const displayName = data.user.user_metadata?.full_name
-          ?? data.user.user_metadata?.name
-          ?? null
+      const { error: profileError } = await supabase.from('user_profiles').upsert({
+        user_id: data.user.id,
+        display_name: displayName,
+      }, {
+        onConflict: 'user_id',
+      })
 
-        await supabase.from('user_profiles').upsert({
-          user_id: data.user.id,
-          display_name: displayName,
-        }, {
-          onConflict: 'user_id',
-        })
+      if (profileError) {
+        console.error('Profile creation failed:', profileError)
+        router.replace('/auth?error=profile_creation_failed')
+        return
       }
 
-      // Always go home — interview is optional, not a gate
       router.replace('/home')
     })
   }, [searchParams, router])

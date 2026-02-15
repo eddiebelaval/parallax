@@ -29,3 +29,25 @@ export function stripCodeFences(raw: string): string {
   }
   return cleaned
 }
+
+/**
+ * Display name for a sender identifier.
+ */
+export function senderLabel(
+  sender: string,
+  personAName: string,
+  personBName: string,
+): string {
+  if (sender === 'mediator') return 'Parallax'
+  if (sender === 'person_a') return personAName
+  return personBName
+}
+
+/**
+ * Tailwind text color class for a sender.
+ */
+export function senderColor(sender: string): string {
+  if (sender === 'mediator') return 'text-temp-cool'
+  if (sender === 'person_a') return 'text-temp-warm'
+  return 'text-temp-hot'
+}

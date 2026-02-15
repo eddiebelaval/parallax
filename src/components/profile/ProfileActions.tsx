@@ -2,9 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 
-/**
- * Client component for profile page actions (buttons that need router).
- */
 export function ProfileActions() {
   const router = useRouter()
 

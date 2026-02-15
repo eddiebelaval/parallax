@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@/lib/supabase'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getInterviewPrompt } from '@/lib/interview-prompts'
@@ -28,16 +29,93 @@ interface InterviewRequestBody {
   display_name?: string | null
 }
 
+interface InProgressEntry {
+  phase: 'in_progress'
+  current_phase: number
+  messages: Array<{ role: string; content: string }>
+  updated_at: string
+}
+
+function isInProgressEntry(entry: unknown): entry is InProgressEntry {
+  return (
+    typeof entry === 'object' &&
+    entry !== null &&
+    (entry as Record<string, unknown>).phase === 'in_progress'
+  )
+}
+
+function getCompletedResponses(responses: unknown[]): unknown[] {
+  return responses.filter((entry) => !isInProgressEntry(entry))
+}
+
+async function getAuthUserId(request: Request): Promise<string | null> {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+
+  const token = authHeader.slice(7)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) return null
+
+  const client = createClient(supabaseUrl, supabaseAnonKey)
+  const { data: { user } } = await client.auth.getUser(token)
+  return user?.id ?? null
+}
+
+export async function GET(request: Request): Promise<NextResponse> {
+  const user_id = await getAuthUserId(request)
+
+  if (!user_id) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
+  const supabase = createServerClient()
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('interview_phase, interview_completed, raw_responses, display_name')
+    .eq('user_id', user_id)
+    .single()
+
+  if (!profile) {
+    return NextResponse.json({ phase: 1, messages: [], completed: false })
+  }
+
+  if (profile.interview_completed) {
+    return NextResponse.json({
+      phase: 4,
+      messages: [],
+      completed: true,
+      display_name: profile.display_name,
+    })
+  }
+
+  const rawResponses = (profile.raw_responses as unknown[]) ?? []
+  const inProgress = rawResponses.find(isInProgressEntry)
+
+  return NextResponse.json({
+    phase: inProgress?.current_phase ?? profile.interview_phase ?? 1,
+    messages: inProgress?.messages ?? [],
+    completed: false,
+    display_name: profile.display_name,
+  })
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   const rateLimited = checkRateLimit(request, 20, 60_000)
   if (rateLimited) return rateLimited
 
-  const body = await request.json() as InterviewRequestBody
-  const { user_id, phase, message, conversation_history, context_mode, display_name } = body
+  const authUserId = await getAuthUserId(request)
+  if (!authUserId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
 
-  if (!user_id || !phase || !message) {
+  const body = await request.json() as InterviewRequestBody
+  const { phase, message, conversation_history, context_mode, display_name } = body
+  const user_id = authUserId
+
+  if (!phase || !message) {
     return NextResponse.json(
-      { error: 'user_id, phase, and message are required' },
+      { error: 'phase and message are required' },
       { status: 400 },
     )
   }
@@ -99,7 +177,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   const phaseComplete = isPhaseComplete(rawText)
   const interviewDone = isInterviewComplete(rawText)
 
+  // Build the full message history including the new exchange
+  const updatedHistory = [
+    ...(conversation_history ?? []),
+    { role: 'user' as const, content: message },
+    { role: 'assistant' as const, content: cleanResponseForDisplay(rawText) },
+  ]
+
   let signalsExtracted = 0
+
+  const completedResponses = getCompletedResponses(rawResponses)
+
   if (phaseComplete || interviewDone) {
     const extraction = parseInterviewExtraction(rawText)
     if (extraction) {
@@ -120,9 +208,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
       signalsExtracted = signals.length
 
-      // Build profile update
+      // Build profile update — phase complete, replace in_progress with extraction
       const profileUpdate: Record<string, unknown> = {
-        raw_responses: [...rawResponses, extraction],
+        raw_responses: [...completedResponses, extraction],
         interview_phase: interviewDone ? 4 : phase,
         interview_completed: interviewDone,
         interview_completed_at: interviewDone ? new Date().toISOString() : undefined,
@@ -138,6 +226,22 @@ export async function POST(request: Request): Promise<NextResponse> {
         .update(profileUpdate)
         .eq('user_id', user_id)
     }
+  } else {
+    // Save in-progress conversation after EVERY exchange so users can resume
+    const inProgress = {
+      phase: 'in_progress' as const,
+      current_phase: phase,
+      messages: updatedHistory,
+      updated_at: new Date().toISOString(),
+    }
+
+    await supabase
+      .from('user_profiles')
+      .update({
+        raw_responses: [...completedResponses, inProgress],
+        interview_phase: phase,
+      })
+      .eq('user_id', user_id)
   }
 
   return NextResponse.json({

@@ -9,18 +9,18 @@ import { ActiveSpeakerBar } from "./ActiveSpeakerBar";
 import { TurnTimer } from "./TurnTimer";
 import { TurnProgressBar } from "./TurnProgressBar";
 import { TimerSettings } from "./TimerSettings";
+import { InlineSessionSummary } from "@/components/InlineSessionSummary";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
 import { useIssues } from "@/hooks/useIssues";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 import { useAutoListen } from "@/hooks/useAutoListen";
-import { useProfileConcierge } from "@/hooks/useProfileConcierge";
-import ConfirmationModal from "../ConfirmationModal";
-import type {
-  Session,
-  OnboardingContext,
-} from "@/types/database";
+import { useConversationInsights } from "@/hooks/useConversationInsights";
+import { useSessionSummary } from "@/hooks/useSessionSummary";
+import { SoloSidebar } from "@/components/SoloSidebar";
+import { senderLabel, senderColor } from "@/lib/conversation";
+import type { Session, OnboardingContext } from "@/types/database";
 
 interface XRayGlanceViewProps {
   session: Session;
@@ -33,7 +33,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
-  const profileConcierge = useProfileConcierge();
+  const { insights: personAInsights } = useConversationInsights(messages, 'person_a');
+  const { insights: personBInsights } = useConversationInsights(messages, 'person_b');
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -43,30 +44,32 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [isMicHot, setIsMicHot] = useState(false);
   const [turnBasedMode, setTurnBasedMode] = useState(true);
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false);
-  const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
-  const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
-  const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
-  const [confirmationModal, setConfirmationModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    isDangerous?: boolean;
-  } | null>(null);
+  const [handsFree, setHandsFree] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [timerFlash, setTimerFlash] = useState(false);
 
-  // Track last spoken mediator message to avoid double-speak
   const lastSpokenRef = useRef<string | null>(null);
   const conductorFired = useRef(false);
   const prevPhaseRef = useRef<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Derived state
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
   const conductorPhase = onboarding.conductorPhase;
   const isOnboarding = conductorPhase === "onboarding";
   const isActive = conductorPhase === "active";
+  const isCompleted = activeSession.status === "completed";
 
   const personAName = activeSession.person_a_name ?? "Person A";
   const personBName = activeSession.person_b_name ?? "Person B";
+
+  const { summaryData, summaryLoading, handleExportSummary } = useSessionSummary({
+    roomCode,
+    personAName,
+    personBName,
+    mode: "in_person",
+    isCompleted,
+  });
 
   const activeSender = isOnboarding ? directedTo : currentTurn;
   const activeSpeaker = activeSender === "person_a" ? personAName : personBName;
@@ -119,11 +122,24 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     }
   }, [roomCode, refreshSession]);
 
-  const { timeRemaining, progress, reset: resetTimer } = useTurnTimer({
+  const { timeRemaining, progress, reset: resetTimer, pause: pauseTimer, resume: resumeTimer } = useTurnTimer({
     durationMs: timerDuration,
     onExpire: handleTurnExpire,
-    enabled: turnBasedMode && isActive,
+    enabled: turnBasedMode && isActive && !isCompleted,
   });
+
+  // Pause timer while Parallax is speaking or analyzing — user's time doesn't burn
+  const shouldPauseTimer = isSpeaking || isAnalyzing || conductorLoading;
+  const wasPausedRef = useRef(false);
+  useEffect(() => {
+    if (shouldPauseTimer && !wasPausedRef.current) {
+      wasPausedRef.current = true;
+      pauseTimer();
+    } else if (!shouldPauseTimer && wasPausedRef.current) {
+      wasPausedRef.current = false;
+      resumeTimer();
+    }
+  }, [shouldPauseTimer, pauseTimer, resumeTimer]);
 
   // Reset timer when turn changes
   useEffect(() => {
@@ -131,18 +147,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       resetTimer();
     }
   }, [activeSender, turnBasedMode, isActive, resetTimer]);
-
-  function senderColor(sender: string): string {
-    if (sender === "mediator") return "text-temp-cool";
-    if (sender === "person_a") return "text-temp-warm";
-    return "text-temp-hot";
-  }
-
-  function senderLabel(sender: string): string {
-    if (sender === "mediator") return "Parallax";
-    if (sender === "person_a") return personAName;
-    return personBName;
-  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -229,39 +233,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
     async (content: string) => {
-      // Intercept profile voice commands before sending to session
-      if (profileConcierge.isCommand(content)) {
-        try {
-          const response = await profileConcierge.processCommand(content);
-          if (response.requires_confirmation) {
-            // Show confirmation modal
-            setConfirmationModal({
-              isOpen: true,
-              title: 'Confirm Action',
-              message: response.confirmation_prompt || 'Are you sure?',
-              isDangerous: content.toLowerCase().includes('delete'),
-              onConfirm: async () => {
-                const result = await profileConcierge.confirm();
-                setConfirmationModal(null);
-                setMediationError(result.success ? `✓ ${result.message}` : `✗ ${result.message}`);
-                speak(result.message);
-              },
-            });
-          } else if (response.success) {
-            setMediationError(`✓ ${response.message}`);
-            speak(response.message);
-          } else {
-            setMediationError(`✗ ${response.message}`);
-            speak(response.message);
-          }
-        } catch {
-          const errorMsg = '✗ Failed to process profile command';
-          setMediationError(errorMsg);
-          speak(errorMsg);
-        }
-        return;
-      }
-
       setMediationError(null);
       const sent = await sendMessage(activeSender, content);
       if (!sent) return;
@@ -342,7 +313,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }, 5000);
       }
     },
-    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues, profileConcierge, speak],
+    [activeSession.id, activeSender, isOnboarding, sendMessage, refreshSession, refreshMessages, refreshIssues],
   );
 
   // Auto-listen: hands-free from session start (togglable)
@@ -362,6 +333,13 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   }, [roomCode, refreshSession, cancelSpeech]);
 
   const totalIssues = personAIssues.length + personBIssues.length;
+
+  function getPresenceStatusLabel(): string | undefined {
+    if (autoListen.isListening && autoListen.isSpeechActive) return "Listening...";
+    if (autoListen.isListening) return "Waiting...";
+    if (isMicHot) return "Recording...";
+    return undefined;
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -474,12 +452,18 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
               Timer
             </button>
           )}
-          <button
-            onClick={endSession}
-            className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
-          >
-            End
-          </button>
+          {isCompleted ? (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ember-500">
+              Session ended
+            </span>
+          ) : (
+            <button
+              onClick={endSession}
+              className="font-mono text-[10px] uppercase tracking-wider text-ember-600 hover:text-foreground transition-colors"
+            >
+              End
+            </button>
+          )}
         </div>
       </div>
 
@@ -488,15 +472,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <ParallaxPresence
           isAnalyzing={isAnalyzing || conductorLoading}
           isSpeaking={isSpeaking}
-          statusLabel={
-            autoListen.isListening
-              ? autoListen.isSpeechActive
-                ? "Listening..."
-                : "Waiting..."
-              : isMicHot
-              ? "Recording..."
-              : undefined
-          }
+          statusLabel={getPresenceStatusLabel()}
           voiceWaveform={voiceWaveform}
           voiceEnergy={voiceEnergy}
         />
@@ -504,8 +480,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Three-column layout: Insight panels + Messages */}
       <div className="flex-1 flex min-h-0">
-        {/* Left panel — Person A signals + issues (desktop only) */}
+        {/* Left panel — Person A insights + signals (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <SoloSidebar insights={personAInsights} />
           <div className="space-y-1 p-2">
             {messages
               .filter((m) => m.sender === "person_a" && m.nvc_analysis)
@@ -529,9 +506,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-2xl mx-auto px-3 py-3 space-y-2">
             {messages.map((msg) => {
-              const isPersonA = msg.sender === "person_a";
               const isMediator = msg.sender === "mediator";
-
               return (
                 <div key={msg.id} className="signal-card-enter">
                   <div
@@ -539,13 +514,12 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
                       isMediator ? "bg-transparent" : "bg-surface"
                     }`}
                   >
-                    {/* Sender label */}
                     <span
                       className={`font-mono text-[9px] uppercase tracking-widest ${
                         senderColor(msg.sender)
                       }`}
                     >
-                      {senderLabel(msg.sender)}
+                      {senderLabel(msg.sender, personAName, personBName)}
                     </span>
                     <p
                       className={`text-sm mt-0.5 leading-relaxed ${
@@ -570,8 +544,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           </div>
         </div>
 
-        {/* Right panel — Person B signals + issues (desktop only) */}
+        {/* Right panel — Person B insights + signals + issues (desktop only) */}
         <div className="hidden md:block w-56 flex-shrink-0 overflow-y-auto">
+          <SoloSidebar insights={personBInsights} />
           <div className="space-y-1 p-2">
             {messages
               .filter((m) => m.sender === "person_b" && m.nvc_analysis)
@@ -623,8 +598,19 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         </div>
       )}
 
+      {/* Session completed — inline summary + export */}
+      {isCompleted && (
+        <div className="flex-shrink-0 border-t border-border">
+          <InlineSessionSummary
+            summaryData={summaryData}
+            summaryLoading={summaryLoading}
+            onExport={handleExportSummary}
+          />
+        </div>
+      )}
+
       {/* Turn progress bar — right above input for maximum visibility */}
-      {turnBasedMode && isActive && (
+      {!isCompleted && turnBasedMode && isActive && (
         <TurnProgressBar
           progress={progress}
           timeRemaining={timeRemaining}
@@ -633,7 +619,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         />
       )}
 
-      {/* Input bar */}
+      {/* Input bar — hidden when session is completed */}
+      {!isCompleted && (
       <div className="flex-shrink-0">
         <ActiveSpeakerBar
           activeSpeakerName={activeSpeaker}
@@ -654,16 +641,12 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           isMuted={muted}
           onToggleMute={() => setMuted((v) => !v)}
           onModeChange={(mode) => {
-            if (mode === "auto") {
-              setHandsFree(true);
-              setMuted(false);
-            } else {
-              setHandsFree(false);
-              setMuted(false);
-            }
+            setHandsFree(mode === "auto");
+            setMuted(false);
           }}
         />
       </div>
+      )}
 
       {/* Issue drawer */}
       <IssueDrawer
@@ -686,17 +669,6 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
 
       {/* Full-screen red flash when timer expires */}
       {timerFlash && <div className="timer-expire-overlay" />}
-
-      {/* Confirmation Modal */}
-      {confirmationModal && (
-        <ConfirmationModal
-          {...confirmationModal}
-          onCancel={() => {
-            profileConcierge.cancel();
-            setConfirmationModal(null);
-          }}
-        />
-      )}
     </div>
   );
 }
