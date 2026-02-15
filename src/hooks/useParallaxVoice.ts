@@ -224,20 +224,23 @@ export function useParallaxVoice(): {
       busyRef.current = true
       playElevenLabs(text)
         .then(() => {
-          busyRef.current = false
           if (pendingRef.current) {
+            // Keep busyRef true through the drain — no flicker between bridge and response
             const next = pendingRef.current
             pendingRef.current = null
             setTimeout(() => speakRef.current(next), 50)
+          } else {
+            busyRef.current = false
           }
         })
         .catch(() => {
           speakFallback(text, () => {
-            busyRef.current = false
             if (pendingRef.current) {
               const next = pendingRef.current
               pendingRef.current = null
               setTimeout(() => speakRef.current(next), 50)
+            } else {
+              busyRef.current = false
             }
           })
         })

@@ -48,6 +48,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const [handsFree, setHandsFree] = useState(true); // Hands-free (auto-listen) vs tap-to-talk
   const [muted, setMuted] = useState(false); // Mute mic in hands-free mode
   const [timerFlash, setTimerFlash] = useState(false); // Full-screen red flash on timer expire
+  const [avaHoldingFloor, setAvaHoldingFloor] = useState(false); // Timer paused while Ava processes + speaks
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -140,15 +141,21 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const { timeRemaining, progress, reset: resetTimer } = useTurnTimer({
     durationMs: timerDuration,
     onExpire: handleTurnExpire,
-    enabled: turnBasedMode && isActive,
+    enabled: turnBasedMode && isActive && !avaHoldingFloor,
   });
 
-  // Reset timer when turn changes
+  // Release Ava's floor when all processing and speaking is done (debounced to avoid flicker)
   useEffect(() => {
-    if (turnBasedMode && isActive) {
-      resetTimer();
-    }
-  }, [activeSender, turnBasedMode, isActive, resetTimer]);
+    if (!avaHoldingFloor) return;
+    if (isAnalyzing || conductorLoading || isSpeaking) return;
+
+    // 300ms debounce: avoids false release during bridge → conductor queue drain
+    const timeout = setTimeout(() => {
+      setAvaHoldingFloor(false);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [avaHoldingFloor, isAnalyzing, conductorLoading, isSpeaking]);
 
   function senderLabel(sender: string): string {
     if (sender === "mediator") return "Ava";
@@ -275,8 +282,9 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
       }
 
       setMediationError(null);
+      setAvaHoldingFloor(true); // Ava owns the room — timer paused until she finishes
       const sent = await sendMessage(activeSender, content);
-      if (!sent) return;
+      if (!sent) { setAvaHoldingFloor(false); return; }
 
       // Ava immediately commands the space — bridge phrase while analysis processes
       const senderName = activeSender === "person_a" ? personAName : personBName;
@@ -341,6 +349,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         }
       } else {
         // During active phase: conductor + intervention check
+        setConductorLoading(true);
         fetch("/api/conductor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -350,7 +359,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
           }),
         })
           .then(() => refreshMessages())
-          .catch(() => {});
+          .catch(() => {})
+          .finally(() => setConductorLoading(false));
 
         // Intervention check after delay
         if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
