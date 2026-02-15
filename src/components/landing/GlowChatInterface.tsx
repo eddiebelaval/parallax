@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ConversationMessage } from '@/types/conversation'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { AvaOrb } from '@/components/AvaOrb'
 
 // Web Speech API types (Chrome webkit prefix)
 interface SpeechRecognitionEvent {
@@ -372,7 +372,7 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
 
         {/* Ava's orb */}
         <div className="relative z-10 flex flex-col items-center gap-2">
-          <ParallaxOrb
+          <AvaOrb
             size={64}
             energy={isLoading || streamingText ? 0.5 : 0.1}
             isSpeaking={isLoading || !!streamingText}

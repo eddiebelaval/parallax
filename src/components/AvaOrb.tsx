@@ -2,21 +2,21 @@
 
 import { useRef, useEffect, useCallback } from "react";
 
-interface ParallaxOrbProps {
+interface AvaOrbProps {
   /** Size in pixels (diameter) */
   size: number;
-  /** Current energy level 0-1 (from useParallaxVoice or useAudioAnalyser) */
+  /** Current energy level 0-1 (from useAvaVoice or useAudioAnalyser) */
   energy: number;
-  /** Whether Parallax is currently speaking via TTS */
+  /** Whether Ava is currently speaking via TTS */
   isSpeaking: boolean;
-  /** Whether Parallax is analyzing/thinking */
+  /** Whether Ava is analyzing/thinking */
   isAnalyzing?: boolean;
   /** Show orbiting particles (auto-disabled below 40px) */
   particles?: boolean;
 }
 
 /**
- * The Parallax Orb — teal sphere with thin waveform line inside,
+ * The Ava Orb — teal sphere with thin waveform line inside,
  * orbiting particles when speaking, and energy-reactive glow.
  *
  * States:
@@ -26,13 +26,13 @@ interface ParallaxOrbProps {
  *
  * Renders to a <canvas> for smooth 60fps animation.
  */
-export function ParallaxOrb({
+export function AvaOrb({
   size,
   energy,
   isSpeaking,
   isAnalyzing = false,
   particles: showParticles,
-}: ParallaxOrbProps) {
+}: AvaOrbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const timeRef = useRef(0);
@@ -248,10 +248,10 @@ export function ParallaxOrb({
       style={{ width: size, height: size }}
       aria-label={
         isSpeaking
-          ? "Parallax is speaking"
+          ? "Ava is speaking"
           : isAnalyzing
-          ? "Parallax is analyzing"
-          : "Parallax"
+          ? "Ava is analyzing"
+          : "Ava"
       }
     />
   );

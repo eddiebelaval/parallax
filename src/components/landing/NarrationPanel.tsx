@@ -3,7 +3,7 @@
 import { useRef, useCallback, useState, useEffect, useLayoutEffect } from 'react'
 import gsap from 'gsap'
 import { Flip } from 'gsap/dist/Flip'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { AvaOrb } from '@/components/AvaOrb'
 import type { NarrationPhase } from '@/hooks/useNarrationController'
 
 if (typeof window !== 'undefined') {
@@ -231,10 +231,10 @@ export function NarrationPanel({
 
       {/* ─── Content by phase ─── */}
 
-      {/* Idle: ParallaxOrb caged inside frosted glass — breathing, waiting to be released */}
+      {/* Idle: AvaOrb caged inside frosted glass — breathing, waiting to be released */}
       {showIdleContent && (
         <div className="relative z-10 flex items-center justify-center">
-          <ParallaxOrb
+          <AvaOrb
             size={88}
             energy={0}
             isSpeaking={false}

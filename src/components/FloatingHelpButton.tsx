@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useConversation } from '@/hooks/useConversation'
 import { useAutoListen } from '@/hooks/useAutoListen'
 import { useParallaxVoice } from '@/hooks/useParallaxVoice'
-import { ParallaxOrb } from '@/components/ParallaxOrb'
+import { AvaOrb } from '@/components/AvaOrb'
 import type { ConversationMessage } from '@/types/conversation'
 
 type InputMode = 'hands-free' | 'type'
@@ -138,7 +138,7 @@ export function FloatingHelpButton() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <ParallaxOrb
+            <AvaOrb
               size={32}
               energy={energy}
               isSpeaking={isSpeaking}

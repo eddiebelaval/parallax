@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
-import { ParallaxOrb } from "@/components/ParallaxOrb";
+import { AvaOrb } from "@/components/AvaOrb";
 
 interface ParallaxPresenceProps {
   isAnalyzing: boolean;
@@ -106,7 +106,7 @@ export function ParallaxPresence({
             />
           </>
         )}
-        <ParallaxOrb
+        <AvaOrb
           size={80}
           energy={energy}
           isSpeaking={isSpeaking}
