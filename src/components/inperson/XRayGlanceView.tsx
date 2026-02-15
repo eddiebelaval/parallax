@@ -33,7 +33,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
   const activeSession = session || initialSession;
   const { messages, loading: messagesLoading, sendMessage, currentTurn, refreshMessages } = useMessages(activeSession.id);
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } = useIssues(activeSession.id);
-  const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const { speak, speakAfterCurrent, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
   const profileConcierge = useProfileConcierge();
 
   const [issueDrawerOpen, setIssueDrawerOpen] = useState(false);
@@ -100,6 +100,11 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     (name: string) => `Thank you, ${name}. Let's let that soak in before we continue.`,
     (name: string) => `I appreciate that, ${name}. Give me just a moment to take that in.`,
     (name: string) => `${name}, that's important. Let me reflect on what you just said.`,
+    (name: string) => `Let me consider what I just heard, ${name}. That deserves a thoughtful response.`,
+    (name: string) => `${name}, thank you. Let me think about what you just shared.`,
+    (name: string) => `I want to be careful with what you just said, ${name}. Give me a moment.`,
+    (name: string) => `That's a lot to hold, ${name}. Let me take a breath and think about this.`,
+    (name: string) => `Thank you, ${name}. Let me sit with that before I respond.`,
   ];
 
   const handleTurnExpire = useCallback(() => {
@@ -222,7 +227,7 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     return () => clearInterval(interval);
   }, [isActive, refreshIssues]);
 
-  // Speak new mediator messages via TTS
+  // Speak new mediator messages via TTS — queued behind bridge phrase if one is playing
   useEffect(() => {
     if (messages.length === 0) return;
     const latest = messages[messages.length - 1];
@@ -230,8 +235,8 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
     if (lastSpokenRef.current === latest.id) return;
 
     lastSpokenRef.current = latest.id;
-    speak(latest.content);
-  }, [messages, speak]);
+    speakAfterCurrent(latest.content);
+  }, [messages, speakAfterCurrent]);
 
   // Fire conductor or mediation on message send
   const handleSend = useCallback(
@@ -650,8 +655,14 @@ export function XRayGlanceView({ session: initialSession, roomCode }: XRayGlance
         />
       )}
 
-      {/* Input bar */}
-      <div className="flex-shrink-0">
+      {/* Input bar — teal thinking glow while Ava processes, red urgency in last 5s */}
+      <div className={`flex-shrink-0 relative ${
+        isAnalyzing || conductorLoading
+          ? "thinking-glow"
+          : turnBasedMode && isActive && timeRemaining > 0 && timeRemaining <= 5000
+            ? "urgency-glow"
+            : ""
+      }`}>
         <ActiveSpeakerBar
           activeSpeakerName={activeSpeaker}
           onSend={handleSend}

@@ -586,7 +586,7 @@ export async function POST(request: Request) {
 
     let responseText: string
     try {
-      responseText = await conductorMessage(system, user, 256)
+      responseText = await conductorMessage(system, user, 384)
     } catch {
       return NextResponse.json({ phase: 'active', responded: false, error: 'Active response failed' })
     }

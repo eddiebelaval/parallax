@@ -13,6 +13,7 @@ const TTS_TIMEOUT_MS = 15000
  */
 export function useParallaxVoice(): {
   speak: (text: string) => void
+  speakAfterCurrent: (text: string) => void
   speakChunked: (text: string) => Promise<void>
   isSpeaking: boolean
   cancel: () => void
@@ -29,6 +30,9 @@ export function useParallaxVoice(): {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
   const rafRef = useRef<number>(0)
   const dataArrayRef = useRef<Float32Array<ArrayBuffer> | null>(null)
+  const busyRef = useRef(false)
+  const pendingRef = useRef<string | null>(null)
+  const speakRef = useRef<(text: string) => void>(() => {})
 
   const analysisTick = useCallback(() => {
     const analyser = analyserRef.current
@@ -82,6 +86,8 @@ export function useParallaxVoice(): {
   }, [stopAnalysis, disconnectNodes])
 
   const cancel = useCallback(() => {
+    pendingRef.current = null
+    busyRef.current = false
     cleanup()
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
@@ -212,14 +218,46 @@ export function useParallaxVoice(): {
     [cleanup],
   )
 
-  /** Fire-and-forget speak. Falls back to browser TTS on failure. */
+  /** Fire-and-forget speak. Falls back to browser TTS on failure. Drains pending queue on completion. */
   const speak = useCallback(
     (text: string) => {
-      playElevenLabs(text).catch(() => {
-        speakFallback(text)
-      })
+      busyRef.current = true
+      playElevenLabs(text)
+        .then(() => {
+          busyRef.current = false
+          if (pendingRef.current) {
+            const next = pendingRef.current
+            pendingRef.current = null
+            setTimeout(() => speakRef.current(next), 50)
+          }
+        })
+        .catch(() => {
+          speakFallback(text, () => {
+            busyRef.current = false
+            if (pendingRef.current) {
+              const next = pendingRef.current
+              pendingRef.current = null
+              setTimeout(() => speakRef.current(next), 50)
+            }
+          })
+        })
     },
     [playElevenLabs, speakFallback],
+  )
+
+  // Keep ref in sync for queue drain callbacks
+  useEffect(() => { speakRef.current = speak }, [speak])
+
+  /** Queue text to play after current audio finishes. Speaks immediately if idle. */
+  const speakAfterCurrent = useCallback(
+    (text: string) => {
+      if (busyRef.current) {
+        pendingRef.current = text
+      } else {
+        speak(text)
+      }
+    },
+    [speak],
   )
 
   /** Awaitable speak. Resolves when audio finishes. Falls back to browser TTS on failure. */
@@ -253,5 +291,5 @@ export function useParallaxVoice(): {
     }
   }, [])
 
-  return { speak, speakChunked, isSpeaking, cancel, waveform, energy }
+  return { speak, speakAfterCurrent, speakChunked, isSpeaking, cancel, waveform, energy }
 }
