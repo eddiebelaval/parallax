@@ -29,14 +29,14 @@ function isSpeechSupported(): boolean {
 }
 
 const SUGGESTION_CHIPS = [
-  { label: 'How does the analysis work?', prompt: 'How does the NVC analysis work? Walk me through what happens when someone sends a message.' },
-  { label: "What's under the hood?", prompt: "What's your technical architecture? What are you built with?" },
-  { label: 'Who built this?', prompt: 'Tell me about who built you and why.' },
-  { label: 'Tell me about the 14 lenses', prompt: 'What are the 14 analytical lenses you use and how do they work together?' },
+  { label: 'The 14 Lenses', prompt: 'Tell me about the 14 analytical lenses — how do they work together and what makes them effective for conflict resolution?' },
+  { label: 'The Melt Animation', prompt: 'Walk me through The Melt animation — how does it transform raw emotion into structured understanding?' },
+  { label: 'Tech Stack & Architecture', prompt: 'Give me the full technical breakdown — Next.js, Supabase, Claude integration, real-time architecture, everything.' },
+  { label: 'Design System', prompt: 'Explain the Ember design system — the temperature-reactive glows, the color theory, and how design encodes meaning.' },
 ]
 
 const INTRO_PROMPT =
-  'A hackathon judge or developer just clicked "Talk to Parallax." Start with "Hello!" and then warmly introduce yourself in 2-3 sentences. You are the CTO of this codebase — you know every architectural decision, every design choice, every line of code. Tell them what they can ask you about: the NVC analysis engine, the 14 analytical lenses, the Ember design system, the Melt animation, the voice pipeline, the real-time architecture, or anything else. Be confident and inviting. Do NOT use bullet points — speak naturally.'
+  'You are Ava, the voice of Parallax. A hackathon judge or developer just clicked "Under the Hood" on the landing page. Introduce yourself warmly: "Hello! I\'m Ava — the voice behind Parallax." Explain this is a space for judges and developers to explore what\'s under the hood. Give them a quick, broad-strokes tech breakdown: built with Next.js 16 and Supabase for real-time two-person conflict resolution, powered by Claude Opus for NVC mediation analysis with 14 analytical lenses, featuring the Ember design system with temperature-reactive glows, voice pipeline with real-time waveforms, and The Melt animation that transforms raw emotion into structured understanding. Then ask if they\'d like to dive deeper into any specific part — the architecture, the AI analysis engine, the design system, or anything else. Be warm, confident, and inviting. Speak naturally — no bullet points.'
 
 interface GlowChatInterfaceProps {
   onClose: () => void
@@ -359,32 +359,38 @@ export function GlowChatInterface({ onClose }: GlowChatInterfaceProps) {
 
   return (
     <div className="max-w-2xl mx-auto w-full h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <div className="flex items-center gap-3">
+      {/* Ava's orb at top with glowing aura */}
+      <div className="flex items-center justify-center mb-6 flex-shrink-0 relative">
+        {/* Glowing aura behind orb */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="w-32 h-16 rounded-full blur-2xl transition-opacity duration-500"
+            style={{
+              background: 'radial-gradient(ellipse 100% 100% at 50% 50%, rgba(106, 171, 142, 0.4) 0%, rgba(106, 171, 142, 0.15) 40%, transparent 70%)',
+              opacity: isLoading || streamingText ? 1 : 0.6,
+            }}
+          />
+        </div>
+
+        {/* Ava's orb */}
+        <div className="relative z-10 flex flex-col items-center gap-2">
           <AudioWaveformOrb
-            name="Parallax"
+            name="Ava"
             role="claude"
             waveform={null}
-            energy={isLoading || streamingText ? 0.3 : 0}
+            energy={isLoading || streamingText ? 0.4 : 0.1}
             active={isLoading || !!streamingText}
-            size={32}
+            size={48}
           />
-          <AudioWaveformOrb
-            name="You"
-            role="a"
-            waveform={mic.waveform}
-            energy={mic.energy}
-            active={mic.active}
-            size={32}
-          />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-success/60">
-            Talk to Parallax
+          <span className="font-mono text-[10px] uppercase tracking-widest text-success/80">
+            Under the Hood
           </span>
         </div>
+
+        {/* Close button - top right */}
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center text-muted hover:text-foreground transition-colors"
+          className="absolute top-0 right-0 w-7 h-7 flex items-center justify-center text-muted hover:text-foreground transition-colors"
           aria-label="Close chat"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">

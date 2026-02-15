@@ -80,13 +80,13 @@ export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
 
   return (
     <div className="group inline-block">
-      {/* Pill wrapper — relative for ant positioning */}
-      <div className="relative inline-flex">
+      {/* Pill wrapper — relative for ant positioning, transforms on hover */}
+      <div className="relative inline-flex transition-all duration-500 ease-out group-hover:-translate-y-1.5">
         {/* The crab pill badge */}
         <div
           id="claude-code-badge"
           ref={pillRef}
-          className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:opacity-40"
+          className="inline-flex items-center gap-2.5 px-5 py-2.5 border border-border rounded-full bg-surface/50 backdrop-blur-sm transition-opacity duration-500 ease-out group-hover:opacity-40"
         >
           {/* Crab icon (Clawd) */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-success flex-shrink-0">
