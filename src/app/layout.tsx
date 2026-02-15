@@ -9,7 +9,6 @@ import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { FloatingHelpButton } from "@/components/FloatingHelpButton";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
@@ -149,7 +148,6 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 overflow-y-auto">{children}</main>
-      <FloatingHelpButton />
       {/* Footer — visible on non-session pages */}
       {!isSessionPage && (
         <footer className="border-t border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
