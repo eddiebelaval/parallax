@@ -12,6 +12,7 @@ import {
   buildSynthesisPrompt,
   buildInterventionPrompt,
   buildAdaptivePrompt,
+  buildActiveResponsePrompt,
 } from '@/lib/prompts/conductor'
 import { checkForIntervention } from '@/lib/conductor/interventions'
 import type { Message, ContextMode, ConductorPhase, ConflictAnalysis, OnboardingContext } from '@/types/database'
@@ -23,6 +24,7 @@ type ConductorTrigger =
   | 'message_sent'
   | 'check_intervention'
   | 'in_person_message'
+  | 'active_response'
 
 /**
  * POST /api/conductor
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
   // Parallax greets them, asks for name + situation.
   if (trigger === 'person_a_ready') {
     // Set greeting phase IMMEDIATELY so the client blocks input while Claude thinks
-    await supabase
+    const { error: greetPhaseErr } = await supabase
       .from('sessions')
       .update({
         onboarding_context: {
@@ -83,6 +85,7 @@ export async function POST(request: Request) {
         },
       })
       .eq('id', session_id)
+    if (greetPhaseErr) console.error('conductor: failed to set greeting phase', greetPhaseErr)
 
     const { system, user } = buildGreetingAPrompt(contextMode)
 
@@ -103,14 +106,15 @@ export async function POST(request: Request) {
     }
 
     // Insert mediator message
-    await supabase.from('messages').insert({
+    const { error: msgErr } = await supabase.from('messages').insert({
       session_id,
       sender: 'mediator',
       content: greeting,
     })
+    if (msgErr) console.error('conductor: failed to insert greeting message', msgErr)
 
     // Advance phase to gather_a — Person A can now type
-    await supabase
+    const { error: gatherErr } = await supabase
       .from('sessions')
       .update({
         onboarding_context: {
@@ -119,6 +123,7 @@ export async function POST(request: Request) {
         },
       })
       .eq('id', session_id)
+    if (gatherErr) console.error('conductor: failed to advance to gather_a', gatherErr)
 
     return NextResponse.json({ phase: 'gather_a', message: greeting })
   }
@@ -157,14 +162,15 @@ export async function POST(request: Request) {
     }
 
     // Insert mediator message
-    await supabase.from('messages').insert({
+    const { error: bMsgErr } = await supabase.from('messages').insert({
       session_id,
       sender: 'mediator',
       content: greeting,
     })
+    if (bMsgErr) console.error('conductor: failed to insert B greeting', bMsgErr)
 
     // Advance phase to gather_b — Person B can now type
-    await supabase
+    const { error: gatherBErr } = await supabase
       .from('sessions')
       .update({
         onboarding_context: {
@@ -173,6 +179,7 @@ export async function POST(request: Request) {
         },
       })
       .eq('id', session_id)
+    if (gatherBErr) console.error('conductor: failed to advance to gather_b', gatherBErr)
 
     return NextResponse.json({ phase: 'gather_b', message: greeting })
   }
@@ -209,13 +216,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Conductor greeting failed', phase: 'active' }, { status: 502 })
     }
 
-    await supabase.from('messages').insert({
+    const { error: legacyMsgErr } = await supabase.from('messages').insert({
       session_id,
       sender: 'mediator',
       content: greeting,
     })
+    if (legacyMsgErr) console.error('conductor: failed to insert legacy greeting', legacyMsgErr)
 
-    await supabase
+    const { error: legacyPhaseErr } = await supabase
       .from('sessions')
       .update({
         onboarding_context: {
@@ -224,6 +232,7 @@ export async function POST(request: Request) {
         },
       })
       .eq('id', session_id)
+    if (legacyPhaseErr) console.error('conductor: failed to set legacy gather_a', legacyPhaseErr)
 
     return NextResponse.json({ phase: 'gather_a', message: greeting })
   }
@@ -281,14 +290,15 @@ export async function POST(request: Request) {
       }
 
       // Insert mediator acknowledgment
-      await supabase.from('messages').insert({
+      const { error: ackMsgErr } = await supabase.from('messages').insert({
         session_id,
         sender: 'mediator',
         content: acknowledgment,
       })
+      if (ackMsgErr) console.error('conductor: failed to insert ack message', ackMsgErr)
 
       // Update session: store A's name + context, advance to waiting_for_b
-      await supabase
+      const { error: waitBErr } = await supabase
         .from('sessions')
         .update({
           person_a_name: extractedName,
@@ -299,6 +309,7 @@ export async function POST(request: Request) {
           },
         })
         .eq('id', session_id)
+      if (waitBErr) console.error('conductor: failed to advance to waiting_for_b', waitBErr)
 
       return NextResponse.json({ phase: 'waiting_for_b', message: acknowledgment, name: extractedName })
     }
@@ -314,7 +325,7 @@ export async function POST(request: Request) {
 
       const nameMap: Record<string, string> = {
         person_a: personAName,
-        mediator: 'Parallax',
+        mediator: 'Ava',
       }
       const history = (allMessages || [])
         .map((m: Message) => `${nameMap[m.sender] || m.sender}: ${m.content}`)
@@ -335,11 +346,12 @@ export async function POST(request: Request) {
       }
 
       // Insert mediator response — phase stays at waiting_for_b
-      await supabase.from('messages').insert({
+      const { error: waitChatErr } = await supabase.from('messages').insert({
         session_id,
         sender: 'mediator',
         content: responseText,
       })
+      if (waitChatErr) console.error('conductor: failed to insert waiting chat message', waitChatErr)
 
       return NextResponse.json({ phase: 'waiting_for_b', message: responseText })
     }
@@ -404,14 +416,15 @@ export async function POST(request: Request) {
       }
 
       // Insert mediator synthesis message
-      await supabase.from('messages').insert({
+      const { error: synthMsgErr } = await supabase.from('messages').insert({
         session_id,
         sender: 'mediator',
         content: synthesisMessage,
       })
+      if (synthMsgErr) console.error('conductor: failed to insert synthesis message', synthMsgErr)
 
       // Update to active phase with goals + Person B's name
-      await supabase
+      const { error: activeErr } = await supabase
         .from('sessions')
         .update({
           person_b_name: personBExtractedName,
@@ -424,6 +437,7 @@ export async function POST(request: Request) {
           },
         })
         .eq('id', session_id)
+      if (activeErr) console.error('conductor: failed to advance to active phase', activeErr)
 
       return NextResponse.json({
         phase: 'active',
@@ -499,17 +513,96 @@ export async function POST(request: Request) {
     }
 
     // Insert mediator intervention
-    await supabase.from('messages').insert({
+    const { error: intMsgErr } = await supabase.from('messages').insert({
       session_id,
       sender: 'mediator',
       content: interventionText,
     })
+    if (intMsgErr) console.error('conductor: failed to insert intervention message', intMsgErr)
 
     return NextResponse.json({
       phase: 'active',
       intervened: true,
       interventionType: check.type,
       message: interventionText,
+    })
+  }
+
+  // --- Trigger: active_response ---
+  // Immediate conductor response during active phase — Parallax speaks after every message.
+  // Weaves NVC analysis from prior messages into natural conversation flow.
+  if (trigger === 'active_response') {
+    if (phase !== 'active') {
+      return NextResponse.json({ phase, responded: false })
+    }
+
+    // Fetch all messages with their analysis data
+    const { data: allMessages } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', session_id)
+      .order('created_at', { ascending: true })
+
+    if (!allMessages || allMessages.length === 0) {
+      return NextResponse.json({ phase: 'active', responded: false })
+    }
+
+    const nameMap: Record<string, string> = {
+      person_a: personAName,
+      person_b: personBName,
+      mediator: 'Ava',
+    }
+
+    // Build analysis-enriched conversation history
+    const enrichedLines = (allMessages as Message[]).map((m) => {
+      const senderLabel = nameMap[m.sender] || m.sender
+      let line = `[${senderLabel}]: ${m.content}`
+
+      // Annotate human messages that have NVC analysis
+      if (m.sender !== 'mediator' && m.nvc_analysis) {
+        const a = m.nvc_analysis as ConflictAnalysis
+        if (a.subtext) line += `\n  -> Insight: ${a.subtext}`
+        if (a.blindSpots && a.blindSpots.length > 0) line += `\n  -> Blind spot: ${a.blindSpots[0]}`
+        if (a.unmetNeeds && a.unmetNeeds.length > 0) line += `\n  -> Needs: ${a.unmetNeeds.join(', ')}`
+      }
+
+      return line
+    })
+
+    // Determine last speaker and next speaker
+    const lastHuman = [...allMessages].reverse().find((m) => m.sender !== 'mediator')
+    const lastSpeakerName = lastHuman
+      ? nameMap[lastHuman.sender] || lastHuman.sender
+      : personAName
+    const nextSpeakerName = lastHuman?.sender === 'person_a' ? personBName : personAName
+
+    const { system, user } = buildActiveResponsePrompt(
+      lastSpeakerName,
+      nextSpeakerName,
+      enrichedLines.join('\n'),
+      onboarding.sessionGoals || [],
+      contextMode,
+    )
+
+    let responseText: string
+    try {
+      responseText = await conductorMessage(system, user, 256)
+    } catch {
+      return NextResponse.json({ phase: 'active', responded: false, error: 'Active response failed' })
+    }
+
+    // Insert mediator message — TTS auto-fires via existing useEffect
+    const { error: arMsgErr } = await supabase.from('messages').insert({
+      session_id,
+      sender: 'mediator',
+      content: responseText,
+    })
+    if (arMsgErr) console.error('conductor: failed to insert active response', arMsgErr)
+
+    return NextResponse.json({
+      phase: 'active',
+      responded: true,
+      message: responseText,
     })
   }
 
@@ -526,7 +619,7 @@ export async function POST(request: Request) {
     const nameMap: Record<string, string> = {
       person_a: session.person_a_name || 'Person A',
       person_b: session.person_b_name || 'Person B',
-      mediator: 'Parallax',
+      mediator: 'Ava',
     }
 
     const conversationHistory = (allMessages || []).map((m: Message) => ({
@@ -591,11 +684,12 @@ export async function POST(request: Request) {
     }
 
     // Insert mediator message
-    await supabase.from('messages').insert({
+    const { error: ipMsgErr } = await supabase.from('messages').insert({
       session_id,
       sender: 'mediator',
       content: mediatorMessage,
     })
+    if (ipMsgErr) console.error('conductor: failed to insert in-person message', ipMsgErr)
 
     // Handle synthesis transition
     if (parsed.action === 'synthesize') {

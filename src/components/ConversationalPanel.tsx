@@ -71,7 +71,7 @@ export function ConversationalPanel({ mode, isOpen, onClose, onToolResults: exte
     }
   }
 
-  const title = mode === 'explorer' ? 'Talk to Parallax' : 'Parallax Guide'
+  const title = mode === 'explorer' ? 'Talk to Ava' : 'Ava Guide'
   const titleColor = mode === 'explorer' ? 'text-accent' : 'text-success'
 
   return (
@@ -213,7 +213,7 @@ export function ConversationalPanel({ mode, isOpen, onClose, onToolResults: exte
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={mode === 'guide' ? 'Ask for help or change settings...' : 'Ask Parallax...'}
+              placeholder={mode === 'guide' ? 'Ask for help or change settings...' : 'Ask Ava...'}
               disabled={isLoading}
               className="flex-1 px-3 py-2 bg-surface border border-border text-foreground text-sm rounded placeholder:text-muted focus:border-ember-600 focus:outline-none transition-colors disabled:opacity-50"
             />

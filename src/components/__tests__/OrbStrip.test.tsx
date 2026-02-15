@@ -23,14 +23,14 @@ vi.mock('@/hooks/useSyntheticWaveform', () => ({
 }))
 
 // Mock AudioWaveformOrb to inspect props
-vi.mock('../AudioWaveformOrb', () => ({
+vi.mock('../_deprecated/AudioWaveformOrb', () => ({
   AudioWaveformOrb: ({ name, role }: { name: string; role: string }) => (
     <div data-testid={`orb-${role}`}>{name}</div>
   ),
 }))
 
 describe('OrbStrip', () => {
-  it('renders three orbs: person A, Parallax, person B', () => {
+  it('renders three orbs: person A, Ava, person B', () => {
     render(
       <OrbStrip
         personAName="Alice"
@@ -40,7 +40,7 @@ describe('OrbStrip', () => {
       />
     )
     expect(screen.getByTestId('orb-a')).toHaveTextContent('Alice')
-    expect(screen.getByTestId('orb-claude')).toHaveTextContent('Parallax')
+    expect(screen.getByTestId('orb-claude')).toHaveTextContent('Ava')
     expect(screen.getByTestId('orb-b')).toHaveTextContent('Bob')
   })
 

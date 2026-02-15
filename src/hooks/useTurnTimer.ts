@@ -30,6 +30,7 @@ export function useTurnTimer({
   const [timeRemaining, setTimeRemaining] = useState(durationMs);
   const [isPaused, setIsPaused] = useState(false);
   const startTimeRef = useRef<number | null>(null);
+  const pausedRemainingRef = useRef<number>(durationMs);
   const onExpireRef = useRef(onExpire);
   const expiredRef = useRef(false);
 
@@ -46,15 +47,19 @@ export function useTurnTimer({
   }, [durationMs]);
 
   const pause = useCallback(() => {
+    // Snapshot remaining time so resume can offset correctly
+    if (startTimeRef.current !== null) {
+      const elapsed = Date.now() - startTimeRef.current;
+      pausedRemainingRef.current = Math.max(0, durationMs - elapsed);
+    }
     setIsPaused(true);
-  }, []);
+  }, [durationMs]);
 
   const resume = useCallback(() => {
-    if (startTimeRef.current === null) {
-      startTimeRef.current = Date.now();
-    }
+    // Offset start time so elapsed calculation excludes paused duration
+    startTimeRef.current = Date.now() - (durationMs - pausedRemainingRef.current);
     setIsPaused(false);
-  }, []);
+  }, [durationMs]);
 
   // Timer loop
   useEffect(() => {

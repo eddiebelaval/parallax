@@ -26,7 +26,11 @@ export default function InterviewPage() {
 
   // Fetch display_name from user_profiles
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+    if (!user) {
+      setDisplayName(null)
+      return
+    }
     supabase
       .from('user_profiles')
       .select('display_name')
@@ -35,14 +39,13 @@ export default function InterviewPage() {
       .then(({ data }) => {
         setDisplayName(data?.display_name ?? null)
       })
-  }, [user])
+  }, [user, authLoading])
 
   const {
     phase,
     messages,
     isLoading,
     isComplete,
-    isResuming,
     signalsExtracted,
     sendMessage,
     startInterview,
@@ -54,14 +57,13 @@ export default function InterviewPage() {
   const voice = useParallaxVoice()
   const typewriter = useTypewriter()
 
-  // Auto-start interview once user and displayName are resolved (skip if resuming)
+  // Auto-start interview once user and displayName are resolved
   useEffect(() => {
-    if (isResuming) return
     if (user && displayName !== undefined && messages.length === 0) {
       startInterview()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, displayName, isResuming])
+  }, [user, displayName])
 
   // Detect new assistant messages → fire typewriter + TTS
   const lastAssistantMsg = messages.findLast(m => m.role === 'assistant')
@@ -202,7 +204,7 @@ export default function InterviewPage() {
             </div>
 
             <p className="text-[var(--ember-text)] text-base leading-relaxed px-4">
-              Parallax now understands your communication patterns, conflict style, and values.
+              Ava now understands your communication patterns, conflict style, and values.
               This intelligence will enhance every conversation and mediation session you join.
             </p>
 
@@ -305,13 +307,6 @@ export default function InterviewPage() {
             {getPhaseConfig(phase as Exclude<InterviewPhase, 0>).duration}
           </span>
         </div>
-        {/* Exit ramp — save progress and leave */}
-        <button
-          onClick={() => router.push('/profile')}
-          className="font-mono text-[9px] uppercase tracking-widest text-ember-600 hover:text-foreground transition-colors mt-2"
-        >
-          Save and continue later
-        </button>
       </div>
 
       {/* Parallax Orb - Larger, More Prominent */}
@@ -355,7 +350,7 @@ export default function InterviewPage() {
                   msg.role === 'assistant' ? 'bg-temp-cool' : 'bg-accent'
                 }`} />
                 <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
-                  {msg.role === 'assistant' ? 'Parallax' : (displayName || 'You')}
+                  {msg.role === 'assistant' ? 'Ava' : (displayName || 'You')}
                 </span>
               </div>
               <div className="text-base font-sans leading-relaxed whitespace-pre-wrap text-[var(--ember-text)] max-w-2xl">
@@ -376,7 +371,7 @@ export default function InterviewPage() {
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-temp-cool animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-widest text-temp-cool/80">
-                Parallax is thinking...
+                Ava is thinking...
               </span>
             </div>
           </div>
@@ -430,8 +425,13 @@ export default function InterviewPage() {
         isMuted={muted}
         onToggleMute={() => setMuted((v) => !v)}
         onModeChange={(mode) => {
-          setHandsFree(mode === "auto");
-          setMuted(false);
+          if (mode === "auto") {
+            setHandsFree(true);
+            setMuted(false);
+          } else {
+            setHandsFree(false);
+            setMuted(false);
+          }
         }}
       />
     </div>

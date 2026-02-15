@@ -121,13 +121,26 @@ describe('POST /api/sessions/[code]/join', () => {
   it('returns 409 when slot already taken', async () => {
     const session = makeSession({ person_a_name: 'Alice', person_b_name: 'Bob' })
     const { chain } = mockSupabase()
-    chain.single.mockResolvedValue({ data: session, error: null })
+
+    // First single(): fetch session (slot already filled);
+    // Second single(): conditional update returns PGRST116 (no matching rows — slot was not null)
+    chain.single
+      .mockResolvedValueOnce({ data: session, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: 'No rows found', code: 'PGRST116' } })
 
     const response = await POST(makeRequest({ name: 'Charlie', side: 'a' }), { params })
     const data = await response.json()
 
     expect(response.status).toBe(409)
     expect(data.error).toContain('Person A has already joined')
+  })
+
+  it('returns 400 when side is invalid', async () => {
+    const response = await POST(makeRequest({ name: 'Alice', side: 'x' }), { params })
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('side must be "a" or "b"')
   })
 
   it('sets status to active when both people present', async () => {

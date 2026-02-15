@@ -175,8 +175,13 @@ export function ActiveSpeakerBar({
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setMicHot(true);
+    try {
+      recognition.start();
+      setMicHot(true);
+    } catch {
+      // InvalidStateError if recognition already started (rapid double-tap)
+      setMicHot(false);
+    }
   }, [disabled]);
 
   const stopVoice = useCallback(() => {
@@ -244,8 +249,13 @@ export function ActiveSpeakerBar({
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setDictating(true);
+    try {
+      recognition.start();
+      setDictating(true);
+    } catch {
+      // InvalidStateError if recognition already started
+      setDictating(false);
+    }
   }, [disabled, textValue]);
 
   const stopDictation = useCallback(() => {
@@ -455,7 +465,7 @@ export function ActiveSpeakerBar({
                   {isMuted
                     ? "Muted — tap mic to unmute"
                     : isTTSSpeaking
-                    ? "Parallax is responding..."
+                    ? "Ava is responding..."
                     : isProcessing
                     ? "Analyzing..."
                     : isAutoListening && isSpeechActive

@@ -159,7 +159,7 @@ export function SessionHistory({ sessions, userId }: SessionHistoryProps) {
                 {/* Participants */}
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[var(--ember-heading)] transition-colors duration-300 group-hover:text-foreground">
-                    {session.mode === 'solo' ? 'You & Parallax' : `${labelA} & ${labelB}`}
+                    {session.mode === 'solo' ? 'You & Ava' : `${labelA} & ${labelB}`}
                   </p>
                   <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-muted">
                     {CONTEXT_LABELS[session.context_mode] ?? session.context_mode}

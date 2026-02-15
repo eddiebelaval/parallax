@@ -5,8 +5,8 @@ import { ParallaxPresence } from "./inperson/ParallaxPresence";
 import { SignalCard } from "./inperson/SignalCard";
 import { ActionPanel } from "./inperson/ActionPanel";
 import { ActiveSpeakerBar } from "./inperson/ActiveSpeakerBar";
-import { InlineSessionSummary } from "./InlineSessionSummary";
 import { CoachingPanel } from "./CoachingPanel";
+import { MessageCard } from "./MessageCard";
 import { AudioWaveformOrb } from "./_deprecated/AudioWaveformOrb";
 import { useMessages } from "@/hooks/useMessages";
 import { useSession } from "@/hooks/useSession";
@@ -14,11 +14,9 @@ import { useIssues } from "@/hooks/useIssues";
 import { useCoaching } from "@/hooks/useCoaching";
 import { useParallaxVoice } from "@/hooks/useParallaxVoice";
 import { useAutoListen } from "@/hooks/useAutoListen";
-import { useConversationInsights } from "@/hooks/useConversationInsights";
-import { useSessionSummary } from "@/hooks/useSessionSummary";
-import { SoloSidebar } from "./SoloSidebar";
+import { useProfileConcierge } from "@/hooks/useProfileConcierge";
+import ConfirmationModal from "./ConfirmationModal";
 import { CONTEXT_MODE_INFO } from "@/lib/context-modes";
-import { senderLabel, senderColor } from "@/lib/conversation";
 import type {
   Session,
   ContextMode,
@@ -49,11 +47,11 @@ function getEffectiveTurn(
 const PHASE_LABELS: Partial<
   Record<ConductorPhase, (a: string, b: string) => string>
 > = {
-  greeting: () => "Parallax is joining...",
+  greeting: () => "Ava is joining...",
   gather_a: (a) => `${a}, share what brought you here`,
   waiting_for_b: () => "Waiting for the other person to join",
   gather_b: (_a, b) => `${b}, share your perspective`,
-  synthesize: () => "Parallax is listening...",
+  synthesize: () => "Ava is listening...",
 };
 
 interface RemoteViewProps {
@@ -79,10 +77,10 @@ export function RemoteView({
   const { personAIssues, personBIssues, refreshIssues, updateIssueStatus } =
     useIssues(activeSession.id);
   const { speak, isSpeaking, cancel: cancelSpeech, waveform: voiceWaveform, energy: voiceEnergy } = useParallaxVoice();
+  const profileConcierge = useProfileConcierge();
 
   const localPerson: MessageSender =
     localSide === "a" ? "person_a" : "person_b";
-  const { insights: conversationInsights } = useConversationInsights(messages, localPerson);
   const coaching = useCoaching(activeSession.id, localPerson);
 
   const [analyzingMessageId, setAnalyzingMessageId] = useState<string | null>(
@@ -90,6 +88,13 @@ export function RemoteView({
   );
   const [conductorLoading, setConductorLoading] = useState(false);
   const [mediationError, setMediationError] = useState<string | null>(null);
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  } | null>(null);
   const [endingSession, setEndingSession] = useState(false);
   const [inputTab, setInputTab] = useState<"conversation" | "coaching">("conversation");
   const [handsFree, setHandsFree] = useState(true);
@@ -99,6 +104,7 @@ export function RemoteView({
   const conductorFired = useRef(false);
   const lastSpokenRef = useRef<string | null>(null);
   const lastSpokenCoachRef = useRef<string | null>(null);
+  const interventionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derived state
   const onboarding = (activeSession.onboarding_context ?? {}) as OnboardingContext;
@@ -110,31 +116,29 @@ export function RemoteView({
   const personBName = activeSession.person_b_name ?? "Person B";
   const localName = localSide === "a" ? personAName : personBName;
 
-  const isMyTurn = effectiveTurn === localPerson;
-  const isCompleted = activeSession.status === "completed";
-  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
-
-  const { summaryData, summaryLoading, handleExportSummary } = useSessionSummary({
-    roomCode,
-    personAName,
-    personBName,
-    mode: "remote",
-    isCompleted,
-  });
-
   const contextMode =
     (activeSession.context_mode as ContextMode) || "intimate";
   const contextModeLabel =
     CONTEXT_MODE_INFO[contextMode]?.name || "Intimate Partners";
 
+  const isMyTurn = effectiveTurn === localPerson;
+  const hasIssues = personAIssues.length > 0 || personBIssues.length > 0;
+
   // Active speaker name for ActiveSpeakerBar
-  function getActiveSpeakerName(): string {
-    if (isMyTurn) return localName;
-    if (effectiveTurn === "mediator") return "Parallax";
-    if (effectiveTurn === "person_a") return personAName;
+  const activeSpeaker = isMyTurn
+    ? localName
+    : effectiveTurn === "mediator"
+      ? "Ava"
+      : effectiveTurn === "person_a"
+        ? personAName
+        : personBName;
+
+  // Helper for sender display
+  function senderLabel(sender: string): string {
+    if (sender === "mediator") return "Ava";
+    if (sender === "person_a") return personAName;
     return personBName;
   }
-  const activeSpeaker = getActiveSpeakerName();
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -327,6 +331,37 @@ export function RemoteView({
   const handleSend = useCallback(
     async (content: string) => {
       setMediationError(null);
+
+      // Intercept profile concierge voice commands before sending to Claude
+      if (profileConcierge.isCommand(content)) {
+        try {
+          const response = await profileConcierge.processCommand(content);
+          if (response.requires_confirmation) {
+            // Show confirmation modal
+            setConfirmationModal({
+              isOpen: true,
+              title: 'Confirm Action',
+              message: response.confirmation_prompt || 'Are you sure?',
+              isDangerous: content.toLowerCase().includes('delete'),
+              onConfirm: async () => {
+                const result = await profileConcierge.confirm();
+                setConfirmationModal(null);
+                setMediationError(
+                  result.success ? `✓ ${result.message}` : `✗ ${result.message}`,
+                );
+              },
+            });
+          } else if (response.success) {
+            setMediationError(`✓ ${response.message}`);
+          } else {
+            setMediationError(`✗ ${response.message}`);
+          }
+        } catch {
+          setMediationError('✗ Failed to process profile command');
+        }
+        return; // Don't send to Claude
+      }
+
       const sent = await sendMessage(localPerson, content);
       if (!sent) return;
 
@@ -350,8 +385,9 @@ export function RemoteView({
         })
           .then(() => refreshIssues())
           .catch(() => {});
-        // Intervention check after delay
-        setTimeout(() => triggerInterventionCheck(), 5000);
+        // Intervention check after delay (tracked for cleanup)
+        if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+        interventionTimerRef.current = setTimeout(() => triggerInterventionCheck(), 5000);
       }
     },
     [
@@ -363,8 +399,16 @@ export function RemoteView({
       triggerMediation,
       triggerInterventionCheck,
       refreshIssues,
+      profileConcierge,
     ],
   );
+
+  // Cleanup intervention timer on unmount
+  useEffect(() => {
+    return () => {
+      if (interventionTimerRef.current) clearTimeout(interventionTimerRef.current);
+    };
+  }, []);
 
   // Auto-listen: hands-free mode for remote conversations
   const autoListen = useAutoListen({
@@ -404,12 +448,7 @@ export function RemoteView({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {isCompleted && (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ember-500">
-              Session ended
-            </span>
-          )}
-          {isActive && !isCompleted && (
+          {isActive && (
             <button
               onClick={endSession}
               disabled={endingSession}
@@ -487,41 +526,29 @@ export function RemoteView({
             className="flex-1 overflow-y-auto min-h-0"
           >
             <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
-              {messages.map((msg) => {
-                const isMediator = msg.sender === "mediator";
-                return (
-                  <div key={msg.id} className="signal-card-enter">
-                    <div
-                      className={`px-3 py-2 rounded ${
-                        isMediator ? "bg-transparent" : "bg-surface"
-                      }`}
-                    >
-                      <span
-                        className={`font-mono text-[9px] uppercase tracking-widest ${senderColor(msg.sender)}`}
-                      >
-                        {senderLabel(msg.sender, personAName, personBName)}
+              {messages.map((msg, i) => (
+                <div key={msg.id}>
+                  <MessageCard
+                    sender={msg.sender}
+                    senderName={senderLabel(msg.sender)}
+                    content={msg.content}
+                    timestamp={new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    nvcAnalysis={msg.nvc_analysis}
+                    isLatest={i === messages.length - 1}
+                  />
+                  {analyzingMessageId === msg.id && !msg.nvc_analysis && (
+                    <div className="pl-4 mt-1 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
+                        Analyzing
                       </span>
-                      <p
-                        className={`text-sm mt-0.5 leading-relaxed ${
-                          isMediator
-                            ? "text-temp-cool/80 italic"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {msg.content}
-                      </p>
                     </div>
-                    {analyzingMessageId === msg.id && !msg.nvc_analysis && (
-                      <div className="pl-4 mt-1 flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-ember-600">
-                          Analyzing
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              ))}
 
               {/* Waiting for B — prominent room code display */}
               {conductorPhase === "waiting_for_b" && localSide === "a" && (
@@ -558,19 +585,7 @@ export function RemoteView({
             </div>
           )}
 
-          {/* Session completed — inline summary + export */}
-          {isCompleted && (
-            <div className="flex-shrink-0 border-t border-border">
-              <InlineSessionSummary
-                summaryData={summaryData}
-                summaryLoading={summaryLoading}
-                onExport={handleExportSummary}
-              />
-            </div>
-          )}
-
-          {/* Tabbed input area — hidden when session is completed */}
-          {!isCompleted && (
+          {/* Tabbed input area */}
           <div className="flex-shrink-0">
             {/* Folder tabs — visible when coaching is available */}
             {(isActive || conductorPhase === "waiting_for_b") && (
@@ -629,19 +644,21 @@ export function RemoteView({
               isMuted={muted}
               onToggleMute={() => setMuted((v) => !v)}
               onModeChange={(mode) => {
-                setHandsFree(mode === "auto");
-                setMuted(false);
+                if (mode === "auto") {
+                  setHandsFree(true);
+                  setMuted(false);
+                } else {
+                  setHandsFree(false);
+                  setMuted(false);
+                }
               }}
             />
           </div>
-          )}
         </div>
 
-        {/* Right sidebar — Insights + Signal cards + Action panels (desktop only) */}
-        <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
-          <SoloSidebar insights={conversationInsights} />
-          {(isActive || isCompleted) && (
-          <>
+        {/* Right sidebar — Signal cards + Action panels (desktop only, active phase) */}
+        {isActive && (
+          <div className="hidden md:flex md:flex-col w-64 border-l border-border overflow-y-auto flex-shrink-0">
             {/* Signal cards */}
             <div className="space-y-1 p-2">
               {messages
@@ -671,9 +688,8 @@ export function RemoteView({
               side="right"
               onUpdateStatus={updateIssueStatus}
             />
-          </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile: issue panels below messages (active phase only) */}
@@ -698,6 +714,17 @@ export function RemoteView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmationModal && (
+        <ConfirmationModal
+          {...confirmationModal}
+          onCancel={() => {
+            profileConcierge.cancel();
+            setConfirmationModal(null);
+          }}
+        />
       )}
     </div>
   );

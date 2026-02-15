@@ -18,6 +18,14 @@ vi.mock('../lenses/LensBar', () => ({
   ),
 }))
 
+// Mock EssenceBullets — pass through V3 primaryInsight only (not V1 subtext, which
+// would duplicate the analysis section's subtext block and break getByText queries)
+vi.mock('../EssenceBullets', () => ({
+  EssenceBullets: ({ analysis }: { analysis: { meta?: { primaryInsight?: string } } }) => (
+    <div data-testid="essence-bullets">{analysis?.meta?.primaryInsight ?? ''}</div>
+  ),
+}))
+
 // Mock temperature module
 vi.mock('@/lib/temperature', () => ({
   getTemperatureColor: vi.fn().mockImplementation((t: number) => t > 0.7 ? 'hot-color' : 'cool-color'),
@@ -80,7 +88,7 @@ describe('MessageCard', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument()
   })
 
-  it('renders "Parallax" for mediator sender', () => {
+  it('renders "Ava" for mediator sender', () => {
     render(
       <MessageCard
         sender="mediator"
@@ -89,7 +97,7 @@ describe('MessageCard', () => {
         timestamp="2:30 PM"
       />
     )
-    expect(screen.getByText('Parallax')).toBeInTheDocument()
+    expect(screen.getByText('Ava')).toBeInTheDocument()
   })
 
   it('renders timestamp', () => {

@@ -1,6 +1,6 @@
-# Parallax Settings
+# Settings
 
-These are the user preferences that Parallax can manage. Settings are stored per-session and reset when a new session starts.
+These are the user preferences I can manage. Settings are stored per-session and reset when a new session starts.
 
 ## Available Settings
 

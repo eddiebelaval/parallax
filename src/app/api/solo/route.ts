@@ -202,10 +202,10 @@ export async function POST(request: Request) {
   try {
     response = await soloMessage(systemPrompt, claudeMessages, 1024)
   } catch {
-    return NextResponse.json({ error: 'Parallax response failed' }, { status: 502 })
+    return NextResponse.json({ error: 'Ava response failed' }, { status: 502 })
   }
 
-  // 10. Insert Parallax response
+  // 10. Insert Ava response
   await supabase.from('messages').insert({
     session_id,
     sender: 'mediator',

@@ -2125,3 +2125,13 @@ a[data-spotlight-active]::after {
     animation: none;
   }
 }
+
+/* Marching ants animation */
+@keyframes ant-march {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.ant-march {
+  animation: ant-march 12s linear infinite;
+}

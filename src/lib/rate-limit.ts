@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+const MAX_TRACKED_IPS = 10_000
 const requestMap = new Map<string, number[]>()
 
 // Clean up stale entries every 5 minutes
@@ -24,6 +25,8 @@ export function checkRateLimit(
   limit = 30,
   windowMs = 60_000,
 ): NextResponse | null {
+  // On Vercel, x-forwarded-for is set by the platform and trustworthy.
+  // In other environments, consider using a platform-specific trusted header.
   const forwarded = request.headers.get('x-forwarded-for')
   const ip = forwarded?.split(',')[0]?.trim() || 'unknown'
 
@@ -36,6 +39,12 @@ export function checkRateLimit(
       { error: 'Rate limit exceeded' },
       { status: 429 },
     )
+  }
+
+  // Evict oldest entries if map grows too large (prevent unbounded memory)
+  if (requestMap.size >= MAX_TRACKED_IPS && !requestMap.has(ip)) {
+    const oldest = requestMap.keys().next().value
+    if (oldest !== undefined) requestMap.delete(oldest)
   }
 
   recent.push(now)

@@ -81,7 +81,7 @@ export function useMessages(sessionId: string | undefined) {
     }
   }, [sessionId])
 
-  // Send a message
+  // Send a message (optimistic insert so MessageCard mounts before analysis)
   const sendMessage = useCallback(async (sender: MessageSender, content: string) => {
     if (!sessionId) return null
 
@@ -92,7 +92,18 @@ export function useMessages(sessionId: string | undefined) {
     })
 
     if (!res.ok) return null
-    return await res.json() as Message
+    const msg = await res.json() as Message
+
+    // Add to state immediately so the card renders without analysis.
+    // This ensures useMelt starts at "idle" and can animate the
+    // dissolve→crystallize transition when analysis arrives later.
+    // The Realtime INSERT handler's duplicate check (line 57) prevents doubles.
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev
+      return [...prev, msg]
+    })
+
+    return msg
   }, [sessionId])
 
   // Determine whose turn it is (alternates between A/B, ignoring mediator messages)
@@ -105,7 +116,11 @@ export function useMessages(sessionId: string | undefined) {
   }
 
   // Re-fetch messages from the server — use when Realtime may not deliver
-  // INSERT events (e.g., after conductor API calls insert mediator messages)
+  // INSERT events (e.g., after conductor API calls insert mediator messages).
+  // Merges new data into existing state so that MessageCard instances are
+  // updated in-place rather than replaced. This preserves useMelt's ref
+  // state so the dissolve→crystallize animation can fire when analysis
+  // transitions from null to present.
   const refreshMessages = useCallback(async () => {
     if (!sessionId) return
     const { data, error } = await supabase
@@ -115,7 +130,19 @@ export function useMessages(sessionId: string | undefined) {
       .order('created_at', { ascending: true })
 
     if (!error && data) {
-      setMessages(data as Message[])
+      setMessages((prev) => {
+        const prevMap = new Map(prev.map((m) => [m.id, m]))
+        return (data as Message[]).map((fresh) => {
+          const existing = prevMap.get(fresh.id)
+          // Keep existing object reference if nothing meaningful changed
+          // (same nvc_analysis presence) to avoid unnecessary re-renders.
+          // Update when analysis arrives or other fields change.
+          if (existing && JSON.stringify(existing) === JSON.stringify(fresh)) {
+            return existing
+          }
+          return fresh
+        })
+      })
     }
   }, [sessionId])
 

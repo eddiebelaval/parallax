@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 const TTS_TIMEOUT_MS = 15000
 
@@ -235,6 +235,23 @@ export function useParallaxVoice(): {
     },
     [playElevenLabs, speakFallback],
   )
+
+  // Cleanup on unmount: stop audio, cancel RAF, revoke blob URLs
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.removeAttribute('src')
+      }
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current)
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
 
   return { speak, speakChunked, isSpeaking, cancel, waveform, energy }
 }

@@ -67,6 +67,13 @@ export function SignalCard({ analysis, side }: SignalCardProps) {
         </p>
       )}
 
+      {/* First blind spot — keeps signal rail in sync with essence format */}
+      {analysis.blindSpots?.[0] && (
+        <p className="text-ember-500 text-[10px] leading-tight mt-0.5 line-clamp-1">
+          {analysis.blindSpots[0]}
+        </p>
+      )}
+
       {/* Unmet needs tags */}
       {needs.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">

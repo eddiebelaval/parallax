@@ -102,11 +102,30 @@ export async function PATCH(request: NextRequest) {
     // HACKATHON DEMO: Use demo user if no auth
     const userId = user?.id || 'demo-user-hackathon-2026'
 
-    const updates: Partial<ProfileSettings> = await request.json()
+    const rawUpdates: Record<string, unknown> = await request.json()
 
-    // Validate updates
-    if (!updates || Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'No updates provided' }, { status: 400 })
+    // Allowlist: only these keys can be set via PATCH
+    const ALLOWED_KEYS: Array<keyof ProfileSettings> = [
+      'display_name', 'preferred_name', 'pronouns',
+      'email_notifications', 'sms_notifications', 'push_notifications',
+      'default_session_mode', 'auto_record_sessions',
+      'enable_live_transcription', 'share_behavioral_signals',
+      'allow_research_data_use', 'public_profile',
+      'voice_speed', 'voice_enabled', 'preferred_voice_id',
+      'interview_completed', 'allow_reinterview', 'last_interview_date',
+      'high_contrast_mode', 'reduce_motion', 'screen_reader_mode',
+      'experimental_features', 'beta_access',
+    ]
+
+    const updates: Partial<ProfileSettings> = {}
+    for (const key of ALLOWED_KEYS) {
+      if (key in rawUpdates) {
+        (updates as Record<string, unknown>)[key] = rawUpdates[key]
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No valid updates provided' }, { status: 400 })
     }
 
     const supabase = createServerClient()

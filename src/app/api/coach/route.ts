@@ -61,12 +61,16 @@ export async function POST(request: Request) {
   const supabase = createServerClient()
 
   // 1. Insert user's coaching message
-  await supabase.from('coaching_messages').insert({
+  const { error: userInsertError } = await supabase.from('coaching_messages').insert({
     session_id,
     person,
     role: 'user',
     content: message,
   })
+  if (userInsertError) {
+    console.error('Failed to insert coaching message:', userInsertError)
+    return NextResponse.json({ error: 'Failed to save coaching message' }, { status: 500 })
+  }
 
   // 2. Fetch ALL coaching history for this person (multi-turn context)
   const { data: coachingHistory } = await supabase
@@ -144,7 +148,7 @@ export async function POST(request: Request) {
   try {
     // Use conductorMessage for single-turn with full coaching context
     const coachingContext = claudeMessages
-      .map((m) => `[${m.role === 'user' ? personName : 'Parallax'}]: ${m.content}`)
+      .map((m) => `[${m.role === 'user' ? personName : 'Ava'}]: ${m.content}`)
       .join('\n')
 
     response = await conductorMessage(
@@ -157,12 +161,15 @@ export async function POST(request: Request) {
   }
 
   // 7. Insert assistant response
-  await supabase.from('coaching_messages').insert({
+  const { error: assistantInsertError } = await supabase.from('coaching_messages').insert({
     session_id,
     person,
     role: 'assistant',
     content: response,
   })
+  if (assistantInsertError) {
+    console.error('Failed to insert coaching response:', assistantInsertError)
+  }
 
   // 8. Return response
   return NextResponse.json({ message: response })

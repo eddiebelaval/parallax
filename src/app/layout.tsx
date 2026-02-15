@@ -9,9 +9,9 @@ import { signOut } from "@/lib/auth";
 import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { WalkingAnt } from "@/components/WalkingAnt";
 import { AvaConcierge } from "@/components/AvaConcierge";
 import { ParallaxOrb } from "@/components/ParallaxOrb";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -255,9 +255,10 @@ export default function RootLayout({
       <body
         className={`${cormorantGaramond.variable} ${raleway.variable} ${ibmPlexMono.variable} ${bitcount.variable} antialiased`}
       >
-        <CursorSpotlight />
-        <WalkingAnt targetId="claude-code-badge" color="#000000" />
-        <LayoutShell>{children}</LayoutShell>
+        <SettingsProvider>
+          <CursorSpotlight />
+          <LayoutShell>{children}</LayoutShell>
+        </SettingsProvider>
       </body>
     </html>
   );

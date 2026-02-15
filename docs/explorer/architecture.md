@@ -29,11 +29,13 @@
 - The Melt: three-phase visual transformation (dissolve -> crystallize -> settled) using Knuth hash particles
 - SignalRail: temperature timeline with backlit glow, showing emotional arc
 
-## What Was Built (PRs)
+## What Was Built
 
-- PR #1: Scaffold, Supabase schema, API routes, Realtime hooks, lobby UI, split-screen, MessageCard
-- PR #2: Dual-lens NVC prompt, /api/mediate, parseNvcAnalysis, temperature colors, fire-and-forget mediation
-- PR #3: TheMelt animation, SignalRail, useMelt hook, auto-expand analysis
-- PR #4: Artifacts (blueprint, pipeline architecture, hackathon transcript)
-- PR #5: Voice input via Web Speech API, session summary, end session flow
-- PR #6: Error handling hardening, PersonPanel extraction, landing page hero, mobile responsive
+42+ PRs merged across 4 days. Key milestones:
+
+- **Foundation (Day 1):** Supabase schema, API routes, Realtime hooks, split-screen layout, dual-lens NVC prompt, fire-and-forget mediation, TheMelt animation, SignalRail, voice input, session summaries
+- **Visual Identity (Day 2):** Ember design system, audio waveform orbs, in-person mode, light mode, 475 tests across 47 files, ElevenLabs TTS, Conversational Layer (Explorer + Guide), self-narrating landing page
+- **Intelligence (Day 3):** Integration audit, Intelligence Network (interview-built behavioral profiles), remote session redesign, interview page rebuild, branch consolidation
+- **Entity (Day 4):** Ava named, solo mode, continuous conductor flow, global Ava pill + voice-first concierge, ParallaxOrb, anonymous auth, hands-free mode, turn-based timers, profile section
+
+Every PR is documented in BUILDING.md with architectural reasoning and gate pass notes.

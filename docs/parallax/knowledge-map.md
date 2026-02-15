@@ -1,6 +1,6 @@
-# Parallax — Knowledge Map
+# Ava — Knowledge Map
 
-Table of contents for Parallax's brain. Every topic she can speak about, where it's documented, and which modes have access.
+Table of contents for Ava's brain. Every topic she can speak about, where it's documented, and which modes have access.
 
 | Topic | Source File | Modes |
 |-------|-----------|-------|
@@ -16,6 +16,7 @@ Table of contents for Parallax's brain. Every topic she can speak about, where i
 | Hackathon build journey | `docs/explorer/hackathon-journey.md` | Explorer |
 | PR history | `docs/explorer/architecture.md` | Explorer |
 | Narration intro context | `docs/explorer/narration-intro.md` | Explorer |
+| Milo's sprint journal | `docs/explorer/milo.md` | Explorer |
 | Build journal (full) | `BUILDING.md` | Explorer |
 | Project architecture (full) | `CLAUDE.md` | Explorer |
 | User Intelligence Layer research | `docs/research/user-intelligence-layer.md` | Explorer |
@@ -29,10 +30,3 @@ Table of contents for Parallax's brain. Every topic she can speak about, where i
 2. **Mode framing** — a one-line context string from `knowledge-base.ts`
 3. **Mode knowledge** — Explorer gets everything in the Explorer column + BUILDING.md + CLAUDE.md; Guide gets everything in the Guide column
 
-## Updating
-
-- To change who Parallax IS: edit files in `docs/parallax/`
-- To change what Explorer Parallax knows: edit files in `docs/explorer/`
-- To change what Guide Parallax knows: edit files in `docs/guide/`
-- To add new research: add `.md` files to `docs/research/` (Explorer-only)
-- This file should be updated whenever a new knowledge source is added

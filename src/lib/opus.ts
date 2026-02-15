@@ -202,7 +202,7 @@ ${transcript}${v3Section}${goalsSection}`
   let systemPrompt = SESSION_SUMMARY_PROMPT
   const neitherHasProfile = !hasProfiles?.personA && !hasProfiles?.personB
   if (neitherHasProfile) {
-    systemPrompt += `\n\nAfter the JSON object, on a new line, add a key "profileSuggestion" with a brief, warm sentence: if either participant wants Parallax to understand their communication style in future sessions, they can build a free profile through the Intelligence Network. Keep it to one sentence — an invitation, not a pitch.`
+    systemPrompt += `\n\nAfter the JSON object, on a new line, add a key "profileSuggestion" with a brief, warm sentence: if either participant wants Ava to understand their communication style in future sessions, they can build a free profile through the Intelligence Network. Keep it to one sentence — an invitation, not a pitch.`
   }
 
   const response = await getClient().messages.create({

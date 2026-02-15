@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 import type { MessageSender } from '@/types/database'
 
 // POST /api/messages — send a message
 export async function POST(request: Request) {
+  const rateLimited = checkRateLimit(request)
+  if (rateLimited) return rateLimited
+
   const body = await request.json()
   const { session_id, sender, content } = body as {
     session_id: string

@@ -21,7 +21,7 @@ const INTRO_PROMPTS: Record<AvaContext, string> = {
   landing:
     "The user tapped your pill on the landing page. Greet warmly in 1 sentence. You can help them navigate, start sessions, replay the tour, or answer questions. Keep it under 15 words.",
   general:
-    "The user tapped your pill. Greet briefly. You can help navigate, change settings, or answer questions about Parallax. Keep it under 15 words.",
+    "The user tapped your pill. Greet briefly. You can help navigate, change settings, or answer questions. Keep it under 15 words.",
   session:
     "The user tapped your pill during a live session. Check in warmly - 'Everything going alright?' or similar. Be supportive and brief. They might want to vent, ask for help, or just need encouragement. Do NOT try to mediate - that's what the session is for. Keep it under 20 words.",
 }

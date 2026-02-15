@@ -24,35 +24,19 @@ Voice input landed via the Web Speech API (Chrome only, with graceful degradatio
 
 PR #6 was a hardening pass. PersonPanel was extracted from SessionView (328 lines down to 204), shared icons replaced five inline SVG duplicates, error states became visible inline rather than silent failures, and the landing page got its hero section: "See the conversation you're actually having."
 
-## Day 4 — February 13: The Depth Play
+## Day 4 — February 13: Ava Becomes Someone
 
-This was the most ambitious day. The V3 Conflict Intelligence Engine introduced 14 analytical lenses — going far beyond NVC alone. The insight was that NVC has blind spots. It doesn't detect cognitive distortions (CBT). It doesn't see power dynamics. It doesn't recognize attachment patterns or systemic fairness issues.
+The product became an entity. She got a name: Ava (Attuned Voice Advocate). The Continuous Conductor Flow made her speak immediately after every message instead of waiting for analysis to complete — because a real mediator doesn't go silent for 10 seconds, they acknowledge what was said. Solo Mode arrived: 1:1 conversations with Ava for people who want to process a conflict on their own, with an intelligence sidebar and HTML session export.
 
-The 14 lenses span five categories: Communication (NVC), Relational (Gottman, Drama Triangle, Attachment), Cognitive (CBT, Narrative), Systemic (SCARF, Organizational Justice, Psychological Safety, Jehn's, Power), and Resolution (Thomas-Kilmann, Restorative Justice, Interest-Based Relational). Six context modes route the right lenses to the right conflicts.
+The biggest architectural change: Ava got a persistent presence. A global orb in the header, visible on every page — landing, home, settings, sessions. Click it anywhere and she activates: voice-first concierge with context-aware greetings, mic input, and text fallback. She reads the room — on the landing page she's a host, on internal pages she's a concierge, during sessions she's a supportive friend checking in from the sidelines.
 
-The User Intelligence Layer research also began — a vision for persistent, interview-built psychological profiles that would let Claude enter mediation already understanding each person. Full research documented in docs/research/user-intelligence-layer.md.
+ParallaxOrb replaced the old circle orbs with a canvas-based visualization: inner waveform driven by Web Audio API, orbiting particles that appear during speech and fade on silence. The orb became Ava's physical body — consistent everywhere.
 
-The conductor onboarding system for remote mode was built: a phase-based state machine (greeting, gather context from person A, gather from person B, synthesize, begin) that gives structure to the first minutes of a session.
+Anonymous auth removed all friction. Turn-based timers gave structure to in-person mediation. Hands-free mode tuning (reduced silence timer, lowered mic gain) made voice input feel natural instead of jumpy.
 
-## Day 5 — February 14: In-Person Mode
+## Day 5-7 — February 14-16: Polish and Ship
 
-The X-Ray Scoreboard brought visual issue tracking to in-person sessions. As people talk, discrete issues are extracted and displayed as cards. Each card tracks whether it's been addressed, well-addressed, or made worse — giving a real-time scorecard of progress.
-
-The Strategy Arena concept emerged: a backtesting framework for conflict resolution, inspired by algorithmic trading. Pre-authored conflict scenarios serve as "market data," and different lens configurations serve as "strategies." The arena runs scenarios through the real mediation pipeline and scores outcomes across five dimensions: de-escalation effectiveness, blind spot detection, NVC translation quality, lens activation relevance, and insight depth.
-
-Stage Mode — a more structured format for guided conversations — was designed but deferred. The vision lives in BUILDING.md and the stage mode blueprint artifact.
-
-## Day 6 — February 15: Parallax Speaks
-
-The Conversational Layer. The idea that changed everything: what if Parallax could explain itself?
-
-Two tiers, one infrastructure. The Explorer lets judges and developers talk to the product itself — ask about the architecture, the journey, the decisions. The Guide helps users understand and operate the product — explaining features, answering questions, eventually managing settings.
-
-This is the feature you're using right now, if you're reading this through the Explorer.
-
-## Day 7 — February 16: Ship
-
-Final polish. Demo video recording. README expansion for judges. Submission.
+Final hardening, demo preparation, and submission. The remaining days focus on edge case fixes, the demo video, README expansion for judges, and ensuring every flow works end-to-end across solo, remote, and in-person modes.
 
 ## Key Pivots
 
@@ -64,12 +48,14 @@ Single-lens NVC became 14-lens Conflict Intelligence when research revealed NVC'
 
 Stateless mediation became conductor-driven when it became clear that cold-start sessions felt jarring. The conductor gathers context from both people before mediation begins, so Claude enters the conversation warm.
 
-What was cut: multi-device real-time sync (too complex for hackathon scope — single device or room-code sharing instead), persistent user profiles in V1 (designed but not implemented — documented as V2 vision), and Stage Mode (designed as blueprint, zero code).
+The product became an entity when Ava got a name, a voice, a body (the orb), and persistent presence across every page. The shift from "tool with a chatbot" to "entity that participates" is the core thesis of id8Labs.
 
 ## The Numbers
 
-- 6 merged PRs, 13 gate passes
-- 86 tests across 6 suites, all passing
-- 14 analytical lenses, 6 context modes
+- 42+ merged PRs, 140+ commits across 4 days
+- 475+ tests across 47 test files, all passing
+- 14 analytical lenses, 6 context modes, 9 behavioral signal types
+- 3 session modes: solo, remote, in-person
 - Production deployed to Vercel
+- ElevenLabs TTS with smart browser voice fallback
 - Zero external dependencies beyond Next.js, Supabase, Claude, and Tailwind

@@ -38,7 +38,7 @@ export const GUIDE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'update_setting',
     description:
-      'Update a user preference in Parallax. Use this when the user asks to change a setting, toggle a feature, or modify their display name. The change takes effect immediately in the UI.',
+      'Update a user preference. Use this when the user asks to change a setting, toggle a feature, or modify their display name. The change takes effect immediately in the UI.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -67,7 +67,7 @@ export const GUIDE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'navigate_to',
     description:
-      'Navigate the user to a page in Parallax. Use this when the user asks to go somewhere, e.g. "take me to settings" or "go to my profile". The navigation happens on the client side.',
+      'Navigate the user to a page. Use this when the user asks to go somewhere, e.g. "take me to settings" or "go to my profile". The navigation happens on the client side.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -83,7 +83,7 @@ export const GUIDE_TOOLS: Anthropic.Tool[] = [
   {
     name: 'replay_tour',
     description:
-      'Replay the Parallax landing page narration tour. Use when the user wants to see the introduction again.',
+      'Replay the landing page narration tour. Use when the user wants to see the introduction again.',
     input_schema: {
       type: 'object' as const,
       properties: {},

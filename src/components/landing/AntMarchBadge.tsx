@@ -114,6 +114,7 @@ export function AntMarchBadge({ onClick }: AntMarchBadgeProps) {
               offsetPath: `path('${path}')`,
               offsetAnchor: 'center',
               offsetRotate: 'auto',
+              animationDelay: `${-(i / ANT_COUNT) * MARCH_DURATION_S}s`,
             } as React.CSSProperties}
           >
             {/* Tiny 2D side-view ant (~10x8px) */}

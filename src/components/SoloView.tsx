@@ -36,7 +36,7 @@ function SoloMessageBubble({
       }`}
     >
       <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">
-        {isParallax ? "Parallax" : "You"}
+        {isParallax ? "Ava" : "You"}
       </p>
       <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
         {content}
@@ -215,7 +215,7 @@ export function SoloView({ session, roomCode }: SoloViewProps) {
           {loading && messages.length > 0 && messages[messages.length - 1]?.sender === "person_a" && (
             <div className="px-4 py-3 border-l-2 border-l-temp-cool bg-temp-cool/5">
               <p className="font-mono text-[10px] uppercase tracking-widest text-ember-600 mb-1">
-                Parallax
+                Ava
               </p>
               <div className="flex gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-temp-cool animate-pulse" />

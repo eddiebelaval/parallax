@@ -8,7 +8,7 @@ export function buildNameMap(session: {
   return {
     person_a: session.person_a_name ?? 'Person A',
     person_b: session.person_b_name ?? 'Person B',
-    mediator: 'Parallax',
+    mediator: 'Ava',
   }
 }
 
