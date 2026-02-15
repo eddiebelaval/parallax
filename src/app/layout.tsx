@@ -10,7 +10,7 @@ import localFont from "next/font/local";
 import { CursorSpotlight } from "@/components/CursorSpotlight";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AvaConcierge } from "@/components/AvaConcierge";
-import { AvaOrb } from "@/components/AvaOrb";
+import { ParallaxOrb } from "@/components/ParallaxOrb";
 import type { NarrationPhase } from "@/hooks/useNarrationController";
 import "./globals.css";
 
@@ -172,7 +172,7 @@ function LayoutShell({ children }: { children: React.ReactNode }) {
           className="ava-pill-orb"
           aria-label="Talk to Ava"
         >
-          <AvaOrb
+          <ParallaxOrb
             size={36}
             energy={voiceEnergy}
             isSpeaking={isAvaActive}
