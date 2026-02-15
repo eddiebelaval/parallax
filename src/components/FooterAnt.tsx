@@ -71,8 +71,11 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     if (typeof window === "undefined") return;
     const currentPath = window.location.pathname;
 
+    console.log('🐜 FooterAnt mount check:', { currentPath, allowedPaths });
+
     // BLACKLIST: Never show on session pages
     if (currentPath.startsWith("/session")) {
+      console.log('🐜 BLOCKED: Session page');
       setIsVisible(false);
       return;
     }
@@ -80,6 +83,7 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     // WHITELIST: Only on landing, profile, settings
     const isAllowedPage = allowedPaths.includes(currentPath);
     if (!isAllowedPage) {
+      console.log('🐜 BLOCKED: Not in allowed paths');
       setIsVisible(false);
       return;
     }
@@ -93,12 +97,17 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
     const encounters = parseInt(localStorage.getItem("parallax-ant-encounters") || "0", 10);
     setEncounterCount(encounters);
 
+    console.log('🐜 Release status:', { released });
+
     if (!released) {
       // Ant not released yet - only visible on landing page, trapped state
-      setIsVisible(currentPath === "/");
+      const shouldShow = currentPath === "/";
+      console.log('🐜 Setting visible:', shouldShow, 'on path:', currentPath);
+      setIsVisible(shouldShow);
       setAntState("trapped");
     } else {
       // Ant released - hide it (no wandering, just gone!)
+      console.log('🐜 Ant already released - hiding');
       setIsVisible(false);
     }
   }, [allowedPaths]);
@@ -375,11 +384,15 @@ export function FooterAnt({ allowedPaths = ["/"] }: FooterAntProps) {
   };
 
   if (!isVisible) {
+    console.log('🐜 NOT RENDERING: isVisible =', isVisible);
     return null;
   }
 
+  console.log('🐜 RENDERING ant:', { position, antState, isVisible });
+
   // Don't render if position hasn't been set yet (except for trapped state)
   if (position.x === -100 && position.y === -100 && antState !== "trapped") {
+    console.log('🐜 NOT RENDERING: Position not set yet');
     return null;
   }
 
